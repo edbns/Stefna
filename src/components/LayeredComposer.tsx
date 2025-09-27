@@ -318,6 +318,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     setNavGenerating(true)
                     
                     // Redirect immediately to gallery on mobile, profile on desktop
+                    console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/' : '/profile' })
                     navigate(isMobile ? '/' : '/profile')
                     
                     window.dispatchEvent(new CustomEvent('close-composer'));
