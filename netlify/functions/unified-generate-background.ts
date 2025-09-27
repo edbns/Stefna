@@ -515,17 +515,10 @@ const BFL_PHOTO_MODELS = [
     description: 'Primary - highest quality for presets and custom prompts'
   },
   {
-    endpoint: 'flux-pro-1.1-pro',
-    name: 'BFL Flux Pro 1.1 Pro',
-    cost: 'medium',
-    priority: 2,
-    description: 'Fallback - high quality alternative'
-  },
-  {
     endpoint: 'flux-pro-1.1',
     name: 'BFL Flux Pro 1.1',
     cost: 'low',
-    priority: 3,
+    priority: 2,
     description: 'Fallback - standard quality for presets and custom prompts'
   }
 ];
@@ -539,17 +532,10 @@ const BFL_EMOTION_MODELS = [
     description: 'Primary - direct BFL API for unreal reflection'
   },
   {
-    endpoint: 'flux-pro-1.1-pro',
-    name: 'BFL Flux Pro 1.1 Pro',
-    cost: 'medium',
-    priority: 2,
-    description: 'Fallback - high quality alternative for unreal reflection'
-  },
-  {
     endpoint: 'flux-pro-1.1',
     name: 'BFL Flux Pro 1.1',
     cost: 'low',
-    priority: 3,
+    priority: 2,
     description: 'Fallback - standard quality for unreal reflection'
   }
 ];
@@ -564,17 +550,10 @@ const BFL_GHIBLI_MODELS = [
     description: 'PREFERRED: Primary endpoint for Ghibli reaction with BFL fallbacks'
   },
   {
-    endpoint: 'flux-pro-1.1-pro',
-    name: 'BFL Flux Pro 1.1 Pro',
-    cost: 'medium',
-    priority: 2,
-    description: 'Fallback - high quality alternative for Ghibli reactions'
-  },
-  {
     endpoint: 'flux-pro-1.1',
     name: 'BFL Flux Pro 1.1',
     cost: 'low',
-    priority: 3,
+    priority: 2,
     description: 'Fallback - standard quality for Ghibli reactions'
   }
 ];
@@ -589,17 +568,10 @@ const BFL_EDIT_FALLBACK_MODELS = [
     description: 'Fallback - highest quality for edit mode'
   },
   {
-    endpoint: 'flux-pro-1.1-pro',
-    name: 'BFL Flux Pro 1.1 Pro',
-    cost: 'medium',
-    priority: 2,
-    description: 'Fallback - high quality alternative for edit mode'
-  },
-  {
     endpoint: 'flux-pro-1.1',
     name: 'BFL Flux Pro 1.1',
     cost: 'low',
-    priority: 3,
+    priority: 2,
     description: 'Fallback - standard quality for edit mode'
   }
 ];
