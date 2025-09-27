@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Plus, FileText, ArrowUp, ChevronUp, ChevronDown } from 'lucide-react'
+import { generationStart } from '../lib/generationEvents'
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
@@ -208,6 +209,38 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
     }
   }, [isMobile, selectedFile, setIsExpanded, isExpanded])
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      
+      // Check if click is outside any dropdown
+      if (!target.closest('[data-dropdown]') && !target.closest('[data-unrealreflection-dropdown]') && !target.closest('[data-parallelself-dropdown]')) {
+        // Close all dropdowns
+        if (unrealReflectionDropdownOpen) {
+          setUnrealReflectionDropdownOpen(false)
+        }
+        if (parallelSelfDropdownOpen) {
+          setParallelSelfDropdownOpen(false)
+        }
+        if (ghibliReactionDropdownOpen) {
+          setGhibliReactionDropdownOpen(false)
+        }
+        if (cyberSirenDropdownOpen) {
+          setCyberSirenDropdownOpen(false)
+        }
+      }
+    }
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside)
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [unrealReflectionDropdownOpen, parallelSelfDropdownOpen, ghibliReactionDropdownOpen, cyberSirenDropdownOpen])
+
   return (
     <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0' : 'bottom-2 left-1/2 transform -translate-x-1/2 w-[60%] min-w-[600px]'} z-[999999]`}>
       {/* Photo preview container - shows above composer when photo is uploaded (desktop only, mobile shows in expanded section) */}
@@ -409,6 +442,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       console.log('🔄 About to navigate to:', targetPath)
                       navigate(targetPath)
                       console.log('🔄 Navigate called successfully')
+                      
+                      // Dispatch generation start event for mobile gallery
+                      generationStart({ kind: 'image' });
                       
                       window.dispatchEvent(new CustomEvent('close-composer'));
                       
@@ -678,7 +714,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Unreal Reflection™ presets dropdown */}
               {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
-                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[999999]">
+                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[999999]" data-unrealreflection-dropdown>
                   <UnrealReflectionPicker
                     value={selectedUnrealReflectionPreset || undefined}
                     onVideoToggle={(enabled) => {
@@ -694,6 +730,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate(isMobile ? '/gallery' : '/profile')
+                        // Dispatch generation start event for mobile gallery
+                        generationStart({ kind: 'image' });
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -749,7 +787,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               
               {/* Parallel Self™ presets dropdown */}
               {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[999999]">
+                <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[999999]" data-parallelself-dropdown>
                   <ParallelSelfPicker
                     value={selectedParallelSelfPreset || undefined}
                     onChange={async (presetId) => {
@@ -761,6 +799,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate(isMobile ? '/gallery' : '/profile')
+                        // Dispatch generation start event for mobile gallery
+                        generationStart({ kind: 'image' });
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
@@ -985,6 +1025,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate(isMobile ? '/gallery' : '/profile')
+                        // Dispatch generation start event for mobile gallery
+                        generationStart({ kind: 'image' });
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -1063,6 +1105,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                         console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
                         navigate(isMobile ? '/gallery' : '/profile')
+                        // Dispatch generation start event for mobile gallery
+                        generationStart({ kind: 'image' });
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
