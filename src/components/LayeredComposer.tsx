@@ -199,7 +199,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       {/* Photo preview container - shows above composer when photo is uploaded (hidden for Custom mode) */}
       {previewUrl && composerState.mode !== 'custom' && (
         <div className="mb-4 flex justify-center">
-          <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
+          <div className={`rounded-2xl p-4 shadow-2xl shadow-black/20 inline-block border ${isMobile ? 'max-w-xs' : ''}`} style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
             
             {/* Media display */}
             <div className="flex justify-center mb-3">
@@ -211,7 +211,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     }
                   }} 
                   src={previewUrl} 
-                  className="max-h-96 w-auto object-contain" 
+                  className={`${isMobile ? 'max-h-48' : 'max-h-96'} w-auto object-contain`} 
                   controls 
                   onLoadedMetadata={measure} 
                   onLoadedData={measure} 
@@ -225,7 +225,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   }} 
                   src={previewUrl} 
                   alt="Uploaded media" 
-                  className="max-h-96 w-auto object-contain" 
+                  className={`${isMobile ? 'max-h-48' : 'max-h-96'} w-auto object-contain`} 
                   onLoad={measure}
                   onError={(e) => {
                     console.error('❌ Image failed to load:', previewUrl, e)
@@ -314,11 +314,11 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   onClick={async () => {
                     if (!checkAuthAndRedirect()) return
                     
-                    // Redirect immediately when user clicks generate
-                    navigate('/profile')
-                    
                     setNavGenerating(true)
                     window.dispatchEvent(new CustomEvent('close-composer'));
+                    
+                    // Redirect to gallery on mobile, profile on desktop
+                    navigate(isMobile ? '/' : '/profile')
                     
                     try {
                       if (composerState.mode === 'custom') {
@@ -376,73 +376,73 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           <div className="flex items-center justify-center gap-2 flex-wrap">
             
             {/* Photo Editing Mode Label and Upload Button - Same Row */}
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
               <div className="text-white text-xs font-medium">
                 Photo Editing
               </div>
-              
-              <button
-                onClick={() => {
+            
+            <button
+              onClick={() => {
                   if (!checkAuthAndRedirect()) return
                   
-                  const input = document.createElement('input')
-                  input.type = 'file'
-                  input.accept = 'image/*'
-                  input.onchange = (e) => {
-                    const target = e.target as HTMLInputElement
-                    const file = target.files?.[0]
-                    if (file) {
-                      console.log('📸 Photo selected:', file.name)
-                      onFileSelect(file)
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = 'image/*'
+                input.onchange = (e) => {
+                  const target = e.target as HTMLInputElement
+                  const file = target.files?.[0]
+                  if (file) {
+                    console.log('📸 Photo selected:', file.name)
+                    onFileSelect(file)
                       // Automatically switch to edit mode when photo is uploaded
                       setComposerState((s: any) => ({ ...s, mode: 'edit' }))
-                    }
                   }
-                  input.click()
-                }}
+                }
+                input.click()
+              }}
                 className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload"
-                style={{ backgroundColor: '#000000' }}
-                title="Upload a photo to get started"
-              >
+              style={{ backgroundColor: '#000000' }}
+              title="Upload a photo to get started"
+            >
                 <Plus size={16} />
                 <span>Upload</span>
-              </button>
-            </div>
+            </button>
+                  </div>
 
             {/* Studio Button */}
             <div className="relative">
-              <button
-                onClick={async () => {
-                  if (!checkAuthAndRedirect()) return
-                  
-                  // Require photo upload first
-                  if (!selectedFile) {
-                    return
+                <button
+                  onClick={async () => {
+                    if (!checkAuthAndRedirect()) return
+                    
+                    // Require photo upload first
+                    if (!selectedFile) {
+                      return
+                    }
+                    
+                    if (composerState.mode === 'edit') {
+                      closeAllDropdowns()
+                    } else {
+                      closeAllDropdowns()
+                      setComposerState((s: any) => ({ ...s, mode: 'edit' }))
+                      setSelectedMode('presets')
+                    }
+                  }}
+                  className={
+                    composerState.mode === 'edit'
+                      ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                      : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
-                  
-                  if (composerState.mode === 'edit') {
-                    closeAllDropdowns()
-                  } else {
-                    closeAllDropdowns()
-                    setComposerState((s: any) => ({ ...s, mode: 'edit' }))
-                    setSelectedMode('presets')
-                  }
-                }}
-                className={
-                  composerState.mode === 'edit'
-                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
-                }
-                style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                  style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                 title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
-              >
-                Studio
-              </button>
+                >
+                  Studio
+                </button>
             </div>
 
             {/* Unreal Reflection™ Button */}
             <div className="relative">
-              <button
+                <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
                   
@@ -453,7 +453,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   
                   if (composerState.mode === 'unrealreflection') {
                     closeAllDropdowns()
-                    setUnrealReflectionDropdownOpen(!unrealReflectionDropdownOpen)
+                        setUnrealReflectionDropdownOpen(!unrealReflectionDropdownOpen)
                   } else {
                     closeAllDropdowns()
                     setComposerState((s: any) => ({ ...s, mode: 'unrealreflection' }))
@@ -513,7 +513,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
             {/* Parallel Self™ Button */}
             <div className="relative">
-              <button
+                <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
                   
