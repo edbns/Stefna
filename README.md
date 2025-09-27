@@ -14,6 +14,7 @@ Transform your photos into stunning AI art with cinematic glow, anime reactions,
 
 ### **Custom Mode**
 - **Free-Form Prompts**: Type anything and watch AI bring it to life
+- **BFL Primary**: Black Forest Labs Flux Pro models for highest quality
 - **AI Enhancement**: Built-in prompt enhancement with ✨ magic wand
 - **Creative Freedom**: Unlimited possibilities for artistic expression
 - **Smart Suggestions**: AI-powered prompt improvements
@@ -51,9 +52,9 @@ Transform your photos into stunning AI art with cinematic glow, anime reactions,
 ## 🤖 AI Technology Stack
 
 ### **Primary AI Providers**
-- **Stability.ai**: High-quality image generation and enhancement
-- **Fal.ai**: Advanced video generation and image processing
-- **BFL (Black Forest Labs)**: Cutting-edge AI models
+- **BFL (Black Forest Labs)**: Primary provider for custom prompts and presets (Flux Pro models)
+- **Stability.ai**: Secondary provider with fallback support for all modes
+- **Fal.ai**: Advanced video generation and specialized image processing
 - **OpenAI**: GPT-powered prompt enhancement and processing
 
 ### **Specialized Features**
