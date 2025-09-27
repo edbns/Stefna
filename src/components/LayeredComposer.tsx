@@ -286,7 +286,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       return "Type something weird. We'll make it art ... tap ✨ for a little magic."
                   }
                 })()}
-                className={`${isMobile ? 'w-[calc(100vw-16px)] mx-2 mt-3' : 'w-full'} px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border`}
+                className={`${isMobile ? 'w-[calc(100vw-16px)] mx-2 mt-3' : 'w-full'} px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 ${isMobile ? 'text-xs' : 'text-sm'} rounded-xl border`}
                 style={{ backgroundColor: '#000000', borderColor: '#333333' }}
                 disabled={composerState.mode === 'edit' ? !selectedFile : false}
                 maxLength={4000}
@@ -297,7 +297,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 <button
                   onClick={handleMagicWandEnhance}
                   disabled={isGenerating || !prompt.trim()}
-                  className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                  className={`absolute ${isMobile ? 'top-1 right-1' : 'top-2 right-2'} w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed`}
                   title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
                 >
                   {isEnhancing ? (
@@ -306,7 +306,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     <span className="text-lg">✨</span>
                   )}
                 </button>
-              <div className="absolute bottom-3 right-2 flex items-center gap-2">
+              <div className={`absolute ${isMobile ? 'bottom-1 right-1' : 'bottom-3 right-2'} flex items-center gap-2`}>
                 <span className="text-white/30 text-xs">{prompt.length}/3000</span>
                 
                 {/* Generate Button - inside prompt box */}
@@ -315,10 +315,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     if (!checkAuthAndRedirect()) return
                     
                     setNavGenerating(true)
-                    window.dispatchEvent(new CustomEvent('close-composer'));
                     
                     // Redirect immediately to gallery on mobile, profile on desktop
+                    console.log('🔄 Redirecting:', { isMobile, target: isMobile ? '/' : '/profile' })
                     navigate(isMobile ? '/' : '/profile')
+                    
+                    window.dispatchEvent(new CustomEvent('close-composer'));
                     
                     try {
                       if (composerState.mode === 'custom') {
