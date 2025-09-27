@@ -412,10 +412,10 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               </div>
 
             {/* Editing Modes Row - Ultra-compact */}
-            <div className="flex items-center justify-center gap-1 flex-wrap">
+            <div className="flex items-center justify-between gap-1 w-full">
               
               {/* Studio Button */}
-              <div className="relative">
+              <div className="relative flex-1">
                 <button
                   onClick={async () => {
                     if (!checkAuthAndRedirect()) return
@@ -435,18 +435,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   }}
                   className={
                     composerState.mode === 'edit'
-                      ? 'px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                      ? 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                      : 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
                   style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                   title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
                 >
                   Studio
                 </button>
-              </div>
+            </div>
 
               {/* Unreal Reflection™ Button */}
-              <div className="relative">
+              <div className="relative flex-1">
                 <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
@@ -469,8 +469,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }}
                 className={
                   composerState.mode === 'unrealreflection'
-                    ? 'px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                    ? 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                   title={!selectedFile ? 'Upload a photo first to use Unreal Reflection mode' : 'Switch to Unreal Reflection mode'}
@@ -517,7 +517,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </div>
 
               {/* Parallel Self™ Button */}
-              <div className="relative">
+              <div className="relative flex-1">
                 <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
@@ -540,8 +540,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }}
                 className={
                   composerState.mode === 'parallelself'
-                    ? 'px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                    ? 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
                   title={!selectedFile ? 'Upload a photo first to use Parallel Self mode' : 'Switch to Parallel Self mode'}
