@@ -315,18 +315,10 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     if (!checkAuthAndRedirect()) return
                     
                     setNavGenerating(true)
+                    window.dispatchEvent(new CustomEvent('close-composer'));
                     
                     // Redirect immediately to gallery on mobile, profile on desktop
-                    console.log('🔄 Redirecting:', { isMobile, target: isMobile ? '/' : '/profile' })
-                    const targetPath = isMobile ? '/' : '/profile'
-                    console.log('🔄 About to navigate to:', targetPath)
-                    navigate(targetPath)
-                    console.log('🔄 Navigate called, now dispatching close-composer event')
-                    
-                    // Small delay to ensure navigation happens first
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('close-composer'));
-                    }, 100)
+                    navigate(isMobile ? '/' : '/profile')
                     
                     try {
                       if (composerState.mode === 'custom') {
