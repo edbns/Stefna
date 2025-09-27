@@ -372,82 +372,77 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
         {/* Controls layout - different for mobile vs desktop */}
         {isMobile ? (
-          /* Mobile Layout: Ultra-compact for small screens */
-          <div className="flex flex-col gap-1 rounded-lg p-2 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
+          /* Mobile Layout: No container, direct buttons */
+          <div className="flex items-center justify-center gap-2 flex-wrap">
             
             {/* Photo Editing Mode Label and Upload Button - Same Row */}
-            <div className="flex items-center justify-center gap-1">
+            <div className="flex items-center gap-2">
               <div className="text-white text-xs font-medium">
                 Photo Editing
               </div>
               
-              <div className="relative">
-            <button
-              onClick={() => {
-                    if (!checkAuthAndRedirect()) return
-                    
-                const input = document.createElement('input')
-                input.type = 'file'
-                input.accept = 'image/*'
-                input.onchange = (e) => {
-                  const target = e.target as HTMLInputElement
-                  const file = target.files?.[0]
-                  if (file) {
-                    console.log('📸 Photo selected:', file.name)
-                    onFileSelect(file)
-                        // Automatically switch to edit mode when photo is uploaded
-                        setComposerState((s: any) => ({ ...s, mode: 'edit' }))
-                  }
-                }
-                input.click()
-              }}
-                  className="px-2 py-1 rounded-lg text-xs font-medium transition-all duration-300 text-white flex items-center gap-1 hover:scale-105 upload"
-              style={{ backgroundColor: '#000000' }}
-              title="Upload a photo to get started"
-            >
-                  <Plus size={12} />
-                  <span>Upload</span>
-            </button>
-                  </div>
-              </div>
-
-            {/* Editing Modes Row - Ultra-compact */}
-            <div className="flex items-center justify-between gap-1 w-full">
-              
-              {/* Studio Button */}
-              <div className="relative flex-1">
-                <button
-                  onClick={async () => {
-                    if (!checkAuthAndRedirect()) return
-                    
-                    // Require photo upload first
-                    if (!selectedFile) {
-                      return
-                    }
-                    
-                    if (composerState.mode === 'edit') {
-                      closeAllDropdowns()
-                    } else {
-                      closeAllDropdowns()
+              <button
+                onClick={() => {
+                  if (!checkAuthAndRedirect()) return
+                  
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.accept = 'image/*'
+                  input.onchange = (e) => {
+                    const target = e.target as HTMLInputElement
+                    const file = target.files?.[0]
+                    if (file) {
+                      console.log('📸 Photo selected:', file.name)
+                      onFileSelect(file)
+                      // Automatically switch to edit mode when photo is uploaded
                       setComposerState((s: any) => ({ ...s, mode: 'edit' }))
-                      setSelectedMode('presets')
                     }
-                  }}
-                  className={
-                    composerState.mode === 'edit'
-                      ? 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                      : 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                   }
-                  style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                  title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
-                >
-                  Studio
-                </button>
+                  input.click()
+                }}
+                className="px-3 py-1.5 rounded-2xl text-xs font-medium transition-all duration-300 text-white flex items-center gap-2 hover:scale-105 upload"
+                style={{ backgroundColor: '#000000' }}
+                title="Upload a photo to get started"
+              >
+                <Plus size={16} />
+                <span>Upload</span>
+              </button>
             </div>
 
-              {/* Unreal Reflection™ Button */}
-              <div className="relative flex-1">
-                <button
+            {/* Studio Button */}
+            <div className="relative">
+              <button
+                onClick={async () => {
+                  if (!checkAuthAndRedirect()) return
+                  
+                  // Require photo upload first
+                  if (!selectedFile) {
+                    return
+                  }
+                  
+                  if (composerState.mode === 'edit') {
+                    closeAllDropdowns()
+                  } else {
+                    closeAllDropdowns()
+                    setComposerState((s: any) => ({ ...s, mode: 'edit' }))
+                    setSelectedMode('presets')
+                  }
+                }}
+                className={
+                  composerState.mode === 'edit'
+                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                }
+                style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
+                title={!selectedFile ? 'Upload a photo first to use Studio mode' : 'Switch to Studio mode'}
+              >
+                Studio
+              </button>
+            </div>
+
+            {/* Unreal Reflection™ Button */}
+            <div className="relative">
+              <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
                   
@@ -458,7 +453,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   
                   if (composerState.mode === 'unrealreflection') {
                     closeAllDropdowns()
-                        setUnrealReflectionDropdownOpen(!unrealReflectionDropdownOpen)
+                    setUnrealReflectionDropdownOpen(!unrealReflectionDropdownOpen)
                   } else {
                     closeAllDropdowns()
                     setComposerState((s: any) => ({ ...s, mode: 'unrealreflection' }))
@@ -469,18 +464,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }}
                 className={
                   composerState.mode === 'unrealreflection'
-                    ? 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                  title={!selectedFile ? 'Upload a photo first to use Unreal Reflection mode' : 'Switch to Unreal Reflection mode'}
+                title={!selectedFile ? 'Upload a photo first to use Unreal Reflection mode' : 'Switch to Unreal Reflection mode'}
               >
-                  Unreal™
+                Unreal Reflection™
               </button>
               
               {/* Unreal Reflection™ presets dropdown */}
               {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
                   <UnrealReflectionPicker
                     value={selectedUnrealReflectionPreset || undefined}
                     onVideoToggle={(enabled) => {
@@ -516,9 +511,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
-              {/* Parallel Self™ Button */}
-              <div className="relative flex-1">
-                <button
+            {/* Parallel Self™ Button */}
+            <div className="relative">
+              <button
                 onClick={async () => {
                   if (!checkAuthAndRedirect()) return
                   
@@ -540,18 +535,18 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 }}
                 className={
                   composerState.mode === 'parallelself'
-                    ? 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
-                    : 'w-full px-2 py-1 rounded-lg text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
+                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white/90 backdrop-blur-md text-black'
+                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white backdrop-blur-md text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                  title={!selectedFile ? 'Upload a photo first to use Parallel Self mode' : 'Switch to Parallel Self mode'}
+                title={!selectedFile ? 'Upload a photo first to use Parallel Self mode' : 'Switch to Parallel Self mode'}
               >
-                  Parallel™
+                Parallel Self™
               </button>
               
               {/* Parallel Self™ presets dropdown */}
               {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
                   <ParallelSelfPicker
                     value={selectedParallelSelfPreset || undefined}
                     onChange={async (presetId) => {
@@ -581,7 +576,6 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
 
-            </div>
           </div>
         ) : (
           /* Desktop Layout: Original single row */
