@@ -195,7 +195,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   }, [setComposerState, setSelectedMode, closeAllDropdowns])
 
   return (
-    <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0 w-full' : 'bottom-2 left-1/2 transform -translate-x-1/2 w-[60%] min-w-[600px]'} z-[999999]`}>
+    <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0' : 'bottom-2 left-1/2 transform -translate-x-1/2 w-[60%] min-w-[600px]'} z-[999999]`}>
       {/* Photo preview container - shows above composer when photo is uploaded (hidden for Custom mode) */}
       {previewUrl && composerState.mode !== 'custom' && (
         <div className="mb-4 flex justify-center">
@@ -286,7 +286,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       return "Type something weird. We'll make it art ... tap ✨ for a little magic."
                   }
                 })()}
-                className={`w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border ${isMobile ? 'mx-2 mt-3' : ''}`}
+                className={`${isMobile ? 'w-[calc(100vw-16px)] mx-2 mt-3' : 'w-full'} px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border`}
                 style={{ backgroundColor: '#000000', borderColor: '#333333' }}
                 disabled={composerState.mode === 'edit' ? !selectedFile : false}
                 maxLength={4000}
@@ -317,6 +317,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     setNavGenerating(true)
                     window.dispatchEvent(new CustomEvent('close-composer'));
                     
+                    // Redirect immediately to gallery on mobile, profile on desktop
+                    navigate(isMobile ? '/' : '/profile')
+                    
                     try {
                       if (composerState.mode === 'custom') {
                         console.log('Custom mode - calling dispatchGenerate')
@@ -329,9 +332,6 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                           editPrompt: prompt
                         })
                       }
-                      
-                      // Redirect to gallery on mobile, profile on desktop after generation starts
-                      navigate(isMobile ? '/' : '/profile')
                     } catch (error) {
                       console.error('❌ Generation failed:', error)
                     } finally {

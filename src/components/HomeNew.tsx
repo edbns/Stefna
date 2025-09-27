@@ -3860,7 +3860,18 @@ const HomeNew: React.FC = () => {
               pendingFile={pendingFile}
               onUploadAgreementAccept={handleUploadAgreementAccept}
               onUploadAgreementCancel={handleUploadAgreementCancel}
-              onAgreementAccepted={() => setUserHasAgreed(true)}
+              onAgreementAccepted={async () => {
+                setUserHasAgreed(true)
+                // Also save to database to ensure persistence
+                try {
+                  await authenticatedFetch('/.netlify/functions/upload-agreement', {
+                    method: 'POST'
+                  })
+                  console.log('✅ Upload agreement saved to database')
+                } catch (error) {
+                  console.error('Failed to save upload agreement:', error)
+                }
+              }}
               
               // Refs and measurements
               containerRef={containerRef}
@@ -3959,7 +3970,18 @@ const HomeNew: React.FC = () => {
                 pendingFile={pendingFile}
                 onUploadAgreementAccept={handleUploadAgreementAccept}
                 onUploadAgreementCancel={handleUploadAgreementCancel}
-                onAgreementAccepted={() => setUserHasAgreed(true)}
+                onAgreementAccepted={async () => {
+                setUserHasAgreed(true)
+                // Also save to database to ensure persistence
+                try {
+                  await authenticatedFetch('/.netlify/functions/upload-agreement', {
+                    method: 'POST'
+                  })
+                  console.log('✅ Upload agreement saved to database')
+                } catch (error) {
+                  console.error('Failed to save upload agreement:', error)
+                }
+              }}
                 
                 // Refs and measurements
                 containerRef={containerRef}
