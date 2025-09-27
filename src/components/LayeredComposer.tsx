@@ -264,7 +264,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       )}
 
       {/* Composer bar - always visible with all existing functionality */}
-      <div className={`${isMobile ? 'px-4 py-3 flex-1 flex flex-col' : 'px-4 py-3'}`}>
+      <div className={`${isMobile ? 'flex-1 flex flex-col' : 'px-4 py-3'}`}>
         
         {/* Prompt Input - ALWAYS VISIBLE (Custom is default, Edit when photo uploaded) */}
         {(['custom', 'edit'].includes(composerState.mode || '') || !composerState.mode) && (
@@ -286,7 +286,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       return "Type something weird. We'll make it art ... tap ✨ for a little magic."
                   }
                 })()}
-                className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
+                className={`w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border ${isMobile ? 'mx-4 mt-3' : ''}`}
                 style={{ backgroundColor: '#000000', borderColor: '#333333' }}
                 disabled={composerState.mode === 'edit' ? !selectedFile : false}
                 maxLength={4000}
@@ -373,7 +373,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
         {/* Controls layout - different for mobile vs desktop */}
         {isMobile ? (
           /* Mobile Layout: No container, direct buttons */
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center justify-center gap-2 flex-wrap px-4 pb-3">
             
             {/* Photo Editing Mode Label and Upload Button - Same Row */}
           <div className="flex items-center gap-2">
