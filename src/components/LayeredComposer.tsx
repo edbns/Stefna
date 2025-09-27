@@ -495,7 +495,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate('/profile')
+                        navigate(isMobile ? '/' : '/profile')
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -562,7 +562,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate('/profile')
+                        navigate(isMobile ? '/' : '/profile')
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
@@ -760,7 +760,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate('/profile')
+                        navigate(isMobile ? '/' : '/profile')
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -838,7 +838,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Parallel Self with preset:', presetId)
                         // Redirect immediately when preset is selected
-                        navigate('/profile')
+                        navigate(isMobile ? '/' : '/profile')
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
