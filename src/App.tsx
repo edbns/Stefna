@@ -14,6 +14,7 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
 import BestPracticesScreen from './screens/BestPracticesScreen'
+import TagPageScreen from './screens/TagPageScreen'
 import { initializeAuthBootstrap } from './services/authBootstrap'
 import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
@@ -168,6 +169,7 @@ const AppContent: React.FC = () => {
           } />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
           <Route path="/bestpractices" element={<BestPracticesScreen />} />
+          <Route path="/tag/:tag" element={<TagPageScreen />} />
           {/* Catch-all route - redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
