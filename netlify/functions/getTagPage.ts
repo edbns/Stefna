@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions';
-import { getCORSHeaders, handleCORS } from '../utils/cors';
-import { qOne, qMany } from '../utils/database';
+import { getCORSHeaders, handleCORS } from './_lib/cors';
+import { qOne, q } from './_db';
 
 export const handler: Handler = async (event) => {
   // Handle CORS preflight
@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
       limit 20
     `;
 
-    const mediaResults = await qMany(mediaSql, [tag]);
+    const mediaResults = await q(mediaSql, [tag]);
 
     // Get popular tags for related suggestions
     const popularTagsSql = `
@@ -109,7 +109,7 @@ export const handler: Handler = async (event) => {
       limit 10
     `;
 
-    const popularTags = await qMany(popularTagsSql, []);
+    const popularTags = await q(popularTagsSql, []);
 
     return {
       statusCode: 200,
