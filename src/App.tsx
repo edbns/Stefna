@@ -72,17 +72,26 @@ const AppContent: React.FC = () => {
     const checkLaunchStatus = async () => {
       try {
         const response = await fetch('/.netlify/functions/get-launch-status');
+        
+        // Handle blocked requests (e.g., by robots.txt or crawlers)
+        if (!response.ok) {
+          console.warn('Launch status request blocked or failed, defaulting to launched');
+          setIsLaunched(true); // Default to launched for better UX
+          setIsLoading(false);
+          return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
           setIsLaunched(data.launch.is_launched);
         } else {
           console.error('Failed to get launch status:', data.error);
-          setIsLaunched(false); // Default to not launched
+          setIsLaunched(true); // Default to launched for better UX
         }
       } catch (error) {
-        console.error('Error checking launch status:', error);
-        setIsLaunched(false); // Default to not launched
+        console.warn('Error checking launch status (likely blocked by crawler):', error);
+        setIsLaunched(true); // Default to launched for better UX
       } finally {
         setIsLoading(false);
       }

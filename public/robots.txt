@@ -3,7 +3,5 @@ Allow: /
 
 Disallow: /admin/
 Disallow: /.netlify/
-Allow: /.netlify/functions/
-Allow: /.netlify/scripts/
 
 Sitemap: https://stefna.xyz/.netlify/functions/sitemap
