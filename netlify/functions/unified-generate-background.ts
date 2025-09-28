@@ -2825,8 +2825,13 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             console.log('✅ [Background] BFL generation successful');
           } catch (bflError) {
             console.warn('⚠️ [Background] BFL failed, trying Stability.ai fallback:', bflError);
-            result = await generateWithStability(generationParams);
-            console.log('✅ [Background] Stability.ai fallback generation successful');
+            try {
+              result = await generateWithStability(generationParams);
+              console.log('✅ [Background] Stability.ai fallback generation successful');
+            } catch (stabilityError) {
+              console.error('❌ [Background] All providers failed for Custom mode');
+              throw new Error(`All providers failed. BFL: ${bflError}. Stability: ${stabilityError}`);
+            }
           }
         } else if (request.mode === 'unreal_reflection') {
           // Unreal Reflection mode: Fal.ai nano-banana/edit → Gemini → BFL fallbacks
