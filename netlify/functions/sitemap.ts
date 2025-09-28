@@ -36,6 +36,25 @@ export const handler: Handler = async (event) => {
       changefreq: 'monthly',
       priority: '0.3'
     },
+    // Social Media & Community
+    {
+      url: 'https://stefna.xyz/gallery',
+      lastmod: currentDate,
+      changefreq: 'daily',
+      priority: '0.9'
+    },
+    {
+      url: 'https://stefna.xyz/feed',
+      lastmod: currentDate,
+      changefreq: 'daily',
+      priority: '0.9'
+    },
+    {
+      url: 'https://stefna.xyz/profile',
+      lastmod: currentDate,
+      changefreq: 'weekly',
+      priority: '0.6'
+    },
     // Popular AI Art Tags
     {
       url: 'https://stefna.xyz/tag/cyber_siren',
