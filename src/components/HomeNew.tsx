@@ -1943,8 +1943,8 @@ const HomeNew: React.FC = () => {
         console.log('📊 Feed length:', media?.length || 0)
         
               // Determine if there are more items based on backend response
-        // True infinite scroll: only stop when backend explicitly says no more items
-      const hasMore = resp.hasMore !== false
+        // Use the backend's hasMore calculation directly
+      const hasMore = resp.hasMore === true
         console.log('📊 Has more:', hasMore, 'Items received:', media.length, 'Page size:', pageSize)
         
         const mapped: UserMedia[] = (media || [])
