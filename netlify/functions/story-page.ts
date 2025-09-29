@@ -5,15 +5,34 @@ export const handler: Handler = async (event, context) => {
   try {
     console.log('=== STORY PAGE FUNCTION CALLED ===')
     
-    // Get the original path from clientContext
+    // Get the original path from multiple sources
     let originalPath = '/story'
+    
+    // Method 1: Try clientContext
     if (context.clientContext?.custom?.purge_api_token) {
       try {
         const tokenData = JSON.parse(atob(context.clientContext.custom.purge_api_token))
         originalPath = tokenData.request_path || '/story'
         console.log('Original path from clientContext:', originalPath)
       } catch (e) {
-        console.log('Error parsing clientContext:', e)
+        console.log('Error parsing clientContext:', e.message)
+      }
+    }
+    
+    // Method 2: Try event.path
+    if (originalPath === '/story' && event.path) {
+      originalPath = event.path
+      console.log('Using event.path:', originalPath)
+    }
+    
+    // Method 3: Try rawUrl
+    if (originalPath === '/story' && event.rawUrl) {
+      try {
+        const url = new URL(event.rawUrl)
+        originalPath = url.pathname
+        console.log('Using rawUrl pathname:', originalPath)
+      } catch (e) {
+        console.log('Error parsing rawUrl:', e.message)
       }
     }
     
