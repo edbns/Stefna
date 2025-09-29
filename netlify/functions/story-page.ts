@@ -79,7 +79,7 @@ export const handler: Handler = async (event, context) => {
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="/assets/index-1411a05b.js"></script>
+  <script type="module" src="/assets/index-8fe1c73d.js"></script>
 </body>
 </html>`
       }
@@ -176,7 +176,7 @@ export const handler: Handler = async (event, context) => {
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="/assets/index-1411a05b.js"></script>
+  <script type="module" src="/assets/index-8fe1c73d.js"></script>
 </body>
 </html>`
 
