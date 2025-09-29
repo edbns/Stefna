@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet'
+import { useNavigate } from 'react-router-dom'
 import { Plus, BookOpen, List, Save, Eye, Trash2, Upload, Image } from 'lucide-react'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
@@ -37,6 +38,7 @@ interface Story {
 const ALLOWED_USER_ID = '49b15f0e-6a2d-445d-9d32-d0a9bd859bfb'
 
 const StoryCreationScreen: React.FC = () => {
+  const navigate = useNavigate()
   const [stories, setStories] = useState<Story[]>([])
   const [currentView, setCurrentView] = useState<'list' | 'create'>('list')
   const [isLoading, setIsLoading] = useState(false)
