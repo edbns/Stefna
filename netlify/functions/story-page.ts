@@ -82,9 +82,20 @@ export const handler: Handler = async (event, context) => {
         title,
         slug,
         teaser_text,
+        full_story_content,
         hero_image_url,
+        hero_image_social,
+        hero_image_thumbnail,
+        story_images,
+        meta_title,
+        meta_description,
+        keywords,
         story_category,
         status,
+        featured,
+        word_count,
+        estimated_read_time,
+        view_count,
         created_at,
         updated_at
       FROM stories 
@@ -101,8 +112,11 @@ export const handler: Handler = async (event, context) => {
     
     console.log('Found story:', story.title)
 
-    // Generate HTML with proper meta tags
-    const ogImage = story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
+    // Generate HTML with proper meta tags using database fields
+    const pageTitle = story.meta_title || `${story.title} | Stefna Stories`
+    const pageDescription = story.meta_description || story.teaser_text
+    const ogImage = story.hero_image_social || story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
+    const keywords = story.keywords ? `<meta name="keywords" content="${story.keywords}">` : ''
     
     const html = `
 <!DOCTYPE html>
@@ -110,12 +124,13 @@ export const handler: Handler = async (event, context) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${story.title} | Stefna Stories</title>
-  <meta name="description" content="${story.teaser_text}">
+  <title>${pageTitle}</title>
+  <meta name="description" content="${pageDescription}">
+  ${keywords}
   
   <!-- Open Graph Tags -->
-  <meta property="og:title" content="${story.title}">
-  <meta property="og:description" content="${story.teaser_text}">
+  <meta property="og:title" content="${pageTitle}">
+  <meta property="og:description" content="${pageDescription}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://stefna.xyz/story/${story.slug}">
   <meta property="og:image" content="${ogImage}">
@@ -125,8 +140,8 @@ export const handler: Handler = async (event, context) => {
   
   <!-- Twitter Card Tags -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${story.title}">
-  <meta name="twitter:description" content="${story.teaser_text}">
+  <meta name="twitter:title" content="${pageTitle}">
+  <meta name="twitter:description" content="${pageDescription}">
   <meta name="twitter:image" content="${ogImage}">
   
   <!-- Additional Meta Tags -->
