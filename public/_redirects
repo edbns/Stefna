@@ -5,7 +5,7 @@
 /assets/*    /assets/:splat    200
 
 # Story pages with server-side meta tags (but not assets)
-/story/*    /.netlify/functions/story-page/:splat    200
+/story/*    /.netlify/functions/story-page    200
 
 # React Router - redirect all other routes to index.html
 /*    /index.html   200

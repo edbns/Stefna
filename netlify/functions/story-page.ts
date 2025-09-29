@@ -16,6 +16,23 @@ export const handler: Handler = async (event, context) => {
       console.log('Method 1 - Using event.path:', slug)
     }
     
+    // Method 1.5: Check clientContext for original path
+    if (!slug && context.clientContext?.custom?.netlify) {
+      try {
+        const netlifyData = JSON.parse(atob(context.clientContext.custom.netlify))
+        if (netlifyData.site_url) {
+          const originalPath = context.clientContext.custom.purge_api_token ? 
+            JSON.parse(atob(context.clientContext.custom.purge_api_token)).request_path : null
+          if (originalPath) {
+            slug = originalPath.replace('/story/', '')
+            console.log('Method 1.5 - Using clientContext path:', slug)
+          }
+        }
+      } catch (e) {
+        console.log('Error parsing clientContext:', e)
+      }
+    }
+    
     // Method 2: Check rawUrl
     if (!slug && event.rawUrl) {
       const url = new URL(event.rawUrl)
