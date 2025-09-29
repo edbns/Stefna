@@ -480,11 +480,6 @@ const IndividualStoryScreen: React.FC = () => {
           color: #fff;
         }
 
-        .nav-info p {
-          margin: 0.25rem 0 0;
-          font-size: 0.8rem;
-          color: #ccc;
-        }
 
         .nav-label {
           font-size: 0.85rem;
@@ -603,7 +598,6 @@ const IndividualStoryScreen: React.FC = () => {
                         />
                         <div className="nav-info">
                           <h4>{previous.title}</h4>
-                          <p>{previous.teaser_text}</p>
                         </div>
                         <ChevronLeft size={20} className="text-gray-400" />
                       </>
@@ -632,7 +626,6 @@ const IndividualStoryScreen: React.FC = () => {
                         <ChevronRight size={20} className="text-gray-400" />
                         <div className="nav-info">
                           <h4>{next.title}</h4>
-                          <p>{next.teaser_text}</p>
                         </div>
                         <img 
                           src={next.hero_image_url} 
