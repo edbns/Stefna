@@ -143,7 +143,7 @@ const IndividualStoryScreen: React.FC = () => {
         <title>{story.title} | Stefna Stories</title>
         <meta name="description" content={story.teaser_text} />
         
-        {/* Open Graph Tags */}
+        {/* Open Graph Tags - Override base tags */}
         <meta property="og:title" content={story.title} />
         <meta property="og:description" content={story.teaser_text} />
         <meta property="og:type" content="article" />
@@ -153,7 +153,7 @@ const IndividualStoryScreen: React.FC = () => {
         <meta property="og:image:height" content="630" />
         <meta property="og:site_name" content="Stefna" />
         
-        {/* Twitter Card Tags */}
+        {/* Twitter Card Tags - Override base tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={story.title} />
         <meta name="twitter:description" content={story.teaser_text} />
@@ -481,14 +481,6 @@ const IndividualStoryScreen: React.FC = () => {
         }
 
 
-        .nav-label {
-          font-size: 0.85rem;
-          color: #999;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 0.5rem;
-          display: block;
-        }
 
         .loading-overlay {
           position: absolute;
@@ -587,7 +579,6 @@ const IndividualStoryScreen: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <span className="nav-label">Previous</span>
                   <div className="nav-content">
                     {previous && (
                       <>
@@ -619,7 +610,6 @@ const IndividualStoryScreen: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <span className="nav-label">Next</span>
                   <div className="nav-content next">
                     {next && (
                       <>
