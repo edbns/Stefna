@@ -1,6 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
+import { withAdminSecurity } from './_lib/adminSecurity';
 
 // ============================================================================
 // ADMIN MEDIA BROWSER
@@ -12,7 +13,7 @@ import { json } from './_lib/http';
 // - Filter and search media
 // ============================================================================
 
-export const handler: Handler = async (event) => {
+const adminMediaHandler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -68,9 +69,7 @@ export const handler: Handler = async (event) => {
       // Get media from all tables
       const media = await q(`
         WITH all_media AS (
-          SELECT 'cyber_siren' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
-          UNION ALL
-          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -78,7 +77,11 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'cyber_siren' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
+          UNION ALL
+          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
+          UNION ALL
+          SELECT 'parallel_self' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM parallel_self_media WHERE status = 'completed' AND image_url IS NOT NULL
         )
         SELECT * FROM all_media
         ${whereClause}
@@ -89,9 +92,7 @@ export const handler: Handler = async (event) => {
       // Get total count
       const totalCount = await q(`
         WITH all_media AS (
-          SELECT 'cyber_siren' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
-          UNION ALL
-          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'unreal_reflection' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
@@ -99,7 +100,11 @@ export const handler: Handler = async (event) => {
           UNION ALL
           SELECT 'custom_prompt' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
-          SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, 0 as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
+          SELECT 'cyber_siren' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
+          UNION ALL
+          SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
+          UNION ALL
+          SELECT 'parallel_self' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM parallel_self_media WHERE status = 'completed' AND image_url IS NOT NULL
         )
         SELECT COUNT(*) as total FROM all_media
         ${whereClause}
@@ -110,22 +115,13 @@ export const handler: Handler = async (event) => {
         SELECT 
           COUNT(*) as total_media,
           COUNT(DISTINCT user_id) as unique_users,
-          COUNT(CASE WHEN type = 'cyber_siren' THEN 1 END) as cyber_siren_count,
-          COUNT(CASE WHEN type = 'presets' THEN 1 END) as presets_count,
           COUNT(CASE WHEN type = 'unreal_reflection' THEN 1 END) as unreal_reflection_count,
           COUNT(CASE WHEN type = 'ghibli_reaction' THEN 1 END) as ghibli_reaction_count,
-          COUNT(CASE WHEN type = 'custom_prompt' THEN 1 END) as custom_prompt_count,
           COUNT(CASE WHEN type = 'edit' THEN 1 END) as edit_count
         FROM (
-          SELECT 'cyber_siren' as type, user_id FROM cyber_siren_media WHERE status = 'completed' AND image_url IS NOT NULL
-          UNION ALL
-          SELECT 'presets' as type, user_id FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
-          UNION ALL
           SELECT 'unreal_reflection' as type, user_id FROM unreal_reflection_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'ghibli_reaction' as type, user_id FROM ghibli_reaction_media WHERE status = 'completed' AND image_url IS NOT NULL
-          UNION ALL
-          SELECT 'custom_prompt' as type, user_id FROM custom_prompt_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'edit' as type, user_id FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
         ) all_media
@@ -173,6 +169,9 @@ export const handler: Handler = async (event) => {
         case 'edit':
           deleteResult = await q(`DELETE FROM edit_media WHERE id = $1`, [id])
           break
+        case 'parallel_self':
+          deleteResult = await q(`DELETE FROM parallel_self_media WHERE id = $1`, [id])
+          break
         default:
           return json({ error: 'Invalid media type' }, { status: 400 })
       }
@@ -196,3 +195,5 @@ export const handler: Handler = async (event) => {
     }, { status: 500 })
   }
 }
+
+export const handler = withAdminSecurity(adminMediaHandler);

@@ -39,22 +39,121 @@ const adminConfigHandler: Handler = async (event) => {
           (SELECT COUNT(*) FROM likes WHERE created_at >= NOW() - INTERVAL '24 hours') as likes_24h
       `);
 
-      // Get media generation statistics
-      const mediaStats = await q(`
-        SELECT 
-          (SELECT COUNT(*) FROM cyber_siren_media WHERE status = 'completed') as cyber_siren_total,
-          (SELECT COUNT(*) FROM presets_media WHERE status = 'completed') as presets_total,
-          (SELECT COUNT(*) FROM unreal_reflection_media WHERE status = 'completed') as unreal_reflection_total,
-          (SELECT COUNT(*) FROM ghibli_reaction_media WHERE status = 'completed') as ghibli_reaction_total,
-          (SELECT COUNT(*) FROM custom_prompt_media WHERE status = 'completed') as custom_prompt_total,
-          (SELECT COUNT(*) FROM edit_media WHERE status = 'completed') as edit_total,
-          (SELECT COUNT(*) FROM cyber_siren_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as cyber_siren_24h,
-          (SELECT COUNT(*) FROM presets_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as presets_24h,
-          (SELECT COUNT(*) FROM unreal_reflection_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as unreal_reflection_24h,
-          (SELECT COUNT(*) FROM ghibli_reaction_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as ghibli_reaction_24h,
-          (SELECT COUNT(*) FROM custom_prompt_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as custom_prompt_24h,
-          (SELECT COUNT(*) FROM edit_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as edit_24h
-      `);
+      // Get media generation statistics - count all media tables
+      let mediaStats = {
+        edit_total: 0,
+        unreal_reflection_total: 0,
+        ghibli_reaction_total: 0,
+        custom_prompt_total: 0,
+        cyber_siren_total: 0,
+        presets_total: 0,
+        parallel_self_total: 0,
+        edit_24h: 0,
+        unreal_reflection_24h: 0,
+        ghibli_reaction_24h: 0,
+        custom_prompt_24h: 0,
+        cyber_siren_24h: 0,
+        presets_24h: 0,
+        parallel_self_24h: 0
+      };
+      
+      try {
+        const editStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM edit_media WHERE status = 'completed') as edit_total,
+            (SELECT COUNT(*) FROM edit_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as edit_24h
+        `);
+        if (editStats[0]) {
+          mediaStats.edit_total = parseInt(String(editStats[0].edit_total)) || 0;
+          mediaStats.edit_24h = parseInt(String(editStats[0].edit_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] edit_media table not found');
+      }
+      
+      try {
+        const unrealStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM unreal_reflection_media WHERE status = 'completed') as unreal_reflection_total,
+            (SELECT COUNT(*) FROM unreal_reflection_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as unreal_reflection_24h
+        `);
+        if (unrealStats[0]) {
+          mediaStats.unreal_reflection_total = parseInt(String(unrealStats[0].unreal_reflection_total)) || 0;
+          mediaStats.unreal_reflection_24h = parseInt(String(unrealStats[0].unreal_reflection_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] unreal_reflection_media table not found');
+      }
+      
+      try {
+        const ghibliStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM ghibli_reaction_media WHERE status = 'completed') as ghibli_reaction_total,
+            (SELECT COUNT(*) FROM ghibli_reaction_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as ghibli_reaction_24h
+        `);
+        if (ghibliStats[0]) {
+          mediaStats.ghibli_reaction_total = parseInt(String(ghibliStats[0].ghibli_reaction_total)) || 0;
+          mediaStats.ghibli_reaction_24h = parseInt(String(ghibliStats[0].ghibli_reaction_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] ghibli_reaction_media table not found');
+      }
+      
+      try {
+        const customPromptStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM custom_prompt_media WHERE status = 'completed') as custom_prompt_total,
+            (SELECT COUNT(*) FROM custom_prompt_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as custom_prompt_24h
+        `);
+        if (customPromptStats[0]) {
+          mediaStats.custom_prompt_total = parseInt(String(customPromptStats[0].custom_prompt_total)) || 0;
+          mediaStats.custom_prompt_24h = parseInt(String(customPromptStats[0].custom_prompt_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] custom_prompt_media table not found');
+      }
+      
+      try {
+        const cyberSirenStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM cyber_siren_media WHERE status = 'completed') as cyber_siren_total,
+            (SELECT COUNT(*) FROM cyber_siren_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as cyber_siren_24h
+        `);
+        if (cyberSirenStats[0]) {
+          mediaStats.cyber_siren_total = parseInt(String(cyberSirenStats[0].cyber_siren_total)) || 0;
+          mediaStats.cyber_siren_24h = parseInt(String(cyberSirenStats[0].cyber_siren_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] cyber_siren_media table not found');
+      }
+      
+      try {
+        const presetsStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM presets_media WHERE status = 'completed') as presets_total,
+            (SELECT COUNT(*) FROM presets_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as presets_24h
+        `);
+        if (presetsStats[0]) {
+          mediaStats.presets_total = parseInt(String(presetsStats[0].presets_total)) || 0;
+          mediaStats.presets_24h = parseInt(String(presetsStats[0].presets_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] presets_media table not found');
+      }
+      
+      try {
+        const parallelSelfStats = await q(`
+          SELECT 
+            (SELECT COUNT(*) FROM parallel_self_media WHERE status = 'completed') as parallel_self_total,
+            (SELECT COUNT(*) FROM parallel_self_media WHERE created_at >= NOW() - INTERVAL '24 hours' AND status = 'completed') as parallel_self_24h
+        `);
+        if (parallelSelfStats[0]) {
+          mediaStats.parallel_self_total = parseInt(String(parallelSelfStats[0].parallel_self_total)) || 0;
+          mediaStats.parallel_self_24h = parseInt(String(parallelSelfStats[0].parallel_self_24h)) || 0;
+        }
+      } catch (e) {
+        console.log('⚠️ [Admin] parallel_self_media table not found');
+      }
 
       // Get credit statistics
       const creditStats = await q(`
@@ -120,7 +219,7 @@ const adminConfigHandler: Handler = async (event) => {
         console.warn('⚠️ [Admin] Health check failed, falling back to env vars:', healthError);
         // Fallback to environment variable checks
         realHealthStatus = {
-          fal_ai_enabled: !!process.env.FAL_AI_API_KEY,
+          fal_ai_enabled: !!process.env.FAL_KEY,
           bfl_api_enabled: !!process.env.BFL_API_KEY,
           stability_enabled: !!process.env.STABILITY_API_KEY,
           cloudinary_enabled: !!process.env.CLOUDINARY_CLOUD_NAME,
@@ -200,11 +299,100 @@ const adminConfigHandler: Handler = async (event) => {
 
       console.log(`✅ [Admin] Retrieved system configuration`)
       
+      // Debug: Log individual counts to identify the issue
+      // Debug: Log individual counts to identify the issue
+      console.log('🔍 [Admin] Debug - Individual media counts:')
+      console.log('- edit_total:', mediaStats.edit_total, typeof mediaStats.edit_total)
+      console.log('- unreal_reflection_total:', mediaStats.unreal_reflection_total, typeof mediaStats.unreal_reflection_total)
+      console.log('- ghibli_reaction_total:', mediaStats.ghibli_reaction_total, typeof mediaStats.ghibli_reaction_total)
+      console.log('- custom_prompt_total:', mediaStats.custom_prompt_total, typeof mediaStats.custom_prompt_total)
+      console.log('- cyber_siren_total:', mediaStats.cyber_siren_total, typeof mediaStats.cyber_siren_total)
+      console.log('- presets_total:', mediaStats.presets_total, typeof mediaStats.presets_total)
+      console.log('- parallel_self_total:', mediaStats.parallel_self_total, typeof mediaStats.parallel_self_total)
+      
+      const calculatedTotal = mediaStats.edit_total + mediaStats.unreal_reflection_total + mediaStats.ghibli_reaction_total + mediaStats.custom_prompt_total + mediaStats.cyber_siren_total + mediaStats.presets_total + mediaStats.parallel_self_total
+      console.log('🔍 [Admin] Debug - Calculated total:', calculatedTotal, typeof calculatedTotal)
+      
+      // Also include debug info in the response so it shows in browser
+      const debugInfo = {
+        individualCounts: {
+          edit_total: mediaStats.edit_total,
+          unreal_reflection_total: mediaStats.unreal_reflection_total,
+          ghibli_reaction_total: mediaStats.ghibli_reaction_total,
+          custom_prompt_total: mediaStats.custom_prompt_total,
+          cyber_siren_total: mediaStats.cyber_siren_total,
+          presets_total: mediaStats.presets_total,
+          parallel_self_total: mediaStats.parallel_self_total
+        },
+        calculatedTotal,
+        dataTypes: {
+          edit_total: typeof mediaStats.edit_total,
+          unreal_reflection_total: typeof mediaStats.unreal_reflection_total,
+          ghibli_reaction_total: typeof mediaStats.ghibli_reaction_total,
+          custom_prompt_total: typeof mediaStats.custom_prompt_total,
+          cyber_siren_total: typeof mediaStats.cyber_siren_total,
+          presets_total: typeof mediaStats.presets_total,
+          parallel_self_total: typeof mediaStats.parallel_self_total
+        }
+      }
+      
+      // Double-check with a direct count query
+      try {
+        const directCount = await q(`
+          SELECT COUNT(*) as total FROM (
+            SELECT id FROM edit_media WHERE status = 'completed'
+            UNION ALL
+            SELECT id FROM unreal_reflection_media WHERE status = 'completed'
+            UNION ALL
+            SELECT id FROM ghibli_reaction_media WHERE status = 'completed'
+            UNION ALL
+            SELECT id FROM custom_prompt_media WHERE status = 'completed'
+            UNION ALL
+            SELECT id FROM cyber_siren_media WHERE status = 'completed'
+            UNION ALL
+            SELECT id FROM presets_media WHERE status = 'completed'
+            UNION ALL
+            SELECT id FROM parallel_self_media WHERE status = 'completed'
+          ) as all_completed_media
+        `)
+        console.log('🔍 [Admin] Debug - Direct count total:', directCount[0]?.total || 0, typeof directCount[0]?.total)
+      } catch (e) {
+        console.log('⚠️ [Admin] Debug - Direct count failed:', e)
+      }
+      
+      // Test individual table counts to identify the problematic one
+      console.log('🔍 [Admin] Debug - Testing individual table counts:')
+      const testTables = [
+        'edit_media',
+        'unreal_reflection_media', 
+        'ghibli_reaction_media',
+        'custom_prompt_media',
+        'cyber_siren_media',
+        'presets_media',
+        'parallel_self_media'
+      ]
+      
+      for (const tableName of testTables) {
+        try {
+          const count = await q(`SELECT COUNT(*) as total FROM ${tableName} WHERE status = 'completed'`)
+          console.log(`- ${tableName}:`, count[0]?.total || 0, typeof count[0]?.total)
+        } catch (e) {
+          console.log(`- ${tableName}: ERROR -`, e instanceof Error ? e.message : String(e))
+        }
+      }
+      
       return json({
+        stats: {
+          totalUsers: systemStats[0]?.total_users || 0,
+          totalMedia: mediaStats.edit_total + mediaStats.unreal_reflection_total + mediaStats.ghibli_reaction_total + mediaStats.custom_prompt_total + mediaStats.cyber_siren_total + mediaStats.presets_total + mediaStats.parallel_self_total,
+          totalCredits: creditStats[0]?.total_credits_in_system || 0,
+          activeUsers: systemStats[0]?.active_users_24h || 0
+        },
         systemStats: systemStats[0] || {},
-        mediaStats: mediaStats[0] || {},
+        mediaStats: mediaStats,
         creditStats: creditStats[0] || {},
         systemConfig,
+        debugInfo,
         timestamp: new Date().toISOString()
       });
 

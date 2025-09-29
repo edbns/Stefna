@@ -1,8 +1,5 @@
 # Netlify redirects for React Router
 # Handle client-side routing by redirecting all routes to index.html
 
-# API routes (Netlify Functions)
-/.netlify/functions/*  /.netlify/functions/:splat  200
-
 # React Router - redirect all other routes to index.html
 /*    /index.html   200

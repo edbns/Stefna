@@ -1,10 +1,11 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
+import { withAdminSecurity } from './_lib/adminSecurity';
 
 
 
-export const handler: Handler = async (event) => {
+const adminDeleteUserHandler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -133,7 +134,7 @@ export const handler: Handler = async (event) => {
   } catch (e) {
     console.error('❌ [Admin] Error deleting user:', e)
     return json({ error: 'Failed to delete user' }, { status: 500 })
-  } finally {
-    
   }
 }
+
+export const handler = withAdminSecurity(adminDeleteUserHandler);

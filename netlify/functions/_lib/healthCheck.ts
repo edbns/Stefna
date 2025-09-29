@@ -51,42 +51,47 @@ export async function checkDatabaseHealth(): Promise<HealthCheckResult> {
 export async function checkFalAiHealth(): Promise<HealthCheckResult> {
   const startTime = Date.now();
   
-  if (!process.env.FAL_AI_API_KEY) {
+  if (!process.env.FAL_KEY) {
     return {
       service: 'fal_ai',
       status: 'unhealthy',
-      error: 'FAL_AI_API_KEY not configured'
+      error: 'FAL_KEY not configured'
     };
   }
   
   try {
-    // Test Fal.ai with a simple API call
+    // Test Fal.ai with a simple API call - test authentication without making actual requests
     const response = await fetch('https://fal.run/fal-ai/fast-sdxl', {
       method: 'GET',
       headers: {
-        'Authorization': `Key ${process.env.FAL_AI_API_KEY}`,
+        'Authorization': `Key ${process.env.FAL_KEY}`,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 5000 // 5 second timeout
     });
     
     const responseTime = Date.now() - startTime;
     
-    if (response.ok || response.status === 405) { // 405 is OK for GET on POST endpoint
+    // Accept 405 (Method Not Allowed) as healthy since we're using GET on POST endpoint
+    if (response.ok || response.status === 405) {
       return {
         service: 'fal_ai',
         status: responseTime < 2000 ? 'healthy' : 'degraded',
         responseTime,
         details: { 
           status: response.status,
+          statusText: response.statusText,
           responseTime: `${responseTime}ms`
         }
       };
     } else {
+      const errorText = await response.text().catch(() => 'Unknown error');
       return {
         service: 'fal_ai',
         status: 'unhealthy',
         responseTime,
-        error: `HTTP ${response.status}: ${response.statusText}`
+        error: `HTTP ${response.status}: ${response.statusText}. ${errorText}`,
+        details: { status: response.status, responseTime: `${responseTime}ms` }
       };
     }
   } catch (error: any) {
@@ -94,7 +99,12 @@ export async function checkFalAiHealth(): Promise<HealthCheckResult> {
       service: 'fal_ai',
       status: 'unhealthy',
       responseTime: Date.now() - startTime,
-      error: error.message || 'Fal.ai API request failed'
+      error: error.message || 'Fal.ai API request failed',
+      details: { 
+        errorType: error.name || 'Unknown',
+        errorMessage: error.message || 'Unknown error',
+        hasEnvVar: !!process.env.FAL_KEY
+      }
     };
   }
 }
@@ -363,6 +373,12 @@ export async function performHealthChecks(): Promise<{
   }
   
   console.log(`✅ [Health Check] Completed in ${totalTime}ms - Overall: ${overallStatus}`);
+  
+  // Log detailed results for debugging
+  results.forEach(result => {
+    const status = result.status === 'healthy' ? '✅' : result.status === 'degraded' ? '⚠️' : '❌';
+    console.log(`${status} [Health Check] ${result.service}: ${result.status} ${result.error ? `(${result.error})` : ''} ${result.responseTime ? `(${result.responseTime}ms)` : ''}`);
+  });
   
   return {
     results,

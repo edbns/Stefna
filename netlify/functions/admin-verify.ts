@@ -15,12 +15,19 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    if (event.httpMethod !== 'GET') {
+    if (event.httpMethod !== 'POST') {
       return json({ error: 'Method Not Allowed' }, { status: 405 })
     }
 
-    // Get admin secret from headers
-    const adminSecret = event.headers['x-admin-secret'] || event.headers['X-Admin-Secret']
+    // Get admin secret from request body
+    let adminSecret
+    try {
+      const body = JSON.parse(event.body || '{}')
+      adminSecret = body.adminSecret
+    } catch (e) {
+      // Fallback to headers if body parsing fails
+      adminSecret = event.headers['x-admin-secret'] || event.headers['X-Admin-Secret']
+    }
     
     if (!adminSecret) {
       return json({ error: 'Admin secret required' }, { status: 401 })

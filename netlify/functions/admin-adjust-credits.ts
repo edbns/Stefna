@@ -1,10 +1,11 @@
 import type { Handler } from "@netlify/functions";
 import { q, qOne, qCount } from './_db';
 import { json } from './_lib/http';
+import { withAdminSecurity } from './_lib/adminSecurity';
 
 
 
-export const handler: Handler = async (event) => {
+const adminAdjustCreditsHandler: Handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -85,3 +86,5 @@ export const handler: Handler = async (event) => {
     return json({ error: 'Failed to adjust credits' }, { status: 500 })
   }
 }
+
+export const handler = withAdminSecurity(adminAdjustCreditsHandler);
