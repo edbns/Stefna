@@ -3,15 +3,17 @@ import { qOne } from './_db'
 import fs from 'fs'
 import path from 'path'
 
-// Function to get the current asset path from index.html
-function getAssetPath(): string {
+// Function to get the current asset path by fetching from the deployed site
+async function getAssetPath(): Promise<string> {
   try {
-    const indexPath = path.join(process.cwd(), 'dist', 'index.html')
-    const indexContent = fs.readFileSync(indexPath, 'utf8')
-    const match = indexContent.match(/src="\/assets\/([^"]+)"/)
-    return match ? `/assets/${match[1]}` : '/assets/index.js'
+    const response = await fetch('https://stefna.xyz/')
+    const html = await response.text()
+    const match = html.match(/src="\/assets\/([^"]+)"/)
+    const assetPath = match ? `/assets/${match[1]}` : '/assets/index.js'
+    console.log('Found asset path:', assetPath)
+    return assetPath
   } catch (error) {
-    console.log('Error reading index.html, using fallback:', error)
+    console.log('Error fetching index.html, using fallback:', error)
     return '/assets/index.js'
   }
 }
@@ -77,7 +79,7 @@ export const handler: Handler = async (event, context) => {
     if (!slugMatch) {
       // This is the story index page (/story) - let React handle it
       console.log('Story index page requested, redirecting to React app')
-      const assetPath = getAssetPath()
+      const assetPath = await getAssetPath()
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'text/html' },
@@ -146,7 +148,7 @@ export const handler: Handler = async (event, context) => {
     const pageDescription = story.meta_description || story.teaser_text
     const ogImage = story.hero_image_social || story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
     const keywords = story.keywords ? `<meta name="keywords" content="${story.keywords}">` : ''
-    const assetPath = getAssetPath()
+    const assetPath = await getAssetPath()
     
     const html = `
 <!DOCTYPE html>
