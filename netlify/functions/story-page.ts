@@ -3,17 +3,35 @@ import { qOne } from './_db'
 import fs from 'fs'
 import path from 'path'
 
-// Function to get the current asset path by fetching from the deployed site
-async function getAssetPath(): Promise<string> {
+// Function to get the current asset path from build manifest
+function getAssetPath(): string {
   try {
-    const response = await fetch('https://stefna.xyz/')
-    const html = await response.text()
-    const match = html.match(/src="\/assets\/([^"]+)"/)
-    const assetPath = match ? `/assets/${match[1]}` : '/assets/index.js'
-    console.log('Found asset path:', assetPath)
-    return assetPath
+    // Try to read from build manifest first
+    const manifestPath = path.join(process.cwd(), '..', 'dist', '.vite', 'manifest.json')
+    if (fs.existsSync(manifestPath)) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+      const indexEntry = manifest['index.html']
+      if (indexEntry && indexEntry.file) {
+        console.log('Found asset path from manifest:', indexEntry.file)
+        return `/${indexEntry.file}`
+      }
+    }
+    
+    // Fallback: try to read from dist/index.html
+    const indexPath = path.join(process.cwd(), '..', 'dist', 'index.html')
+    if (fs.existsSync(indexPath)) {
+      const indexContent = fs.readFileSync(indexPath, 'utf8')
+      const match = indexContent.match(/src="\/assets\/([^"]+)"/)
+      if (match) {
+        console.log('Found asset path from index.html:', `/assets/${match[1]}`)
+        return `/assets/${match[1]}`
+      }
+    }
+    
+    console.log('Using fallback asset path')
+    return '/assets/index.js'
   } catch (error) {
-    console.log('Error fetching index.html, using fallback:', error)
+    console.log('Error reading asset path, using fallback:', error)
     return '/assets/index.js'
   }
 }
@@ -79,7 +97,7 @@ export const handler: Handler = async (event, context) => {
     if (!slugMatch) {
       // This is the story index page (/story) - let React handle it
       console.log('Story index page requested, redirecting to React app')
-      const assetPath = await getAssetPath()
+      const assetPath = getAssetPath()
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'text/html' },
@@ -148,7 +166,7 @@ export const handler: Handler = async (event, context) => {
     const pageDescription = story.meta_description || story.teaser_text
     const ogImage = story.hero_image_social || story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
     const keywords = story.keywords ? `<meta name="keywords" content="${story.keywords}">` : ''
-    const assetPath = await getAssetPath()
+    const assetPath = getAssetPath()
     
     const html = `
 <!DOCTYPE html>
