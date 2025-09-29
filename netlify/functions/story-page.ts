@@ -11,11 +11,17 @@ export const handler: Handler = async (event, context) => {
     // Method 1: Try clientContext
     if (context.clientContext?.custom?.purge_api_token) {
       try {
-        const tokenData = JSON.parse(atob(context.clientContext.custom.purge_api_token))
-        originalPath = tokenData.request_path || '/story'
-        console.log('Original path from clientContext:', originalPath)
+        const token = context.clientContext.custom.purge_api_token
+        if (token && /^[A-Za-z0-9+/=]+$/.test(token)) {
+          const decoded = atob(token)
+          const tokenData = JSON.parse(decoded)
+          originalPath = tokenData.request_path || '/story'
+          console.log('Original path from clientContext:', originalPath)
+        } else {
+          console.log('purge_api_token is not a valid base64 string, skipping')
+        }
       } catch (e) {
-        console.log('Error parsing clientContext:', e.message)
+        console.log('Error parsing purge_api_token:', e.message)
       }
     }
     
