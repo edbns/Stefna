@@ -18,7 +18,7 @@ export const handler: Handler = async (event, context) => {
     }
     
     // Check if this is the story index page (/story) or a specific story (/story/slug)
-    const slugMatch = originalPath.match(/^\/story\/(.+)$/)
+    const slugMatch = originalPath.match(/^\/story\/([^\/]+)$/)
     
     if (!slugMatch) {
       // This is the story index page (/story) - let React handle it
@@ -46,7 +46,7 @@ export const handler: Handler = async (event, context) => {
       }
     }
     
-    const slug = slugMatch[1]
+    const slug = slugMatch[1].split('?')[0] // Strip query params
     console.log('Story slug extracted:', slug)
 
     // Fetch story data from database
@@ -76,11 +76,13 @@ export const handler: Handler = async (event, context) => {
     console.log('Found story:', story.title)
 
     // Generate HTML with proper meta tags
+    const ogImage = story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
+    
     const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${story.title} | Stefna Stories</title>
   <meta name="description" content="${story.teaser_text}">
@@ -90,7 +92,7 @@ export const handler: Handler = async (event, context) => {
   <meta property="og:description" content="${story.teaser_text}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://stefna.xyz/story/${story.slug}">
-  <meta property="og:image" content="${story.hero_image_url}">
+  <meta property="og:image" content="${ogImage}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Stefna Stories">
@@ -99,7 +101,7 @@ export const handler: Handler = async (event, context) => {
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${story.title}">
   <meta name="twitter:description" content="${story.teaser_text}">
-  <meta name="twitter:image" content="${story.hero_image_url}">
+  <meta name="twitter:image" content="${ogImage}">
   
   <!-- Additional Meta Tags -->
   <meta name="author" content="Stefna">
