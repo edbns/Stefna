@@ -462,8 +462,9 @@ const StoryCreationScreen: React.FC = () => {
                           <button
                             className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors"
                             title="View Story"
+                            onClick={() => navigate(`/story/${story.slug}`)}
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>
                       </div>

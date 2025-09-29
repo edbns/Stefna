@@ -66,6 +66,8 @@ async function handleGet(headers: Record<string, string>, queryStringParameters?
           story_category,
           status,
           featured,
+          word_count,
+          estimated_read_time,
           created_at,
           updated_at
         FROM stories 
@@ -98,6 +100,8 @@ async function handleGet(headers: Record<string, string>, queryStringParameters?
           story_category,
           status,
           featured,
+          word_count,
+          estimated_read_time,
           created_at,
           updated_at
         FROM stories 

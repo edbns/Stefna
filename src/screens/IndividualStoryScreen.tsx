@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 interface StoryCard {
@@ -84,6 +84,33 @@ const IndividualStoryScreen: React.FC = () => {
     navigate(`/story/${targetStory.slug}`)
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: story.title,
+      text: story.teaser_text,
+      url: `https://stefna.xyz/story/${story.slug}`
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareData.url)
+        alert('Story link copied to clipboard!')
+      }
+    } catch (error) {
+      console.error('Error sharing:', error)
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareData.url)
+        alert('Story link copied to clipboard!')
+      } catch (clipboardError) {
+        console.error('Clipboard error:', clipboardError)
+      }
+    }
+  }
+
   const { previous, next } = getNavigationStories()
 
   if (isLoading) {
@@ -113,12 +140,29 @@ const IndividualStoryScreen: React.FC = () => {
   return (
     <div className="individual-story-screen">
       <Helmet>
-        <title>{story.title}</title>
+        <title>{story.title} | Stefna Stories</title>
         <meta name="description" content={story.teaser_text} />
+        
+        {/* Open Graph Tags */}
         <meta property="og:title" content={story.title} />
         <meta property="og:description" content={story.teaser_text} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://stefna.xyz/story/${story.slug}`} />
+        <meta property="og:image" content={story.hero_image_url} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="Stefna" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={story.title} />
+        <meta name="twitter:description" content={story.teaser_text} />
+        <meta name="twitter:image" content={story.hero_image_url} />
+        
+        {/* Additional Meta Tags */}
+        <meta name="author" content="Stefna" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`https://stefna.xyz/story/${story.slug}`} />
       </Helmet>
 
       <style>{`
@@ -203,6 +247,29 @@ const IndividualStoryScreen: React.FC = () => {
           backdrop-filter: blur(10px);
         }
         .back-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.1);
+        }
+
+        .share-button {
+          position: fixed;
+          top: 1.5rem;
+          right: 1.5rem;
+          z-index: 50;
+          width: 3rem;
+          height: 3rem;
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          border-radius: 50%;
+          color: #fff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+        }
+        .share-button:hover {
           background: rgba(255, 255, 255, 0.2);
           transform: scale(1.1);
         }
@@ -468,6 +535,15 @@ const IndividualStoryScreen: React.FC = () => {
         title="Back to Stories"
       >
         <ArrowLeft size={20} />
+      </button>
+
+      {/* Floating Share Button */}
+      <button 
+        className="share-button"
+        onClick={handleShare}
+        title="Share Story"
+      >
+        <Share2 size={20} />
       </button>
 
         <div className="container">
