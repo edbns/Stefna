@@ -3,29 +3,54 @@ import { qOne } from './_db'
 
 export const handler: Handler = async (event, context) => {
   try {
-    const { path, rawUrl, headers } = event
-    console.log('Story page request:', { path, rawUrl, headers, event })
+    console.log('=== STORY PAGE FUNCTION CALLED ===')
+    console.log('Event:', JSON.stringify(event, null, 2))
+    console.log('Context:', JSON.stringify(context, null, 2))
     
-    // Try different ways to get the slug
+    // Netlify passes the original path in different ways
     let slug = ''
-    if (path) {
-      slug = path.replace('/story/', '')
-    } else if (rawUrl) {
-      const url = new URL(rawUrl)
-      slug = url.pathname.replace('/story/', '')
-    } else if (headers['x-forwarded-uri']) {
-      slug = headers['x-forwarded-uri'].replace('/story/', '')
+    
+    // Method 1: Check if path is directly available
+    if (event.path) {
+      slug = event.path.replace('/story/', '')
+      console.log('Method 1 - Using event.path:', slug)
     }
     
-    if (!slug) {
-      console.log('No slug found in path:', { path, rawUrl, headers })
-      return {
-        statusCode: 404,
-        body: 'Story not found'
+    // Method 2: Check rawUrl
+    if (!slug && event.rawUrl) {
+      const url = new URL(event.rawUrl)
+      slug = url.pathname.replace('/story/', '')
+      console.log('Method 2 - Using rawUrl:', slug)
+    }
+    
+    // Method 3: Check headers
+    if (!slug && event.headers) {
+      const forwardedUri = event.headers['x-forwarded-uri'] || event.headers['X-Forwarded-Uri']
+      if (forwardedUri) {
+        slug = forwardedUri.replace('/story/', '')
+        console.log('Method 3 - Using x-forwarded-uri:', slug)
       }
     }
     
-    console.log('Looking for story with slug:', slug)
+    // Method 4: Check query parameters
+    if (!slug && event.queryStringParameters) {
+      const pathParam = event.queryStringParameters.path
+      if (pathParam) {
+        slug = pathParam.replace('/story/', '')
+        console.log('Method 4 - Using query path:', slug)
+      }
+    }
+    
+    console.log('Final slug extracted:', slug)
+    
+    if (!slug) {
+      console.log('ERROR: No slug found in any method')
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'text/html' },
+        body: '<html><body><h1>404 - Story not found</h1><p>No slug could be extracted from the request.</p></body></html>'
+      }
+    }
 
     // Fetch story data from database
     const story = await qOne(`
