@@ -27,7 +27,8 @@ export const handler: Handler = async (event, context) => {
     
     // Method 2: Try event.path
     if (originalPath === '/story' && event.path) {
-      originalPath = event.path
+      // Remove /story-page/ prefix if present
+      originalPath = event.path.replace('/story-page/', '/story/')
       console.log('Using event.path:', originalPath)
     }
     
