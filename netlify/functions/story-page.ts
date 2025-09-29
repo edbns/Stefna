@@ -12,7 +12,7 @@ export const handler: Handler = async (event, context) => {
     
     // Method 1: Check if path is directly available
     if (event.path) {
-      slug = event.path.replace('/story/', '')
+      slug = event.path.replace('/story-page/', '').replace('/story/', '')
       console.log('Method 1 - Using event.path:', slug)
     }
     
