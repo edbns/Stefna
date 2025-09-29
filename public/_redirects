@@ -1,5 +1,8 @@
 # Netlify redirects for React Router
 # Handle client-side routing by redirecting all routes to index.html
 
+# Story pages with server-side meta tags
+/story/*    /.netlify/functions/story-page    200
+
 # React Router - redirect all other routes to index.html
 /*    /index.html   200

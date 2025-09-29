@@ -42,6 +42,23 @@ const IndividualStoryScreen: React.FC = () => {
       }
 
       try {
+        // Check if story data is preloaded from server-side rendering
+        const preloadedStory = (window as any).__STORY_DATA__
+        
+        if (preloadedStory && preloadedStory.slug === slug) {
+          // Use preloaded data
+          setStory(preloadedStory)
+          setIsLoading(false)
+          
+          // Still fetch all stories for navigation
+          const allStoriesResponse = await fetch('/.netlify/functions/story-api')
+          if (allStoriesResponse.ok) {
+            const allStories = await allStoriesResponse.json()
+            setAllStories(allStories)
+          }
+          return
+        }
+
         // Fetch current story and all stories for navigation
         const [storyResponse, allStoriesResponse] = await Promise.all([
           fetch(`/.netlify/functions/story-api?slug=${slug}`),
