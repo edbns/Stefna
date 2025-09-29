@@ -4,70 +4,50 @@ import { qOne } from './_db'
 export const handler: Handler = async (event, context) => {
   try {
     console.log('=== STORY PAGE FUNCTION CALLED ===')
-    console.log('Event:', JSON.stringify(event, null, 2))
-    console.log('Context:', JSON.stringify(context, null, 2))
     
-    // Netlify passes the original path in different ways
-    let slug = ''
-    
-    // Method 1: Check if path is directly available
-    if (event.path) {
-      slug = event.path.replace('/story-page/', '').replace('/story/', '')
-      console.log('Method 1 - Using event.path:', slug)
-    }
-    
-    // Method 1.5: Check clientContext for original path
-    if (!slug && context.clientContext?.custom?.netlify) {
+    // Get the original path from clientContext
+    let originalPath = '/story'
+    if (context.clientContext?.custom?.purge_api_token) {
       try {
-        const netlifyData = JSON.parse(atob(context.clientContext.custom.netlify))
-        if (netlifyData.site_url) {
-          const originalPath = context.clientContext.custom.purge_api_token ? 
-            JSON.parse(atob(context.clientContext.custom.purge_api_token)).request_path : null
-          if (originalPath) {
-            slug = originalPath.replace('/story/', '')
-            console.log('Method 1.5 - Using clientContext path:', slug)
-          }
-        }
+        const tokenData = JSON.parse(atob(context.clientContext.custom.purge_api_token))
+        originalPath = tokenData.request_path || '/story'
+        console.log('Original path from clientContext:', originalPath)
       } catch (e) {
         console.log('Error parsing clientContext:', e)
       }
     }
     
-    // Method 2: Check rawUrl
-    if (!slug && event.rawUrl) {
-      const url = new URL(event.rawUrl)
-      slug = url.pathname.replace('/story/', '')
-      console.log('Method 2 - Using rawUrl:', slug)
-    }
+    // Check if this is the story index page (/story) or a specific story (/story/slug)
+    const slugMatch = originalPath.match(/^\/story\/(.+)$/)
     
-    // Method 3: Check headers
-    if (!slug && event.headers) {
-      const forwardedUri = event.headers['x-forwarded-uri'] || event.headers['X-Forwarded-Uri']
-      if (forwardedUri) {
-        slug = forwardedUri.replace('/story/', '')
-        console.log('Method 3 - Using x-forwarded-uri:', slug)
-      }
-    }
-    
-    // Method 4: Check query parameters
-    if (!slug && event.queryStringParameters) {
-      const pathParam = event.queryStringParameters.path
-      if (pathParam) {
-        slug = pathParam.replace('/story/', '')
-        console.log('Method 4 - Using query path:', slug)
-      }
-    }
-    
-    console.log('Final slug extracted:', slug)
-    
-    if (!slug) {
-      console.log('ERROR: No slug found in any method')
+    if (!slugMatch) {
+      // This is the story index page (/story) - let React handle it
+      console.log('Story index page requested, redirecting to React app')
       return {
-        statusCode: 404,
+        statusCode: 200,
         headers: { 'Content-Type': 'text/html' },
-        body: '<html><body><h1>404 - Story not found</h1><p>No slug could be extracted from the request.</p></body></html>'
+        body: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stefna Stories</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/assets/index.js"></script>
+</body>
+</html>`
       }
     }
+    
+    const slug = slugMatch[1]
+    console.log('Story slug extracted:', slug)
 
     // Fetch story data from database
     const story = await qOne(`
