@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -85,6 +85,8 @@ const IndividualStoryScreen: React.FC = () => {
   }
 
   const handleShare = async () => {
+    if (!story) return
+    
     const shareData = {
       title: story.title,
       text: story.teaser_text,

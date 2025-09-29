@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import './index.css'
 // import { validateAllSync, validateAll, validateUIConfigurationWhenReady } from './utils/presets/validate' // REMOVED - using database-driven presets now
@@ -165,9 +166,11 @@ console.log('🔍 About to render React app...');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AppErrorBoundary>
-      <App />
-    </AppErrorBoundary>
+    <HelmetProvider>
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
+    </HelmetProvider>
   </React.StrictMode>,
 )
 
