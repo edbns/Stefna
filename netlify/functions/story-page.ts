@@ -3,15 +3,29 @@ import { qOne } from './_db'
 
 export const handler: Handler = async (event, context) => {
   try {
-    const { path } = event
-    const slug = path.replace('/story/', '')
+    const { path, rawUrl, headers } = event
+    console.log('Story page request:', { path, rawUrl, headers, event })
+    
+    // Try different ways to get the slug
+    let slug = ''
+    if (path) {
+      slug = path.replace('/story/', '')
+    } else if (rawUrl) {
+      const url = new URL(rawUrl)
+      slug = url.pathname.replace('/story/', '')
+    } else if (headers['x-forwarded-uri']) {
+      slug = headers['x-forwarded-uri'].replace('/story/', '')
+    }
     
     if (!slug) {
+      console.log('No slug found in path:', { path, rawUrl, headers })
       return {
         statusCode: 404,
         body: 'Story not found'
       }
     }
+    
+    console.log('Looking for story with slug:', slug)
 
     // Fetch story data from database
     const story = await qOne(`
@@ -30,11 +44,14 @@ export const handler: Handler = async (event, context) => {
     `, [slug])
 
     if (!story) {
+      console.log('Story not found in database for slug:', slug)
       return {
         statusCode: 404,
         body: 'Story not found'
       }
     }
+    
+    console.log('Found story:', story.title)
 
     // Generate HTML with proper meta tags
     const html = `
@@ -97,7 +114,10 @@ export const handler: Handler = async (event, context) => {
     console.error('Error generating story page:', error)
     return {
       statusCode: 500,
-      body: 'Internal server error'
+      headers: {
+        'Content-Type': 'text/html'
+      },
+      body: `<html><body><h1>Error</h1><p>${error.message}</p></body></html>`
     }
   }
 }
