@@ -4,6 +4,9 @@ import { qOne } from './_db'
 export const handler: Handler = async (event, context) => {
   try {
     console.log('=== STORY PAGE FUNCTION CALLED ===')
+    console.log('Request path:', event.path)
+    console.log('Request rawUrl:', event.rawUrl)
+    console.log('Request headers:', JSON.stringify(event.headers, null, 2))
     
     // Get the original path from multiple sources
     let originalPath = '/story'
@@ -40,6 +43,16 @@ export const handler: Handler = async (event, context) => {
         console.log('Using rawUrl pathname:', originalPath)
       } catch (e) {
         console.log('Error parsing rawUrl:', e.message)
+      }
+    }
+    
+    // Check if this is an asset request
+    if (originalPath.startsWith('/assets/')) {
+      console.log('Asset request detected:', originalPath)
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'text/html' },
+        body: `<html><body><h1>Asset not found</h1><p>Asset path: ${originalPath}</p><p>This should be handled by static file serving, not the story-page function.</p></body></html>`
       }
     }
     
