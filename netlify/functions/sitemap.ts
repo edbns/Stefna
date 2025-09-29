@@ -1,11 +1,32 @@
 import { Handler } from '@netlify/functions';
+import { q } from './_db';
 
 export const handler: Handler = async (event) => {
   // Get current date in YYYY-MM-DD format
   const currentDate = new Date().toISOString().split('T')[0];
 
-  // Define sitemap entries
-  const sitemapEntries = [
+  // Fetch published stories from database
+  let storyEntries: any[] = [];
+  try {
+    const stories = await q(`
+      SELECT slug, updated_at 
+      FROM stories 
+      WHERE status = 'published'
+      ORDER BY created_at DESC
+    `);
+    
+    storyEntries = stories.map(story => ({
+      url: `https://stefna.xyz/story/${story.slug}`,
+      lastmod: story.updated_at ? story.updated_at.split('T')[0] : currentDate,
+      changefreq: 'monthly',
+      priority: '0.9'
+    }));
+  } catch (error) {
+    console.error('Error fetching stories for sitemap:', error);
+  }
+
+  // Define static sitemap entries
+  const staticEntries = [
     {
       url: 'https://stefna.xyz/',
       lastmod: currentDate,
@@ -74,6 +95,21 @@ export const handler: Handler = async (event) => {
       changefreq: 'daily',
       priority: '0.7'
     }
+  ];
+
+  // Add story archive page
+  const storyArchiveEntry = {
+    url: 'https://stefna.xyz/story',
+    lastmod: currentDate,
+    changefreq: 'daily',
+    priority: '0.8'
+  };
+
+  // Combine all entries
+  const sitemapEntries = [
+    ...staticEntries,
+    storyArchiveEntry,
+    ...storyEntries
   ];
 
   // Generate XML content
