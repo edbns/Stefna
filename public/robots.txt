@@ -3,5 +3,6 @@ Allow: /
 
 Disallow: /admin/
 Disallow: /.netlify/
+Disallow: /StoryCreation
 
 Sitemap: https://stefna.xyz/.netlify/functions/sitemap

@@ -219,52 +219,38 @@ const StoryScreen: React.FC = () => {
           transition: transform 0.3s ease;
           text-decoration: none;
           color: inherit;
+          display: flex;
+          flex-direction: column;
         }
         .card img {
           width: 100%;
           height: 200px;
           object-fit: cover;
-          border-radius: 12px;
+          border-radius: 12px 12px 0 0;
           display: block;
         }
         .card:hover {
           transform: scale(1.05);
         }
-        .card::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.4);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          border-radius: 12px;
-        }
-        .card:hover::after {
-          opacity: 1;
-        }
 
         .card-content {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
           padding: 1rem;
-          background: linear-gradient(transparent, rgba(0,0,0,0.8));
-          border-radius: 0 0 12px 12px;
           color: #fff;
-          z-index: 1;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
         }
         .card-content h3 {
-          margin: 0;
+          margin: 0 0 0.5rem 0;
           font-size: 1.2rem;
+          color: #fff;
         }
         .card-content p {
-          margin: 0.5rem 0 0;
+          margin: 0;
           font-size: 0.9rem;
           color: #ccc;
+          line-height: 1.4;
         }
 
         .back-button {
