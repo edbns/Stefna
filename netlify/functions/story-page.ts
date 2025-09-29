@@ -113,7 +113,7 @@ export const handler: Handler = async (event, context) => {
     console.log('Found story:', story.title)
 
     // Generate HTML with proper meta tags using database fields
-    const pageTitle = story.meta_title || `${story.title} | Stefna Stories`
+    const pageTitle = story.meta_title || story.title
     const pageDescription = story.meta_description || story.teaser_text
     const ogImage = story.hero_image_social || story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
     const keywords = story.keywords ? `<meta name="keywords" content="${story.keywords}">` : ''
