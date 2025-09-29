@@ -11,6 +11,9 @@ import CookiesPolicy from './screens/CookiesPolicy'
 import ProfileScreen from './screens/ProfileScreen'
 import MobileGalleryScreen from './screens/MobileGalleryScreen'
 import AdminDashboardScreen from './screens/AdminDashboardScreen'
+import StoryCreationScreen from './screens/StoryCreationScreen'
+import StoryScreen from './screens/StoryScreen'
+import IndividualStoryScreen from './screens/IndividualStoryScreen'
 import { Navigate } from 'react-router-dom'
 import AuthScreen from './screens/AuthScreen'
 import BestPracticesScreen from './screens/BestPracticesScreen'
@@ -153,12 +156,19 @@ const AppContent: React.FC = () => {
           {/* Mobile-only routes */}
           <Route path="/auth" element={<AuthScreen />} />
           <Route path="/gallery" element={<MobileGalleryScreen />} />
+          <Route path="/story" element={<StoryScreen />} />
+          <Route path="/story/:slug" element={<IndividualStoryScreen />} />
           
           {/* Desktop-only routes (blocked on mobile) */}
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="/dashboard/management/control" element={
             <MobileRouteGuard>
               <AdminDashboardScreen />
+            </MobileRouteGuard>
+          } />
+          <Route path="/StoryCreation" element={
+            <MobileRouteGuard>
+              <StoryCreationScreen />
             </MobileRouteGuard>
           } />
           <Route path="/privacy" element={

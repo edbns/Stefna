@@ -3768,6 +3768,9 @@ const HomeNew: React.FC = () => {
               // Navigate to best practices page
               navigate('/bestpractices');
             }}
+            onStoriesClick={() => {
+              navigate('/story');
+            }}
             isGenerating={navGenerating}
           />
           
@@ -4033,7 +4036,13 @@ const HomeNew: React.FC = () => {
           Get The Look
         </button>
 
-
+        <button
+          onClick={() => navigate('/story')}
+          className="px-4 py-2 bg-gray-600 text-white rounded-full border border-gray-600 transition-all duration-300 hover:bg-gray-700 hover:scale-105 font-medium"
+          aria-label="Stories"
+        >
+          Stories
+        </button>
 
         {/* Login/Profile Button */}
         {!isAuthenticated ? (
