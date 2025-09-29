@@ -1,7 +1,10 @@
 # Netlify redirects for React Router
 # Handle client-side routing by redirecting all routes to index.html
 
-# Story pages with server-side meta tags
+# Exclude assets from story redirects
+/assets/*    /assets/:splat    200
+
+# Story pages with server-side meta tags (but not assets)
 /story/*    /.netlify/functions/story-page    200
 
 # React Router - redirect all other routes to index.html
