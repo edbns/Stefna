@@ -93,20 +93,21 @@ export const COLORCORE_POSES: ColorcorePose[] = [
  * @returns Randomized prompt with color theme and poses
  */
 export function generateColorcorePrompt(basePrompt: string): string {
-  // Use a more robust random selection with timestamp for better randomization
-  const seed = Date.now() + Math.random();
-  const themeIndex = Math.floor((seed * 1000) % COLORCORE_THEMES.length);
+  // Use multiple entropy sources for better randomization
+  // This ensures different results even if called rapidly
+  const entropy = Date.now() * Math.random() * (Math.random() * 1000);
+  const themeIndex = Math.floor(entropy % COLORCORE_THEMES.length);
   const randomTheme = COLORCORE_THEMES[themeIndex];
   
-  // Randomly select 4 different poses with better shuffling
+  // Randomly select 4 different poses using Fisher-Yates shuffle
   const shuffledPoses = [...COLORCORE_POSES];
   for (let i = shuffledPoses.length - 1; i > 0; i--) {
-    const j = Math.floor((seed * (i + 1) * 1000) % (i + 1));
+    const j = Math.floor(Math.random() * (i + 1));
     [shuffledPoses[i], shuffledPoses[j]] = [shuffledPoses[j], shuffledPoses[i]];
   }
   const selectedPoses = shuffledPoses.slice(0, 4);
   
-  console.log('🎨 [Colorcore] Selected theme:', randomTheme.color, 'Poses:', selectedPoses.map(p => p.name));
+  console.log('🎨 [Colorcore] Selected theme:', randomTheme.color, '(index:', themeIndex, ')', 'Poses:', selectedPoses.map(p => p.name));
   
   // Replace placeholders in the base prompt
   let randomizedPrompt = basePrompt
