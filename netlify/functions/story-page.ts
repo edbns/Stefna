@@ -15,14 +15,27 @@ function getAssetPath(): string {
       return '/src/main.tsx'
     }
     
-    // In production, try to read from dist/index.html to get the actual hashed asset path
-    const indexPath = path.join(process.cwd(), '..', 'dist', 'index.html')
-    if (fs.existsSync(indexPath)) {
-      const indexContent = fs.readFileSync(indexPath, 'utf8')
-      const match = indexContent.match(/src="\/assets\/([^"]+)"/)
-      if (match) {
-        console.log('Found asset path from index.html:', `/assets/${match[1]}`)
-        return `/assets/${match[1]}`
+    // In production, the dist folder is published as root
+    // Try multiple possible locations for index.html
+    const possiblePaths = [
+      path.join(process.cwd(), 'index.html'),           // Published root
+      path.join(process.cwd(), '..', 'index.html'),     // One level up
+      path.join(process.cwd(), '..', 'dist', 'index.html'), // Build directory
+      '/var/task/index.html',                           // Lambda runtime path
+    ]
+    
+    console.log('Searching for index.html in production...')
+    
+    for (const indexPath of possiblePaths) {
+      console.log('Trying path:', indexPath)
+      if (fs.existsSync(indexPath)) {
+        console.log('Found index.html at:', indexPath)
+        const indexContent = fs.readFileSync(indexPath, 'utf8')
+        const match = indexContent.match(/src="\/assets\/([^"]+)"/)
+        if (match) {
+          console.log('Found asset path from index.html:', `/assets/${match[1]}`)
+          return `/assets/${match[1]}`
+        }
       }
     }
     
