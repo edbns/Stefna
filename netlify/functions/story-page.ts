@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 
 // Function to get the current asset path from build manifest
-function getAssetPath(): string {
+async function getAssetPath(hostname: string): Promise<string> {
   try {
     // Check if we're in development mode (Vite dev server)
     const isDev = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true'
@@ -15,34 +15,28 @@ function getAssetPath(): string {
       return '/src/main.tsx'
     }
     
-    // In production, the dist folder is published as root
-    // Try multiple possible locations for index.html
-    const possiblePaths = [
-      path.join(process.cwd(), 'index.html'),           // Published root
-      path.join(process.cwd(), '..', 'index.html'),     // One level up
-      path.join(process.cwd(), '..', 'dist', 'index.html'), // Build directory
-      '/var/task/index.html',                           // Lambda runtime path
-    ]
+    // In production, fetch index.html via HTTP to get the asset path
+    console.log('Fetching index.html to extract asset path...')
+    const protocol = hostname.includes('localhost') ? 'http' : 'https'
+    const indexUrl = `${protocol}://${hostname}/index.html`
     
-    console.log('Searching for index.html in production...')
+    console.log('Fetching from:', indexUrl)
     
-    for (const indexPath of possiblePaths) {
-      console.log('Trying path:', indexPath)
-      if (fs.existsSync(indexPath)) {
-        console.log('Found index.html at:', indexPath)
-        const indexContent = fs.readFileSync(indexPath, 'utf8')
-        const match = indexContent.match(/src="\/assets\/([^"]+)"/)
-        if (match) {
-          console.log('Found asset path from index.html:', `/assets/${match[1]}`)
-          return `/assets/${match[1]}`
-        }
+    const response = await fetch(indexUrl)
+    if (response.ok) {
+      const indexContent = await response.text()
+      const match = indexContent.match(/src="\/assets\/([^"]+)"/)
+      if (match) {
+        const assetPath = `/assets/${match[1]}`
+        console.log('Found asset path from index.html:', assetPath)
+        return assetPath
       }
     }
     
     console.log('Using fallback asset path')
     return '/assets/index.js'
   } catch (error) {
-    console.log('Error reading asset path, using fallback:', error)
+    console.log('Error fetching asset path, using fallback:', error)
     return '/assets/index.js'
   }
 }
@@ -108,7 +102,8 @@ export const handler: Handler = async (event, context) => {
     if (!slugMatch) {
       // This is the story index page (/story) - let React handle it
       console.log('Story index page requested, redirecting to React app')
-      const assetPath = getAssetPath()
+      const hostname = event.headers.host || 'stefna.xyz'
+      const assetPath = await getAssetPath(hostname)
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'text/html' },
@@ -177,7 +172,8 @@ export const handler: Handler = async (event, context) => {
     const pageDescription = story.meta_description || story.teaser_text
     const ogImage = story.hero_image_social || story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
     const keywords = story.keywords ? `<meta name="keywords" content="${story.keywords}">` : ''
-    const assetPath = getAssetPath()
+    const hostname = event.headers.host || 'stefna.xyz'
+    const assetPath = await getAssetPath(hostname)
     
     const html = `
 <!DOCTYPE html>
