@@ -221,6 +221,11 @@ async function handlePut(data: any, headers: Record<string, string>, id?: string
       updateData.estimated_read_time = Math.ceil(words / 200)
     }
 
+    // Handle JSON fields properly
+    if (updateData.story_images) {
+      updateData.story_images = JSON.stringify(updateData.story_images)
+    }
+
     // Remove undefined values
     Object.keys(updateData).forEach(key => {
       if (updateData[key] === undefined) {
