@@ -732,7 +732,7 @@ const StoryCreationScreen: React.FC = () => {
                                     className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-black focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
                                   >
                                     <option value="16:9">16:9 (Landscape)</option>
-                                    <option value="9:16">9:16 (Portrait)</option>
+                                    <option value="6:19">6:19 (Portrait)</option>
                                     <option value="1:1">1:1 (Square)</option>
                                     <option value="4:3">4:3 (Classic)</option>
                                     <option value="3:4">3:4 (Portrait Classic)</option>

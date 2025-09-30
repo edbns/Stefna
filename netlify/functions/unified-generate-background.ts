@@ -279,7 +279,7 @@ function getAspectRatioForMode(mode: string): string {
       return '16:9'; // Cinematic wide (Stability.ai)
 
     case 'story_time':
-      return '9:16'; // Vertical for TikTok/Reels (Kling video)
+      return '6:19'; // Vertical for TikTok/Reels (Kling video)
 
     default:
       return '1:1'; // Safe fallback
@@ -294,7 +294,7 @@ function getDimensionsForAspectRatio(aspectRatio: string): { width: number, heig
       return { width: 960, height: 1280 };
     case '16:9':
       return { width: 1280, height: 720 };
-    case '9:16':
+    case '6:19':
       return { width: 720, height: 1280 };
     case '1:1':
     default:
