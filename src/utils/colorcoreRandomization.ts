@@ -87,6 +87,20 @@ export const COLORCORE_POSES: ColorcorePose[] = [
   { name: 'V-sign over one eye', description: 'V-sign gesture over one eye' }
 ];
 
+// Cute animals that can appear in 1-2 random frames
+export const COLORCORE_ANIMALS: string[] = [
+  'holding a fluffy puppy',
+  'cuddling a small kitten',
+  'holding a baby corgi in arms',
+  'cuddling a pomeranian',
+  'holding a bunny rabbit',
+  'with a small kitten on shoulder',
+  'holding a tiny piglet',
+  'cuddling a golden retriever puppy',
+  'holding a small fluffy white kitten',
+  'with a baby pig in arms'
+];
+
 /**
  * Generate a randomized colorcore prompt
  * @param basePrompt The base prompt template with placeholders
@@ -105,6 +119,37 @@ export function generateColorcorePrompt(basePrompt: string): string {
   }
   const selectedPoses = shuffledPoses.slice(0, 4);
   
+  // Randomly decide if we add animals (1 or 2 frames)
+  const numAnimalFrames = Math.random() < 0.7 ? (Math.random() < 0.6 ? 1 : 2) : 0; // 70% chance of animals, then 60% for 1, 40% for 2
+  const animalFrameIndices: number[] = [];
+  const animalDescriptions: string[] = [];
+  
+  if (numAnimalFrames > 0) {
+    // Select which frames get animals
+    const frameIndices = [0, 1, 2, 3];
+    const shuffledFrames = frameIndices.sort(() => Math.random() - 0.5);
+    animalFrameIndices.push(...shuffledFrames.slice(0, numAnimalFrames));
+    
+    // Select random animals for each frame
+    for (let i = 0; i < numAnimalFrames; i++) {
+      const randomAnimal = COLORCORE_ANIMALS[Math.floor(Math.random() * COLORCORE_ANIMALS.length)];
+      // Add color-matched accessory to the animal
+      const colorAccessory = getAnimalAccessory(randomTheme.color);
+      animalDescriptions.push(`${randomAnimal} ${colorAccessory}`);
+    }
+  }
+  
+  // Build pose descriptions with animals
+  const poseDescriptions: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    const animalIndex = animalFrameIndices.indexOf(i);
+    if (animalIndex !== -1) {
+      poseDescriptions.push(`${selectedPoses[i].name} while ${animalDescriptions[animalIndex]}`);
+    } else {
+      poseDescriptions.push(selectedPoses[i].name);
+    }
+  }
+  
   // Randomly select 3-4 styling items for female (not all of them)
   const shuffledFemaleStyling = [...randomTheme.styling.female].sort(() => Math.random() - 0.5);
   const selectedFemaleStyling = shuffledFemaleStyling.slice(0, 3 + Math.floor(Math.random() * 2)); // 3 or 4 items
@@ -113,7 +158,7 @@ export function generateColorcorePrompt(basePrompt: string): string {
   const shuffledMaleStyling = [...randomTheme.styling.male].sort(() => Math.random() - 0.5);
   const selectedMaleStyling = shuffledMaleStyling.slice(0, 2 + Math.floor(Math.random() * 2)); // 2 or 3 items
   
-  console.log('🎨 [Colorcore] Selected:', randomTheme.color, '| Poses:', selectedPoses.map(p => p.name).join(', '), '| Female styling:', selectedFemaleStyling.length, 'items | Male styling:', selectedMaleStyling.length, 'items');
+  console.log('🎨 [Colorcore] Color:', randomTheme.color, '| Animals:', numAnimalFrames, 'frames', animalFrameIndices.length > 0 ? `(${animalFrameIndices.join(', ')})` : '', '| Styling: F', selectedFemaleStyling.length, 'M', selectedMaleStyling.length);
   
   // Replace placeholders in the base prompt
   let randomizedPrompt = basePrompt
@@ -121,8 +166,8 @@ export function generateColorcorePrompt(basePrompt: string): string {
     .replace(/{COLOR_DESCRIPTION}/g, randomTheme.description);
   
   // Update pose descriptions
-  const poseDescriptions = selectedPoses.map(pose => pose.name).join(', ');
-  randomizedPrompt = randomizedPrompt.replace(/{POSES}/g, poseDescriptions);
+  const posesText = poseDescriptions.join(', ');
+  randomizedPrompt = randomizedPrompt.replace(/{POSES}/g, posesText);
   
   // Update styling suggestions based on selected subset
   const femaleStyling = selectedFemaleStyling.join(', ');
@@ -133,6 +178,32 @@ export function generateColorcorePrompt(basePrompt: string): string {
     .replace(/{MALE_STYLING}/g, maleStyling);
   
   return randomizedPrompt;
+}
+
+/**
+ * Get color-matched accessory for animals
+ */
+function getAnimalAccessory(color: string): string {
+  const accessories = [
+    'with a {color} bow',
+    'with a {color} collar',
+    'with a {color} ribbon',
+    'with a {color} bandana'
+  ];
+  
+  const randomAccessory = accessories[Math.floor(Math.random() * accessories.length)];
+  
+  // Map color names to simple colors for accessories
+  const colorMap: Record<string, string> = {
+    'punchy neon yellow': 'yellow',
+    'bold hot pink': 'pink',
+    'vivid purple': 'purple',
+    'electric lime green': 'green',
+    'bright tangerine orange': 'orange',
+    'pure black': 'white' // White accessory on black background for contrast
+  };
+  
+  return randomAccessory.replace('{color}', colorMap[color] || 'colorful');
 }
 
 /**
