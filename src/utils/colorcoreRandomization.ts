@@ -93,10 +93,8 @@ export const COLORCORE_POSES: ColorcorePose[] = [
  * @returns Randomized prompt with color theme and poses
  */
 export function generateColorcorePrompt(basePrompt: string): string {
-  // Use multiple entropy sources for better randomization
-  // This ensures different results even if called rapidly
-  const entropy = Date.now() * Math.random() * (Math.random() * 1000);
-  const themeIndex = Math.floor(entropy % COLORCORE_THEMES.length);
+  // Use Math.random() directly for unbiased color selection
+  const themeIndex = Math.floor(Math.random() * COLORCORE_THEMES.length);
   const randomTheme = COLORCORE_THEMES[themeIndex];
   
   // Randomly select 4 different poses using Fisher-Yates shuffle
@@ -107,7 +105,15 @@ export function generateColorcorePrompt(basePrompt: string): string {
   }
   const selectedPoses = shuffledPoses.slice(0, 4);
   
-  console.log('🎨 [Colorcore] Selected theme:', randomTheme.color, '(index:', themeIndex, ')', 'Poses:', selectedPoses.map(p => p.name));
+  // Randomly select 3-4 styling items for female (not all of them)
+  const shuffledFemaleStyling = [...randomTheme.styling.female].sort(() => Math.random() - 0.5);
+  const selectedFemaleStyling = shuffledFemaleStyling.slice(0, 3 + Math.floor(Math.random() * 2)); // 3 or 4 items
+  
+  // Randomly select 2-3 styling items for male (not all of them)
+  const shuffledMaleStyling = [...randomTheme.styling.male].sort(() => Math.random() - 0.5);
+  const selectedMaleStyling = shuffledMaleStyling.slice(0, 2 + Math.floor(Math.random() * 2)); // 2 or 3 items
+  
+  console.log('🎨 [Colorcore] Selected:', randomTheme.color, '| Poses:', selectedPoses.map(p => p.name).join(', '), '| Female styling:', selectedFemaleStyling.length, 'items | Male styling:', selectedMaleStyling.length, 'items');
   
   // Replace placeholders in the base prompt
   let randomizedPrompt = basePrompt
@@ -118,9 +124,9 @@ export function generateColorcorePrompt(basePrompt: string): string {
   const poseDescriptions = selectedPoses.map(pose => pose.name).join(', ');
   randomizedPrompt = randomizedPrompt.replace(/{POSES}/g, poseDescriptions);
   
-  // Update styling suggestions based on theme
-  const femaleStyling = randomTheme.styling.female.join(', ');
-  const maleStyling = randomTheme.styling.male.join(', ');
+  // Update styling suggestions based on selected subset
+  const femaleStyling = selectedFemaleStyling.join(', ');
+  const maleStyling = selectedMaleStyling.join(', ');
   
   randomizedPrompt = randomizedPrompt
     .replace(/{FEMALE_STYLING}/g, femaleStyling)
