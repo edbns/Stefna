@@ -32,24 +32,48 @@ const StoryScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>('all')
   const [filteredStories, setFilteredStories] = useState<Story[]>([])
 
-  const allCategories = [
-    { value: 'all', label: 'All', tagline: 'Every tale has its place in the archive.' },
-    { value: 'the-haunted', label: 'The Haunted', tagline: 'Some memories don\'t stay buried.' },
-    { value: 'the-damned', label: 'The Damned', tagline: 'The Damned always ride alone.' },
-    { value: 'the-divine', label: 'The Divine', tagline: 'Chosen by nothing. Worshipped by no one.' },
-    { value: 'the-forgotten', label: 'The Forgotten', tagline: 'Not dead. Just left behind.' },
-    { value: 'the-masked', label: 'The Masked', tagline: 'Beauty is a weapon. So is silence.' },
-    { value: 'the-elemental', label: 'The Elemental', tagline: 'They don\'t walk. They rise from storm, ash, and fire.' },
-    { value: 'the-eternal', label: 'The Eternal', tagline: 'You\'ve seen them before. You just don\'t remember where.' }
-  ]
+  // Category mapping for display names and taglines
+  const categoryMapping: Record<string, { label: string; tagline: string }> = {
+    'all': { label: 'All', tagline: 'Every tale has its place in the archive.' },
+    'the-haunted': { label: 'The Haunted', tagline: 'Some memories don\'t stay buried.' },
+    'the-damned': { label: 'The Damned', tagline: 'The Damned always ride alone.' },
+    'the-divine': { label: 'The Divine', tagline: 'Chosen by nothing. Worshipped by no one.' },
+    'the-forgotten': { label: 'The Forgotten', tagline: 'Not dead. Just left behind.' },
+    'the-masked': { label: 'The Masked', tagline: 'Beauty is a weapon. So is silence.' },
+    'the-elemental': { label: 'The Elemental', tagline: 'They don\'t walk. They rise from storm, ash, and fire.' },
+    'the-eternal': { label: 'The Eternal', tagline: 'You\'ve seen them before. You just don\'t remember where.' }
+  }
 
   // Get categories that actually have stories
   const getAvailableCategories = () => {
     const storyCategories = new Set(stories.map(story => story.story_category))
-    // Always include 'All' button, plus categories that have stories
-    const availableCategories = allCategories.filter(cat => 
-      cat.value === 'all' || storyCategories.has(cat.value)
-    )
+    
+    // Always include 'All' button
+    const availableCategories = [
+      { value: 'all', label: categoryMapping['all'].label, tagline: categoryMapping['all'].tagline }
+    ]
+    
+    // Add categories that have stories, with proper display names
+    storyCategories.forEach(category => {
+      if (categoryMapping[category]) {
+        availableCategories.push({
+          value: category,
+          label: categoryMapping[category].label,
+          tagline: categoryMapping[category].tagline
+        })
+      } else {
+        // For new categories not in mapping, create a display name
+        const displayName = category.split('-').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')
+        availableCategories.push({
+          value: category,
+          label: displayName,
+          tagline: `Stories from the ${displayName.toLowerCase()} collection.`
+        })
+      }
+    })
+    
     return availableCategories
   }
 
@@ -329,7 +353,7 @@ const StoryScreen: React.FC = () => {
           {/* Category Tagline Display */}
           {selectedCategory && (
             <div className="tagline-display">
-              {allCategories.find(cat => cat.value === selectedCategory)?.tagline}
+              {categoryMapping[selectedCategory]?.tagline || `Stories from the ${selectedCategory.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ').toLowerCase()} collection.`}
             </div>
           )}
         </div>
