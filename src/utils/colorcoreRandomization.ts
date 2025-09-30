@@ -101,14 +101,60 @@ export const COLORCORE_ANIMALS: string[] = [
   'with a baby pig in arms'
 ];
 
+// Color rotation state - tracks which colors have been used recently
+let colorRotationState = {
+  usedColors: [] as number[],
+  lastReset: Date.now()
+};
+
+/**
+ * Get the next color in rotation, ensuring all colors are used before repeating
+ */
+function getNextColorInRotation(): number {
+  const now = Date.now();
+  
+  // Reset rotation state every 5 minutes to allow for fresh starts
+  if (now - colorRotationState.lastReset > 5 * 60 * 1000) {
+    colorRotationState.usedColors = [];
+    colorRotationState.lastReset = now;
+  }
+  
+  // If we've used all colors, reset the used list
+  if (colorRotationState.usedColors.length >= COLORCORE_THEMES.length) {
+    colorRotationState.usedColors = [];
+  }
+  
+  // Get available colors (not used recently)
+  const availableColors = [];
+  for (let i = 0; i < COLORCORE_THEMES.length; i++) {
+    if (!colorRotationState.usedColors.includes(i)) {
+      availableColors.push(i);
+    }
+  }
+  
+  // If no available colors (shouldn't happen), reset and use all
+  if (availableColors.length === 0) {
+    colorRotationState.usedColors = [];
+    availableColors.push(...Array.from({ length: COLORCORE_THEMES.length }, (_, i) => i));
+  }
+  
+  // Randomly select from available colors
+  const selectedIndex = availableColors[Math.floor(Math.random() * availableColors.length)];
+  
+  // Mark this color as used
+  colorRotationState.usedColors.push(selectedIndex);
+  
+  return selectedIndex;
+}
+
 /**
  * Generate a randomized colorcore prompt
  * @param basePrompt The base prompt template with placeholders
  * @returns Randomized prompt with color theme and poses
  */
 export function generateColorcorePrompt(basePrompt: string): string {
-  // Use Math.random() directly for unbiased color selection
-  const themeIndex = Math.floor(Math.random() * COLORCORE_THEMES.length);
+  // Use rotation system to ensure all colors are used before repeating
+  const themeIndex = getNextColorInRotation();
   const randomTheme = COLORCORE_THEMES[themeIndex];
   
   // Randomly select 4 different poses using Fisher-Yates shuffle
