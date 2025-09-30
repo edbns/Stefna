@@ -1,4 +1,7 @@
+import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-wasm';
+import '@tensorflow/tfjs-backend-cpu';
 import { createDetector, SupportedModels } from '@tensorflow-models/face-landmarks-detection';
 
 export type GlitchMode = 'neo_tokyo' | 'cyberpunk' | 'digital_glitch' | 'neon_wave';
@@ -28,37 +31,9 @@ export interface CyberSirenResult {
   };
 }
 
-// TensorFlow.js Face Landmarks Detection model loading state
+// TensorFlow.js model loading
 let tfModel: any = null;
 let isModelLoading = false;
-
-// Load TensorFlow.js Face Landmarks Detection model
-async function loadTFModel(): Promise<any> {
-  if (tfModel) {
-    return tfModel;
-  }
-
-  if (isModelLoading) {
-    // Wait for the model to finish loading
-    while (isModelLoading) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return tfModel;
-  }
-
-  isModelLoading = true;
-  try {
-    console.log('🎭 Loading TensorFlow.js Face Landmarks Detection model...');
-    tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh);
-    console.log('✅ Face detection model loaded successfully');
-    return tfModel;
-  } catch (error) {
-    console.error('❌ Failed to load face detection model:', error);
-    throw error;
-  } finally {
-    isModelLoading = false;
-  }
-}
 
 // Main function to apply Cyber Siren FX to an image URL
 export async function applyCyberSiren(
@@ -300,8 +275,30 @@ export async function generateCyberSirenOverlay(
       // Face detection to clear face region (so we don't glitch it)
       if (preserveFace) {
         try {
-          const model = await loadTFModel();
-          const faces = await model.estimateFaces(image);
+          if (!tfModel) {
+            // Initialize TensorFlow.js backend
+            const backends = ['webgl', 'wasm', 'cpu'];
+            let backendInitialized = false;
+
+            for (const backend of backends) {
+              try {
+                await tf.setBackend(backend);
+                await tf.ready();
+                backendInitialized = true;
+                break;
+              } catch (err) {
+                continue;
+              }
+            }
+
+            if (!backendInitialized) {
+              throw new Error('All TensorFlow.js backends failed to initialize');
+            }
+
+            tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh);
+          }
+          
+          const faces = await tfModel.estimateFaces(image);
           
           if (faces && faces.length > 0) {
             const face = faces[0];

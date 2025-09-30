@@ -72,7 +72,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com https://api.fal.ai https://api.replicate.com https://api.cloudinary.com; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; style-src 'self' 'unsafe-inline';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com https://api.fal.ai https://api.replicate.com https://api.cloudinary.com; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"

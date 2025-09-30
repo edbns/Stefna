@@ -2517,7 +2517,15 @@ const HomeNew: React.FC = () => {
         return;
       }
       
-      effectivePrompt = parallelSelfPreset.prompt;
+      // Check if this is a randomized preset (like colorcore)
+      if (parallelSelfPreset.isRandomized && parallelSelfPreset.basePrompt) {
+        // Import the randomization utility dynamically
+        const { generateColorcorePrompt } = await import('../utils/colorcoreRandomization');
+        effectivePrompt = generateColorcorePrompt(parallelSelfPreset.basePrompt);
+        console.log('🎨 [Colorcore] Generated randomized prompt for:', parallelSelfPreset.label);
+      } else {
+        effectivePrompt = parallelSelfPreset.prompt;
+      }
       generationMeta = { 
         mode: 'parallelself', 
         parallelSelfPresetId, 
@@ -4036,14 +4044,14 @@ const HomeNew: React.FC = () => {
           Get The Look
         </button>
 
-        {/* Stories button hidden for now */}
-        {/* <button
+        {/* Stories button */}
+        <button
           onClick={() => navigate('/story')}
           className="px-4 py-2 bg-gray-600 text-white rounded-full border border-gray-600 transition-all duration-300 hover:bg-gray-700 hover:scale-105 font-medium"
           aria-label="Stories"
         >
           Stories
-        </button> */}
+        </button>
 
         {/* Login/Profile Button */}
         {!isAuthenticated ? (

@@ -38,8 +38,8 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
         </div>
       </button>
 
-      {/* Stories Button - Hidden for now */}
-      {/* <button
+      {/* Stories Button */}
+      <button
         onClick={onStoriesClick}
         className="w-14 h-14 bg-gray-600 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-700 transition-colors relative group"
         title="Stories"
@@ -50,7 +50,7 @@ const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
           Stories
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/80"></div>
         </div>
-      </button> */}
+      </button>
 
       {/* Login or Profile Button - Context aware */}
       {isAuthenticated ? (

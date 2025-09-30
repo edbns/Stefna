@@ -42,6 +42,9 @@ const IndividualStoryScreen: React.FC = () => {
       }
 
       try {
+        // Reset loading states
+        setLoadingNav(false)
+        
         // Check if story data is preloaded from server-side rendering
         const preloadedStory = (window as any).__STORY_DATA__
         
@@ -54,7 +57,8 @@ const IndividualStoryScreen: React.FC = () => {
           const allStoriesResponse = await fetch('/.netlify/functions/story-api')
           if (allStoriesResponse.ok) {
             const allStories = await allStoriesResponse.json()
-            setAllStories(allStories)
+            const publishedStories = allStories.filter((s: Story) => s.status === 'published')
+            setAllStories(publishedStories)
           }
           return
         }
@@ -98,7 +102,12 @@ const IndividualStoryScreen: React.FC = () => {
 
   const navigateToStory = async (targetStory: Story) => {
     setLoadingNav(true)
-    navigate(`/story/${targetStory.slug}`)
+    try {
+      navigate(`/story/${targetStory.slug}`)
+    } finally {
+      // Reset loading state after a short delay to allow navigation to complete
+      setTimeout(() => setLoadingNav(false), 1000)
+    }
   }
 
   const handleShare = async () => {
@@ -499,6 +508,35 @@ const IndividualStoryScreen: React.FC = () => {
           color: #fff;
         }
 
+        /* Mobile navigation - more compact */
+        @media (max-width: 768px) {
+          .navigation-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          .nav-button {
+            max-width: 100%;
+            padding: 1rem;
+            min-height: 60px;
+          }
+
+          .nav-thumbnail {
+            width: 40px;
+            height: 30px;
+          }
+
+          .nav-info h4 {
+            font-size: 0.9rem;
+          }
+
+          .nav-content {
+            gap: 0.75rem;
+          }
+        }
+
 
 
         .loading-overlay {
@@ -601,6 +639,7 @@ const IndividualStoryScreen: React.FC = () => {
                   <div className="nav-content">
                     {previous && (
                       <>
+                        <ChevronLeft size={20} className="text-gray-400" />
                         <img 
                           src={previous.hero_image_url} 
                           alt={previous.title}
@@ -609,7 +648,6 @@ const IndividualStoryScreen: React.FC = () => {
                         <div className="nav-info">
                           <h4>{previous.title}</h4>
                         </div>
-                        <ChevronLeft size={20} className="text-gray-400" />
                       </>
                     )}
                   </div>

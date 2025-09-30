@@ -190,19 +190,38 @@ export class IdentityPreservationService {
     return embedding;
   }
 
-  /**
-   * Extract face embedding using TensorFlow.js (legacy method)
-   */
-  private static async extractFaceEmbedding(imageUrl: string): Promise<{ vector: number[] }> {
-    // Dynamically import TensorFlow.js to avoid SSR issues
-    const tf = await import('@tensorflow/tfjs-core');
-    const { createDetector, SupportedModels } = await import('@tensorflow-models/face-landmarks-detection');
-    
-    // Set backend
-    await tf.setBackend('webgl');
-    
-    // Load model
-    const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
+    /**
+     * Extract face embedding using TensorFlow.js (legacy method)
+     */
+    private static async extractFaceEmbedding(imageUrl: string): Promise<{ vector: number[] }> {
+      // Import TensorFlow.js modules
+      const tf = await import('@tensorflow/tfjs-core');
+      const { createDetector, SupportedModels } = await import('@tensorflow-models/face-landmarks-detection');
+      
+      // Initialize backend
+      await import('@tensorflow/tfjs-backend-webgl');
+      await import('@tensorflow/tfjs-backend-wasm');
+      await import('@tensorflow/tfjs-backend-cpu');
+      
+      const backends = ['webgl', 'wasm', 'cpu'];
+      let backendInitialized = false;
+
+      for (const backend of backends) {
+        try {
+          await tf.setBackend(backend);
+          await tf.ready();
+          backendInitialized = true;
+          break;
+        } catch (err) {
+          continue;
+        }
+      }
+
+      if (!backendInitialized) {
+        throw new Error('All TensorFlow.js backends failed to initialize');
+      }
+
+      const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
     
     // Create image element
     const img = new Image();

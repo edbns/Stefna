@@ -5,7 +5,6 @@ import PresetTag from './PresetTag'
 import { generateLikeKey } from '../services/likesService'
 // RemixIcon removed - no more remix functionality
 import { MediaCard as SpinnerCard } from './ui/Toasts'
-// LazyImage removed - using simple img tags for better performance
 // formatRemixCount removed - no more remix functionality
 
 interface MasonryMediaGridProps {
@@ -229,32 +228,30 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                           </div>
                         )}
                       </div>
-                  ) : (item.type as any) === 'story-time' && (item.status as any) === 'processing' ? (
-                      // Story Time processing - show progress with photo
-                      <div className="relative">
-                        <img
-                          src={optimizeFeedImage(item.url)}
-                          alt="Story Time processing"
-                          className="w-full h-auto object-cover opacity-75"
-                          loading="lazy"
-                        />
-                        {/* Processing overlay */}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <div className="text-center text-white">
-                            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-2"></div>
-                            <div className="text-sm font-semibold">Generating Videos...</div>
-                            <div className="text-xs opacity-75">Story Time in progress</div>
-                          </div>
-                        </div>
-                      </div>
-                  ) : (
-                    <img
-                      src={optimizeFeedImage(item.url)} 
-                      alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                    />
-                  )}
+    ) : (item.type as any) === 'story-time' && (item.status as any) === 'processing' ? (
+        // Story Time processing - show progress with photo
+        <div className="relative">
+          <img
+            src={optimizeFeedImage(item.url)}
+            alt="Story Time processing"
+            className="w-full h-auto object-cover opacity-75"
+          />
+          {/* Processing overlay */}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-2"></div>
+              <div className="text-sm font-semibold">Generating Videos...</div>
+              <div className="text-xs opacity-75">Story Time in progress</div>
+            </div>
+          </div>
+        </div>
+    ) : (
+      <img
+        src={optimizeFeedImage(item.url)}
+        alt={`Generated ${item.type} - ${item.prompt?.substring(0, 50) || 'AI Content'}...`}
+        className="w-full h-auto object-cover"
+      />
+    )}
 
                   {/* Loading spinner overlay for generating items */}
                   {item.status === 'processing' && (

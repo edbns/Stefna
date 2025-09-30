@@ -80,9 +80,10 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(na) * Math.sqrt(nb) || 1);
 }
 
-// TensorFlow.js Face Landmarks Detection model loading state
+// TensorFlow.js model loading
 let tfModel: any = null;
 let isModelLoading = false;
+let modelLoadPromise: Promise<any> | null = null;
 
 export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
   const [state, setState] = useState<IPAState>({
@@ -95,72 +96,65 @@ export function useIPAFaceCheck(threshold: number = DEFAULT_THRESHOLD) {
     isReady: false
   });
 
-  const modelLoadPromise = useRef<Promise<any> | null>(null);
+  const modelLoadPromiseRef = useRef<Promise<any> | null>(null);
 
   // Load TensorFlow.js Face Landmarks Detection model
   const loadTFModel = useCallback(async (): Promise<any> => {
-    if (tfModel) {
-      return tfModel;
+    if (modelLoadPromiseRef.current) {
+      return modelLoadPromiseRef.current;
     }
 
-    if (isModelLoading && modelLoadPromise.current) {
-      return modelLoadPromise.current;
-    }
-
-    if (isModelLoading) {
-      return new Promise((resolve, reject) => {
-        const checkModel = () => {
-          if (tfModel) {
-            resolve(tfModel);
-          } else if (isModelLoading) {
-            setTimeout(checkModel, 100);
-          } else {
-            reject(new Error('Model loading failed'));
-          }
-        };
-        checkModel();
-      });
-    }
-
-    isModelLoading = true;
-    
-    try {
-      // 🔧 FIX: Proper TensorFlow.js backend initialization with fallback
-      const backends = ['webgl', 'wasm', 'cpu'];
-      let backendInitialized = false;
-      
-      for (const backend of backends) {
-        try {
-          console.log(`[IPA] Attempting TFJS backend: ${backend}`);
-          await tf.setBackend(backend);
-          await tf.ready();
-          console.log(`✅ [IPA] TFJS backend initialized: ${backend}`);
-          backendInitialized = true;
-          break;
-        } catch (err) {
-          console.warn(`⚠️ [IPA] Backend ${backend} failed:`, err);
-          continue;
+    modelLoadPromiseRef.current = (async () => {
+      if (isModelLoading) {
+        // Wait for the model to finish loading if another call initiated it
+        while (isModelLoading) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
+        if (tfModel) {
+          return tfModel;
+        }
+        throw new Error('TensorFlow model loading failed during wait');
       }
-      
-      if (!backendInitialized) {
-        throw new Error('All TensorFlow.js backends failed to initialize');
-      }
-      
-      // Load face landmarks detection model
-      const model = await createDetector(SupportedModels.MediaPipeFaceMesh);
 
-      // Store model and update state
-      tfModel = model;
-      setState(prev => ({ ...prev, isReady: true }));
-      return model;
-    } catch (error) {
-      console.error('Failed to load TensorFlow.js Face Landmarks Detection model:', error);
-      isModelLoading = false;
-      throw error;
-    } finally {
-      isModelLoading = false;
-    }
+      isModelLoading = true;
+      try {
+        console.log('🎭 Loading TensorFlow.js modules and model...');
+        // 🔧 FIX: Proper TensorFlow.js backend initialization with fallback
+        const backends = ['webgl', 'wasm', 'cpu'];
+        let backendInitialized = false;
+
+        for (const backend of backends) {
+          try {
+            console.log(`[TFJS] Attempting backend: ${backend}`);
+            await tf.setBackend(backend);
+            await tf.ready();
+            console.log(`✅ [TFJS] Backend initialized: ${backend}`);
+            backendInitialized = true;
+            break;
+          } catch (err) {
+            console.warn(`⚠️ [TFJS] Backend ${backend} failed:`, err);
+            continue;
+          }
+        }
+
+        if (!backendInitialized) {
+          throw new Error('All TensorFlow.js backends failed to initialize');
+        }
+
+        tfModel = await createDetector(SupportedModels.MediaPipeFaceMesh);
+        console.log('✅ Face detection model loaded successfully');
+        setState(prev => ({ ...prev, isReady: true }));
+        return tfModel;
+      } catch (error) {
+        console.error('❌ Failed to load TensorFlow.js modules or model:', error);
+        throw error;
+      } finally {
+        isModelLoading = false;
+        modelLoadPromiseRef.current = null; // Reset promise on completion/failure
+      }
+    })();
+
+    return modelLoadPromiseRef.current;
   }, []);
 
   // Extract face embedding from image using TensorFlow.js

@@ -24,7 +24,7 @@ export async function handleUploadSelectedFile(file: File): Promise<string> {
     setSourceUrl(secureUrl);
     
     // Kick on next microtask so state is settled (prevents race conditions)
-    // queueMicrotask(() => { 
+    // queueMicrotask(() => {
     //   void kickRunIfReady(); // REMOVED - using database-driven presets now
     // });
     

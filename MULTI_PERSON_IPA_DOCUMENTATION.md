@@ -65,7 +65,7 @@ The system only injects group-aware prompts when:
 | The Untouchable | ✅ | ❌ | ✅ | Editorial, fashion power | Fashion power duo or editorial squad |
 | Holiday Mirage | ✅ | ✅ | ❌ | Luxury travel, vacation | Luxury getaway = couples, families |
 | The One That Got Away | ❌ | ❌ | ❌ | Solo narrative | Solo narrative only |
-| Nightshade | ✅ | ❌ | ✅ | Street fashion, edgy | Edgy fashion friends or duo looks |
+| Colorcore | ✅ | ❌ | ✅ | Randomized 2x2 grid, color themes | Colorful grid collages with varied poses |
 | Afterglow | ✅ | ❌ | ❌ | Intimate, after-party | Couple moment only |
 
 ## Technical Implementation Details

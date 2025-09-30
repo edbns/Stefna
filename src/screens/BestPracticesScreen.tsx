@@ -52,8 +52,8 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Parallel Self™",
-      title: "Nightshade",
-      description: "Black-on-black power in a glowing white space, minimal and futuristic."
+      title: "Colorcore",
+      description: "Randomized 2x2 grid with color themes and varied poses."
     },
     {
       mode: "Parallel Self™",
@@ -166,7 +166,7 @@ export default function BestPracticesScreen() {
       'The Untouchable': '/images/parallel_self_untouchable.jpg?v=' + Date.now(),
       'Neon Proof': '/images/parallel_self_neon_proof.jpg?v=' + Date.now(),
       'The Mechanic': '/images/parallel_self_the_mechanic.jpg?v=' + Date.now(),
-      'Nightshade': '/images/parallel_self_nightshade.jpg',
+      'Colorcore': '/images/parallel_self_colorcore.jpg',
       'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.jpg?v=' + Date.now(),
       'The Syndicate': '/images/unreal_reflection_the_syndicate.jpg',
       'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.jpg',

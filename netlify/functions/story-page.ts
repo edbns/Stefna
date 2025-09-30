@@ -6,18 +6,16 @@ import path from 'path'
 // Function to get the current asset path from build manifest
 function getAssetPath(): string {
   try {
-    // Try to read from build manifest first
-    const manifestPath = path.join(process.cwd(), '..', 'dist', '.vite', 'manifest.json')
-    if (fs.existsSync(manifestPath)) {
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
-      const indexEntry = manifest['index.html']
-      if (indexEntry && indexEntry.file) {
-        console.log('Found asset path from manifest:', indexEntry.file)
-        return `/${indexEntry.file}`
-      }
+    // Check if we're in development mode (Vite dev server)
+    const isDev = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true'
+    
+    if (isDev) {
+      // In development, use the Vite dev server entry point
+      console.log('Development mode detected, using Vite dev server entry')
+      return '/src/main.tsx'
     }
     
-    // Fallback: try to read from dist/index.html
+    // In production, try to read from dist/index.html to get the actual hashed asset path
     const indexPath = path.join(process.cwd(), '..', 'dist', 'index.html')
     if (fs.existsSync(indexPath)) {
       const indexContent = fs.readFileSync(indexPath, 'utf8')
@@ -108,7 +106,7 @@ export const handler: Handler = async (event, context) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stefna Stories</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
@@ -200,7 +198,7 @@ export const handler: Handler = async (event, context) => {
   <link rel="canonical" href="https://stefna.xyz/story/${story.slug}">
   
   <!-- Favicon and other head elements -->
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">

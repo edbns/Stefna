@@ -15,6 +15,7 @@ export async function uploadToCloudinary(fileOrDataUrl: File | string, folder: s
       file = fileOrDataUrl;
     }
 
+
     console.log('☁️ Starting Cloudinary upload:', { 
       fileName: file.name, 
       fileSize: file.size, 

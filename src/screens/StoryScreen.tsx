@@ -29,23 +29,28 @@ const StoryScreen: React.FC = () => {
   const [stories, setStories] = useState<Story[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>('all')
   const [filteredStories, setFilteredStories] = useState<Story[]>([])
 
   const allCategories = [
-    { value: 'the-haunted', label: 'The Haunted' },
-    { value: 'the-damned', label: 'The Damned' },
-    { value: 'the-divine', label: 'The Divine' },
-    { value: 'the-forgotten', label: 'The Forgotten' },
-    { value: 'the-masked', label: 'The Masked' },
-    { value: 'the-elemental', label: 'The Elemental' },
-    { value: 'the-eternal', label: 'The Eternal' }
+    { value: 'all', label: 'All', tagline: 'Every tale has its place in the archive.' },
+    { value: 'the-haunted', label: 'The Haunted', tagline: 'Some memories don\'t stay buried.' },
+    { value: 'the-damned', label: 'The Damned', tagline: 'The Damned always ride alone.' },
+    { value: 'the-divine', label: 'The Divine', tagline: 'Chosen by nothing. Worshipped by no one.' },
+    { value: 'the-forgotten', label: 'The Forgotten', tagline: 'Not dead. Just left behind.' },
+    { value: 'the-masked', label: 'The Masked', tagline: 'Beauty is a weapon. So is silence.' },
+    { value: 'the-elemental', label: 'The Elemental', tagline: 'They don\'t walk. They rise from storm, ash, and fire.' },
+    { value: 'the-eternal', label: 'The Eternal', tagline: 'You\'ve seen them before. You just don\'t remember where.' }
   ]
 
   // Get categories that actually have stories
   const getAvailableCategories = () => {
     const storyCategories = new Set(stories.map(story => story.story_category))
-    return allCategories.filter(cat => storyCategories.has(cat.value))
+    // Always include 'All' button, plus categories that have stories
+    const availableCategories = allCategories.filter(cat => 
+      cat.value === 'all' || storyCategories.has(cat.value)
+    )
+    return availableCategories
   }
 
   useEffect(() => {
@@ -72,7 +77,7 @@ const StoryScreen: React.FC = () => {
 
   // Filter stories when category changes
   useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all') {
       const filtered = stories.filter(story => story.story_category === selectedCategory)
       setFilteredStories(filtered)
     } else {
@@ -199,6 +204,21 @@ const StoryScreen: React.FC = () => {
           border-color: #ffffff;
         }
 
+        .tagline-display {
+          text-align: center;
+          padding: 1rem 2rem;
+          margin: 1rem auto;
+          max-width: 600px;
+          font-style: italic;
+          font-size: 1.1rem;
+          color: #ccc;
+          opacity: 0.8;
+          border-left: 2px solid #333;
+          border-right: 2px solid #333;
+          position: relative;
+          z-index: 1;
+        }
+
         .grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -299,12 +319,19 @@ const StoryScreen: React.FC = () => {
               <button
                 key={category.value}
                 className={`category-button ${selectedCategory === category.value ? 'selected' : ''}`}
-                onClick={() => setSelectedCategory(selectedCategory === category.value ? null : category.value)}
+                onClick={() => setSelectedCategory(selectedCategory === category.value ? 'all' : category.value)}
               >
                 {category.label}
               </button>
             ))}
           </div>
+          
+          {/* Category Tagline Display */}
+          {selectedCategory && (
+            <div className="tagline-display">
+              {allCategories.find(cat => cat.value === selectedCategory)?.tagline}
+            </div>
+          )}
         </div>
       )}
 

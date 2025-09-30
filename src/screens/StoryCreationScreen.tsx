@@ -9,6 +9,7 @@ interface StoryCard {
   caption: string
   file?: File
   uploading?: boolean
+  aspectRatio?: string
 }
 
 interface Story {
@@ -121,7 +122,7 @@ const StoryCreationScreen: React.FC = () => {
   }
 
   const addStoryCard = () => {
-    setStoryCards([...storyCards, { url: '', caption: '' }])
+    setStoryCards([...storyCards, { url: '', caption: '', aspectRatio: '16:9' }])
   }
 
   const updateStoryCard = (index: number, field: keyof StoryCard, value: string | boolean | File) => {
@@ -634,13 +635,6 @@ const StoryCreationScreen: React.FC = () => {
                   <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xl font-semibold text-gray-900">Story Cards</h3>
-                      <button
-                      onClick={addStoryCard}
-                      className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Card
-                      </button>
                     </div>
 
                     {storyCards.length === 0 ? (
@@ -675,11 +669,19 @@ const StoryCreationScreen: React.FC = () => {
                                 </label>
                                 {card.url ? (
                                   <div className="space-y-2">
-                                    <img
-                                      src={card.url}
-                                      alt={card.alt_text || 'Card image'}
-                                      className="w-full h-20 object-cover rounded-lg"
-                                    />
+                                    <div 
+                                      className="w-full rounded-lg overflow-hidden"
+                                      style={{
+                                        aspectRatio: card.aspectRatio || '16:9',
+                                        maxHeight: '300px'
+                                      }}
+                                    >
+                                      <img
+                                        src={card.url}
+                                        alt={card.alt_text || 'Card image'}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
                                     <div className="flex gap-2">
                                       <button
                                         onClick={() => handleFileSelect(index)}
@@ -699,7 +701,11 @@ const StoryCreationScreen: React.FC = () => {
                                 ) : (
                                   <div
                                     onClick={() => handleFileSelect(index)}
-                                    className="w-full h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-600 transition-colors"
+                                    className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-600 transition-colors"
+                                    style={{
+                                      aspectRatio: card.aspectRatio || '16:9',
+                                      maxHeight: '200px'
+                                    }}
                                   >
                                     {card.uploading ? (
                                       <div className="text-center">
@@ -715,6 +721,27 @@ const StoryCreationScreen: React.FC = () => {
                                   </div>
                                 )}
                                 
+                                {/* Aspect Ratio Selection */}
+                                <div className="mt-2">
+                                  <label className="block text-xs text-gray-500 mb-1">
+                                    Aspect Ratio:
+                                  </label>
+                                  <select
+                                    value={card.aspectRatio || '16:9'}
+                                    onChange={(e) => updateStoryCard(index, 'aspectRatio', e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-black focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
+                                  >
+                                    <option value="16:9">16:9 (Landscape)</option>
+                                    <option value="9:16">9:16 (Portrait)</option>
+                                    <option value="1:1">1:1 (Square)</option>
+                                    <option value="4:3">4:3 (Classic)</option>
+                                    <option value="3:4">3:4 (Portrait Classic)</option>
+                                    <option value="21:9">21:9 (Ultra Wide)</option>
+                                    <option value="2:3">2:3 (Photo Portrait)</option>
+                                    <option value="3:2">3:2 (Photo Landscape)</option>
+                                  </select>
+                                </div>
+
                                 {/* Manual URL input */}
                                 <div className="mt-2">
                                   <label className="block text-xs text-gray-500 mb-1">
@@ -762,6 +789,17 @@ const StoryCreationScreen: React.FC = () => {
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Add Card Button */}
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={addStoryCard}
+                      className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Card
+                    </button>
                   </div>
 
                   {/* Save Actions */}

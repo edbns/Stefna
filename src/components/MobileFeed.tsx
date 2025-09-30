@@ -118,14 +118,13 @@ const MobileFeed: React.FC<MobileFeedProps> = ({
                 playsInline
                 muted
               />
-            ) : (
-              <img
-                src={media.url}
-                alt="Generated content"
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-            )}
+    ) : (
+      <img
+        src={media.url}
+        alt="Generated content"
+        className="w-full h-auto object-cover"
+      />
+    )}
             
             {/* Media Type Badge */}
             <div className="absolute top-2 left-2">

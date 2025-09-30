@@ -1,5 +1,7 @@
 // src/presets/parallelSelf.ts
 
+import { generateColorcorePrompt } from '../utils/colorcoreRandomization';
+
 /*
 
 🧠 Parallel Self™ – Nano Banana Optimized (v1.0)
@@ -16,7 +18,7 @@ Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - The Untouchable: Grayscale fashion portrait with minimalist power
 - Neon Proof: Nighttime streetwear with neon accents and low-angle cinematography
 - The Mechanic: Raw street mechanics with designer workwear and cinematic garage scenes
-- Nightshade: Futuristic silhouette in glowing white minimalism
+- Colorcore: Randomized 2x2 grid with color themes and varied poses
 - Getaway Lookbook: Cinematic fashion fugitives in nighttime getaway aftermath
 
 All presets use optimized strength (0.54–0.6) and guidance (7.0–7.5) for Nano Banana.
@@ -44,6 +46,9 @@ export type ParallelSelfPreset = {
   raw?: boolean
   image_prompt_strength?: number
   aspect_ratio?: string
+  // Colorcore-specific parameters
+  isRandomized?: boolean
+  basePrompt?: string
 }
 
 export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
@@ -135,27 +140,29 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     image_prompt_strength: 0.58,
     aspect_ratio: '4:5'
   },
-  // 🌙 Nightshade
+  // 🎨 Colorcore
   {
-    id: 'parallel_self_nightshade',
-    label: 'Nightshade',
-    prompt: 'Transform this person, couple or group of people in the photo into the street fashion icon or icons styled in all-black, high-end urban wear — blending elements from brands like Rick Owens, Ader Error, and Fear of God. Their outfit(s) are structured yet wearable: layered fabrics, oversized silhouettes, clean tailoring, or subtle asymmetry. No colors, only black, charcoal, or minimal white details. The atmosphere feels cinematic and stylish — a blurred underground tunnel, glowing crosswalk, fogged parking structure, or concrete gallery space lit by white or soft neon accents. Their posture is relaxed but powerful — mid-step, leaning against a wall, or walking directly into soft light. Their face(s) are clearly visible, expression calm but unbothered. This is fashion that dominates the scene without shouting — modern, striking, and unforgettable.',
-    negative_prompt: 'colors, smiling, busy background, clutter, low contrast, accessories, logos',
-    strength: 0.56,
+    id: 'parallel_self_colorcore',
+    label: 'Colorcore',
+    prompt: 'Create a single photoreal square image (aspect ratio 1:1) that contains four vertically oriented portrait frames, arranged in a 2x2 grid (two at the top, two at the bottom). Each portrait frame must follow a 6:19 vertical aspect ratio inside the square layout, showing the same subject(s) — person, couple, or group — in different poses, outfits, and expressions. All people in the input image must appear in every frame. No cropping or solo close-ups. Keep group integrity consistent. Each of the four portrait frames must be evenly spaced with clean white borders between each frame, and a thick white outer margin around the entire grid. The four frames are tall, vertical portraits, arranged like this: 🟨🟨 🟨🟨 FRAMING: Upper body only, from the waist up. Show head, shoulders, torso, and arms only. No legs or full body shots. Use a solid butter yellow background in all 4 frames — bright, vibrant, and clean. No patterns, textures, props, or gradient. All outfits and accessories must follow a yellow theme, but vary between the frames. Include a mix of fashion aesthetics: casual, sexy, streetwear, modest, etc. For female subjects: pastel dresses, knit tops, crop hoodies, fashion lingerie, casual tees. For male subjects: yellow oversized tees, bomber jackets, sleeveless vests, long tunics. Couples or groups should show slight changes per frame — jacket off/on, different pose or accessories — but remain harmonious. Poses per frame (each frame must show a different one): Finger heart, Peace sign near the eye, Chin resting on hand, Cheek squish or soft smile. Lighting: bright studio style — high clarity, no shadows, clean beauty light across all 4 frames. Final image must look like a professional 2×2 collage with a unified aesthetic: strong yellow pop, styling variation, expressive energy, and clean white grid borders.',
+    negative_prompt: 'cartoon, anime, multiple people in one frame, overlapping, dark lighting, shadows, patterns, textures, props, gradients, full body, legs, feet, standing pose, walking',
+    strength: 0.6,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
     input: 'image',
     requiresSource: true,
     source: 'parallel_self',
-    guidance_scale: 7.0,
+    guidance_scale: 13,
     num_inference_steps: 30,
-    features: ['nightshade', 'futuristic_silhouette', 'sculptural_lighting', 'sci_fi_fashion', 'identity_preserved'],
+    features: ['colorcore', '2x2_grid', 'randomized_colors', 'portrait_collage', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
-    raw: true,
-    image_prompt_strength: 0.56,
-    aspect_ratio: '1:1'
+    raw: false,
+    image_prompt_strength: 0.6,
+    aspect_ratio: '1:1',
+    isRandomized: true,
+    basePrompt: 'Create a single photoreal square image (aspect ratio 1:1) that contains four vertically oriented portrait frames, arranged in a 2x2 grid (two at the top, two at the bottom). Each portrait frame must follow a 6:19 vertical aspect ratio inside the square layout, showing the same subject(s) — person, couple, or group — in different poses, outfits, and expressions. All people in the input image must appear in every frame. No cropping or solo close-ups. Keep group integrity consistent. Each of the four portrait frames must be evenly spaced with clean white borders between each frame, and a thick white outer margin around the entire grid. The four frames are tall, vertical portraits, arranged like this: 🟨🟨 🟨🟨 FRAMING: Upper body only, from the waist up. Show head, shoulders, torso, and arms only. No legs or full body shots. Use a solid {COLOR} background in all 4 frames — {COLOR_DESCRIPTION}. No patterns, textures, props, or gradient. All outfits and accessories must follow a {COLOR} theme, but vary between the frames. Include a mix of fashion aesthetics: casual, sexy, streetwear, modest, etc. For female subjects: {FEMALE_STYLING}. For male subjects: {MALE_STYLING}. Couples or groups should show slight changes per frame — jacket off/on, different pose or accessories — but remain harmonious. Poses per frame (each frame must show a different one): {POSES}. Lighting: bright studio style — high clarity, no shadows, clean beauty light across all 4 frames. Final image must look like a professional 2×2 collage with a unified aesthetic: strong {COLOR} pop, styling variation, expressive energy, and clean white grid borders.'
   },
   // 🚗 Getaway Lookbook
   {
