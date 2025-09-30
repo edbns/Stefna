@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:fast": "vite build --mode production --minify",
-    "build:preview": "vite build --mode production && npx vite-bundle-analyzer dist",
+    "build": "node scripts/generate-sitemap.js && vite build",
+    "build:fast": "node scripts/generate-sitemap.js && vite build --mode production --minify",
+    "build:preview": "node scripts/generate-sitemap.js && vite build --mode production && npx vite-bundle-analyzer dist",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "test": "echo 'No tests configured yet'",
-    "ensure-esbuild": "npm install --save-dev @esbuild/linux-x64 --force"
+    "ensure-esbuild": "npm install --save-dev @esbuild/linux-x64 --force",
+    "generate-sitemap": "node scripts/generate-sitemap.js"
   },
   "dependencies": {
     "@fal-ai/client": "^1.6.2",

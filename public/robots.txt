@@ -5,4 +5,4 @@ Disallow: /admin/
 Disallow: /.netlify/
 Disallow: /StoryCreation
 
-Sitemap: https://stefna.xyz/.netlify/functions/sitemap
+Sitemap: https://stefna.xyz/sitemap.xml
