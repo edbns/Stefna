@@ -3,20 +3,20 @@ import { qOne } from './_db'
 import fs from 'fs'
 import path from 'path'
 
-// Function to get the current asset path from build manifest
-async function getAssetPath(hostname: string): Promise<string> {
+// Function to get the current asset paths (JS and CSS) from build manifest
+async function getAssetPaths(hostname: string): Promise<{ jsPath: string; cssPath: string }> {
   try {
     // Check if we're in development mode (Vite dev server)
     const isDev = process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV === 'true'
     
     if (isDev) {
-      // In development, use the Vite dev server entry point
+      // In development, use the Vite dev server entry point (no CSS needed, Vite injects it)
       console.log('Development mode detected, using Vite dev server entry')
-      return '/src/main.tsx'
+      return { jsPath: '/src/main.tsx', cssPath: '' }
     }
     
-    // In production, fetch index.html via HTTP to get the asset path
-    console.log('Fetching index.html to extract asset path...')
+    // In production, fetch index.html via HTTP to get the asset paths
+    console.log('Fetching index.html to extract asset paths...')
     const protocol = hostname.includes('localhost') ? 'http' : 'https'
     const indexUrl = `${protocol}://${hostname}/index.html`
     
@@ -25,19 +25,24 @@ async function getAssetPath(hostname: string): Promise<string> {
     const response = await fetch(indexUrl)
     if (response.ok) {
       const indexContent = await response.text()
-      const match = indexContent.match(/src="\/assets\/([^"]+)"/)
-      if (match) {
-        const assetPath = `/assets/${match[1]}`
-        console.log('Found asset path from index.html:', assetPath)
-        return assetPath
-      }
+      
+      // Extract JS path
+      const jsMatch = indexContent.match(/src="\/assets\/([^"]+\.js)"/)
+      const jsPath = jsMatch ? `/assets/${jsMatch[1]}` : '/assets/index.js'
+      
+      // Extract CSS path
+      const cssMatch = indexContent.match(/href="\/assets\/([^"]+\.css)"/)
+      const cssPath = cssMatch ? `/assets/${cssMatch[1]}` : ''
+      
+      console.log('Found asset paths - JS:', jsPath, 'CSS:', cssPath)
+      return { jsPath, cssPath }
     }
     
-    console.log('Using fallback asset path')
-    return '/assets/index.js'
+    console.log('Using fallback asset paths')
+    return { jsPath: '/assets/index.js', cssPath: '' }
   } catch (error) {
-    console.log('Error fetching asset path, using fallback:', error)
-    return '/assets/index.js'
+    console.log('Error fetching asset paths, using fallback:', error)
+    return { jsPath: '/assets/index.js', cssPath: '' }
   }
 }
 
@@ -103,7 +108,7 @@ export const handler: Handler = async (event, context) => {
       // This is the story index page (/story) - let React handle it
       console.log('Story index page requested, redirecting to React app')
       const hostname = event.headers.host || 'stefna.xyz'
-      const assetPath = await getAssetPath(hostname)
+      const { jsPath, cssPath } = await getAssetPaths(hostname)
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'text/html' },
@@ -118,10 +123,11 @@ export const handler: Handler = async (event, context) => {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+  ${cssPath ? `<link rel="stylesheet" crossorigin href="${cssPath}">` : ''}
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="${assetPath}"></script>
+  <script type="module" crossorigin src="${jsPath}"></script>
 </body>
 </html>`
       }
@@ -173,7 +179,7 @@ export const handler: Handler = async (event, context) => {
     const ogImage = story.hero_image_social || story.hero_image_url || 'https://stefna.xyz/og-image.jpg'
     const keywords = story.keywords ? `<meta name="keywords" content="${story.keywords}">` : ''
     const hostname = event.headers.host || 'stefna.xyz'
-    const assetPath = await getAssetPath(hostname)
+    const { jsPath, cssPath } = await getAssetPaths(hostname)
     
     const html = `
 <!DOCTYPE html>
@@ -211,6 +217,7 @@ export const handler: Handler = async (event, context) => {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+  ${cssPath ? `<link rel="stylesheet" crossorigin href="${cssPath}">` : ''}
   
   <!-- Load the main app -->
   <script>
@@ -220,7 +227,7 @@ export const handler: Handler = async (event, context) => {
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="${assetPath}"></script>
+  <script type="module" crossorigin src="${jsPath}"></script>
 </body>
 </html>`
 
