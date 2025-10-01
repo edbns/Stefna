@@ -436,19 +436,22 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       
                       setNavGenerating(true)
                       
-                      // Redirect immediately to gallery on mobile, profile on desktop
-                      console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/gallery' : '/profile' })
-                      const targetPath = isMobile ? '/gallery' : '/profile'
-                      console.log('🔄 About to navigate to:', targetPath)
-                      navigate(targetPath)
-                      console.log('🔄 Navigate called successfully')
-                      
-                      // Dispatch generation start event for mobile gallery
+                      // Dispatch generation start event BEFORE navigation
                       console.log('🚀 Dispatching generationStart event for mobile gallery');
                       generationStart({ kind: 'image' });
                       console.log('✅ generationStart event dispatched');
                       
                       window.dispatchEvent(new CustomEvent('close-composer'));
+                      
+                      // Small delay to ensure event is processed before navigation
+                      await new Promise(resolve => setTimeout(resolve, 50));
+                      
+                      // Now redirect to gallery on mobile, profile on desktop
+                      console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/gallery' : '/profile' })
+                      const targetPath = isMobile ? '/gallery' : '/profile'
+                      console.log('🔄 About to navigate to:', targetPath)
+                      navigate(targetPath)
+                      console.log('🔄 Navigate called successfully');
                       
                       try {
                         if (composerState.mode === 'custom') {
@@ -548,14 +551,22 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       
                       setNavGenerating(true)
                       
-                      // Redirect immediately to gallery on mobile, profile on desktop
+                      // Dispatch generation start event BEFORE navigation
+                      console.log('🚀 Dispatching generationStart event');
+                      generationStart({ kind: 'image' });
+                      console.log('✅ generationStart event dispatched');
+                      
+                      window.dispatchEvent(new CustomEvent('close-composer'));
+                      
+                      // Small delay to ensure event is processed before navigation
+                      await new Promise(resolve => setTimeout(resolve, 50));
+                      
+                      // Now redirect to gallery on mobile, profile on desktop
                       console.log('🔄 Mobile redirect check:', { isMobile, target: isMobile ? '/gallery' : '/profile' })
                       const targetPath = isMobile ? '/gallery' : '/profile'
                       console.log('🔄 About to navigate to:', targetPath)
                       navigate(targetPath)
                       console.log('🔄 Navigate called successfully')
-                      
-                      window.dispatchEvent(new CustomEvent('close-composer'));
                       
                       try {
                         if (composerState.mode === 'custom') {
@@ -730,10 +741,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       // Auto-generate when Unreal Reflection preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
-                        // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/gallery' : '/profile')
-                        // Dispatch generation start event for mobile gallery
+                        // Dispatch generation start event BEFORE navigation
                         generationStart({ kind: 'image' });
+                        // Small delay to ensure event is processed
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        // Redirect to gallery on mobile, profile on desktop
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -799,10 +812,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       // Auto-generate when Parallel Self preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Parallel Self with preset:', presetId)
-                        // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/gallery' : '/profile')
-                        // Dispatch generation start event for mobile gallery
+                        // Dispatch generation start event BEFORE navigation
                         generationStart({ kind: 'image' });
+                        // Small delay to ensure event is processed
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        // Redirect to gallery on mobile, profile on desktop
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
@@ -1025,10 +1040,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       // Auto-generate when Unreal Reflection preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Unreal Reflection with preset:', presetId)
-                        // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/gallery' : '/profile')
-                        // Dispatch generation start event for mobile gallery
+                        // Dispatch generation start event BEFORE navigation
                         generationStart({ kind: 'image' });
+                        // Small delay to ensure event is processed
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        // Redirect to gallery on mobile, profile on desktop
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('unrealreflection', {
                             unrealReflectionPresetId: presetId,
@@ -1105,10 +1122,12 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       // Auto-generate when Parallel Self preset is selected
                       if (presetId && selectedFile && isAuthenticated) {
                         console.log('Auto-generating Parallel Self with preset:', presetId)
-                        // Redirect immediately when preset is selected
-                        navigate(isMobile ? '/gallery' : '/profile')
-                        // Dispatch generation start event for mobile gallery
+                        // Dispatch generation start event BEFORE navigation
                         generationStart({ kind: 'image' });
+                        // Small delay to ensure event is processed
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        // Redirect to gallery on mobile, profile on desktop
+                        navigate(isMobile ? '/gallery' : '/profile')
                         try {
                           await dispatchGenerate('parallelself', {
                             parallelSelfPresetId: presetId
