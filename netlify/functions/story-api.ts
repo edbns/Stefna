@@ -62,7 +62,6 @@ async function handleGet(headers: Record<string, string>, queryStringParameters?
           teaser_text,
           full_story_content,
           hero_image_url,
-          story_images,
           story_category,
           status,
           featured,
@@ -95,8 +94,8 @@ async function handleGet(headers: Record<string, string>, queryStringParameters?
           title,
           slug,
           teaser_text,
+          full_story_content,
           hero_image_url,
-          story_images,
           story_category,
           status,
           featured,
@@ -131,7 +130,6 @@ async function handlePost(data: any, headers: Record<string, string>) {
       teaser_text,
       hero_image_url,
       full_story_content,
-      story_images,
       story_category = 'fantasy',
       status = 'draft',
       featured = false
@@ -155,9 +153,9 @@ async function handlePost(data: any, headers: Record<string, string>) {
     const story = await qOne(`
       INSERT INTO stories (
         title, slug, teaser_text, full_story_content, 
-        hero_image_url, story_images, story_category, status, featured,
+        hero_image_url, story_category, status, featured,
         word_count, estimated_read_time
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `, [
       title,
@@ -165,7 +163,6 @@ async function handlePost(data: any, headers: Record<string, string>) {
       teaser_text,
       full_story_content,
       hero_image_url,
-      JSON.stringify(story_images || []),
       story_category,
       status,
       featured,
@@ -203,13 +200,15 @@ async function handlePut(data: any, headers: Record<string, string>, id?: string
       teaser_text,
       hero_image_url,
       full_story_content,
-      story_images,
       story_category,
       status,
       featured
     } = data
 
     const updateData: any = { ...data, updated_at: new Date() }
+    
+    // Remove story_images if it exists (legacy field)
+    delete updateData.story_images
 
     if (title) {
       updateData.slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -219,11 +218,6 @@ async function handlePut(data: any, headers: Record<string, string>, id?: string
       const words = full_story_content.split(/\s+/).length
       updateData.word_count = words
       updateData.estimated_read_time = Math.ceil(words / 200)
-    }
-
-    // Handle JSON fields properly
-    if (updateData.story_images) {
-      updateData.story_images = JSON.stringify(updateData.story_images)
     }
 
     // Remove undefined values

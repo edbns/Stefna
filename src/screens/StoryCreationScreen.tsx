@@ -4,14 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, BookOpen, List, Save, Eye, Trash2, Upload, Image } from 'lucide-react'
 import { uploadToCloudinary } from '../lib/cloudinaryUpload'
 
-interface StoryCard {
-  url: string
-  caption: string
-  file?: File
-  uploading?: boolean
-  aspectRatio?: string
-}
-
 interface Story {
   id: string
   title: string
@@ -21,7 +13,6 @@ interface Story {
   hero_image_url: string
   hero_image_social?: string
   hero_image_thumbnail?: string
-  story_images: StoryCard[]
   meta_title?: string
   meta_description?: string
   keywords?: string
@@ -51,14 +42,13 @@ const StoryCreationScreen: React.FC = () => {
     title: '',
     teaser_text: '',
     hero_image_url: '',
+    full_story_content: '',
     story_category: 'the-haunted',
     status: 'draft' as 'draft' | 'published' | 'archived',
     featured: false
   })
   
   const [heroImageUploading, setHeroImageUploading] = useState(false)
-  
-  const [storyCards, setStoryCards] = useState<StoryCard[]>([])
 
   useEffect(() => {
     checkAuthentication()
@@ -113,72 +103,14 @@ const StoryCreationScreen: React.FC = () => {
       title: '',
       teaser_text: '',
       hero_image_url: '',
+      full_story_content: '',
       story_category: 'the-haunted',
       status: 'draft',
       featured: false
     })
-    setStoryCards([])
     setEditingStory(null)
   }
 
-  const addStoryCard = () => {
-    setStoryCards([...storyCards, { url: '', caption: '', aspectRatio: '16:9' }])
-  }
-
-  const updateStoryCard = (index: number, field: keyof StoryCard, value: string | boolean | File) => {
-    const updated = [...storyCards]
-    updated[index][field] = value as any
-    setStoryCards(updated)
-  }
-
-  const handleImageUpload = async (index: number, file: File) => {
-    if (!file) return
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
-      return
-    }
-
-    // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image file must be less than 5MB')
-      return
-    }
-
-    try {
-      // Set uploading state
-      updateStoryCard(index, 'uploading', true)
-      
-      // For now, create a data URL for immediate preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string
-        updateStoryCard(index, 'url', dataUrl)
-        updateStoryCard(index, 'uploading', false)
-      }
-      reader.readAsDataURL(file)
-      
-    } catch (error) {
-      console.error('Upload failed:', error)
-      updateStoryCard(index, 'uploading', false)
-      alert('Preview failed. Please try again or paste an image URL manually.')
-    }
-  }
-
-  const handleFileSelect = (index: number) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        updateStoryCard(index, 'file', file)
-        handleImageUpload(index, file)
-      }
-    }
-    input.click()
-  }
 
   const handleHeroImageUpload = async (file: File) => {
     if (!file) return
@@ -227,30 +159,17 @@ const StoryCreationScreen: React.FC = () => {
     input.click()
   }
 
-  const removeStoryCard = (index: number) => {
-    setStoryCards(storyCards.filter((_, i) => i !== index))
-  }
-
   const saveStory = async () => {
-    if (!storyForm.title || !storyForm.teaser_text) {
-      alert('Title and teaser text are required')
+    if (!storyForm.title || !storyForm.teaser_text || !storyForm.full_story_content) {
+      alert('Title, teaser text, and story content are required')
       return
     }
 
     try {
       setIsLoading(true)
-      
-      // Generate full story content from cards
-      const fullContent = storyCards
-        .filter(card => card.url) // Only include cards with URLs
-        .map(card => 
-          card.caption ? `![Story card](${card.url})\n\n${card.caption}` : `![Story card](${card.url})`
-        ).join('\n\n')
 
       const storyData = {
         ...storyForm,
-        full_story_content: fullContent,
-        story_images: storyCards.filter(card => card.url), // Only store cards with URLs
         slug: editingStory?.slug || storyForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       }
 
@@ -288,11 +207,11 @@ const StoryCreationScreen: React.FC = () => {
       title: story.title,
       teaser_text: story.teaser_text,
       hero_image_url: story.hero_image_url,
+      full_story_content: story.full_story_content || '',
       story_category: story.story_category || 'the-haunted',
       status: story.status,
       featured: story.featured
     })
-    setStoryCards(story.story_images || [])
     setEditingStory(story)
     setCurrentView('create')
   }
@@ -631,183 +550,43 @@ const StoryCreationScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Story Cards Section */}
+                  {/* Story Content Section */}
                   <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-semibold text-gray-900">Story Cards</h3>
+                      <h3 className="text-xl font-semibold text-gray-900">Story Content</h3>
                     </div>
 
-                    {storyCards.length === 0 ? (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                        <Image className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500 mb-4">No cards yet</p>
-                        <button
-                          onClick={addStoryCard}
-                          className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-                        >
-                          Create First Card
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {storyCards.map((card, index) => (
-                          <div key={index} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
-                              <h4 className="font-medium text-gray-900">Card {index + 1}</h4>
-                              <button
-                                onClick={() => removeStoryCard(index)}
-                                className="text-red-600 hover:text-red-700 p-1"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            
-                            <div className="space-y-4">
+                    <div className="space-y-3">
+                      {/* Main Story Content */}
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Image Upload
-                                </label>
-                                {card.url ? (
-                                  <div className="space-y-2">
-                                    <div 
-                                      className="w-full rounded-lg overflow-hidden"
-                                      style={{
-                                        aspectRatio: card.aspectRatio || '16:9',
-                                        maxHeight: '300px'
-                                      }}
-                                    >
-                                      <img
-                                        src={card.url}
-                                        alt={card.alt_text || 'Card image'}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <button
-                                        onClick={() => handleFileSelect(index)}
-                                        disabled={card.uploading}
-                                        className="flex-1 bg-black text-white py-1 px-3 rounded text-xs hover:bg-gray-800 disabled:opacity-50"
-                                      >
-                                        {card.uploading ? 'Uploading...' : 'Replace'}
-                                      </button>
-                                      <button
-                                        onClick={() => updateStoryCard(index, 'url', '')}
-                                        className="px-3 py-1 border border-gray-300 rounded text-xs hover:bg-gray-100 text-black"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div
-                                    onClick={() => handleFileSelect(index)}
-                                    className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-600 transition-colors"
-                                    style={{
-                                      aspectRatio: card.aspectRatio || '16:9',
-                                      maxHeight: '200px'
-                                    }}
-                                  >
-                                    {card.uploading ? (
-                                      <div className="text-center">
-                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mx-auto mb-1"></div>
-                                        <span className="text-xs text-gray-600">Uploading...</span>
-                                      </div>
-                                    ) : (
-                                      <div className="text-center">
-                                        <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                                        <span className="text-xs text-gray-600">Click to upload</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Aspect Ratio Selection */}
-                                <div className="mt-2">
-                                  <label className="block text-xs text-gray-500 mb-1">
-                                    Aspect Ratio:
-                                  </label>
-                                  <select
-                                    value={card.aspectRatio || '16:9'}
-                                    onChange={(e) => updateStoryCard(index, 'aspectRatio', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-black focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
-                                  >
-                                    <option value="16:9">16:9 (Landscape)</option>
-                                    <option value="6:19">6:19 (Portrait)</option>
-                                    <option value="1:1">1:1 (Square)</option>
-                                    <option value="4:3">4:3 (Classic)</option>
-                                    <option value="3:4">3:4 (Portrait Classic)</option>
-                                    <option value="21:9">21:9 (Ultra Wide)</option>
-                                    <option value="2:3">2:3 (Photo Portrait)</option>
-                                    <option value="3:2">3:2 (Photo Landscape)</option>
-                                  </select>
-                                </div>
-
-                                {/* Manual URL input */}
-                                <div className="mt-2">
-                                  <label className="block text-xs text-gray-500 mb-1">
-                                    For permanent storage, paste Cloudinary URL:
-                                  </label>
-                                  <input
-                                    type="url"
-                                    value={card.url}
-                                    onChange={(e) => updateStoryCard(index, 'url', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-black focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
-                                    placeholder="https://example.com/image.jpg"
-                                  />
-                                </div>
-                              </div>
-                              
-                            </div>
-                            
-                            <div className="mt-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Caption Text
+                          Story Text *
                               </label>
                               <textarea
-                                value={card.caption}
-                                onChange={(e) => updateStoryCard(index, 'caption', e.target.value)}
-                                rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:ring-2 focus:ring-gray-600 focus:border-gray-600"
-                                placeholder="Text that appears with this image..."
-                              />
-                            </div>
-                            
-                            {card.url && (
-                              <div className="mt-4">
-                                <img
-                                  src={card.url}
-                                  alt={card.alt_text || 'Card image'}
-                                  className="object-cover rounded-lg"
-                                  style={{ width: '400px', height: '250px', objectFit: 'cover' }}
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none'
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                          value={storyForm.full_story_content}
+                          onChange={(e) => setStoryForm({...storyForm, full_story_content: e.target.value})}
+                          rows={20}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-gray-600 focus:border-gray-600 font-mono text-sm"
+                          placeholder="Write your story here...
 
-                  {/* Add Card Button */}
-                  <div className="mt-6 flex justify-center">
-                    <button
-                      onClick={addStoryCard}
-                      className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Card
-                    </button>
+Paste Cloudinary image URLs directly in the text where you want them to appear:
+
+https://res.cloudinary.com/your-cloud/image/upload/v123/image.jpg
+
+Images will automatically be detected and displayed inline!"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          {storyForm.full_story_content.split(/\s+/).filter(w => w).length} words
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Save Actions */}
                   <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-gray-600">
-                        {storyCards.length} card{storyCards.length !== 1 ? 's' : ''} • 
-                        Draft saved automatically
+                        {storyForm.full_story_content.split(/\s+/).filter(w => w).length} words total
                       </div>
                       <div className="flex gap-3">
                         <button
@@ -821,7 +600,7 @@ const StoryCreationScreen: React.FC = () => {
                         </button>
                         <button
                           onClick={saveStory}
-                          disabled={isLoading || !storyForm.title || !storyForm.teaser_text}
+                          disabled={isLoading || !storyForm.title || !storyForm.teaser_text || !storyForm.full_story_content}
                           className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                           <Save className="w-4 h-4" />

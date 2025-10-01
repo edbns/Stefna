@@ -4,11 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
-interface StoryCard {
-  url: string
-  caption: string
-}
-
 interface Story {
   id: string
   title: string
@@ -16,7 +11,6 @@ interface Story {
   teaser_text: string
   full_story_content: string
   hero_image_url: string
-  story_images: StoryCard[]
   story_category: string
   status: 'draft' | 'published' | 'archived'
   featured: boolean
@@ -371,78 +365,51 @@ const IndividualStoryScreen: React.FC = () => {
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
-        .story-card {
-          display: flex;
-          margin-bottom: 3rem;
-          min-height: 300px;
-          border-radius: 12px;
-          overflow: hidden;
+        .story-content-card {
           background: rgba(255, 255, 255, 0.05);
           backdrop-filter: blur(10px);
+          border-radius: 16px;
+          padding: 3rem;
+          margin-bottom: 3rem;
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .story-card.reverse {
-          flex-direction: row-reverse;
-        }
-
-        .story-card-image {
-          flex: 1;
-          position: relative;
-        }
-
-        .story-card-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-
-        .story-card-content {
-          flex: 1;
-          padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-
-        /* Mobile responsive - stack cards vertically */
-        @media (max-width: 768px) {
-          .story-card {
-            flex-direction: column !important;
-            min-height: auto;
-          }
-
-          .story-card-image {
-            height: 250px;
-          }
-
-          .story-card-content {
-            padding: 1.5rem;
-          }
-
-          .story-card-text {
-            font-size: 1rem;
-            line-height: 1.6;
-          }
-        }
-
-        .story-card-text {
+        .story-content {
           color: #fff;
-          font-size: 1.1rem;
-          line-height: 1.8;
-          margin: 0;
+          font-size: 1.15rem;
+          line-height: 1.9;
         }
 
-        .card-number {
-          position: absolute;
-          top: 1rem;
-          left: 1rem;
-          background: rgba(0, 0, 0, 0.7);
-          color: white;
-          padding: 0.5rem 1rem;
-          border-radius: 20px;
-          font-size: 0.9rem;
-          font-weight: bold;
+        .story-content p {
+          margin-bottom: 1.5rem;
+          white-space: pre-wrap;
+        }
+
+        .story-image {
+          width: 100%;
+          max-width: 100%;
+          height: auto;
+          border-radius: 12px;
+          margin: 3rem 0;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Mobile responsive text */
+        @media (max-width: 768px) {
+          .story-content-card {
+            padding: 1.5rem;
+            border-radius: 12px;
+          }
+
+          .story-content {
+            font-size: 1rem;
+            line-height: 1.7;
+          }
+
+          .story-image {
+            margin: 2rem 0;
+            border-radius: 8px;
+          }
         }
 
         .navigation-section {
@@ -606,21 +573,38 @@ const IndividualStoryScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Story Cards */}
-          {story.story_images && story.story_images.map((imageCard, index) => (
-            <div key={index} className={`story-card ${index % 2 === 1 ? 'reverse' : ''}`}>
-              <div className="story-card-image">
-                <img
-                  src={imageCard.url}
-                  alt={imageCard.caption || `Story card ${index + 1}`}
-                />
-                <div className="card-number">{index + 1}</div>
-              </div>
-              <div className="story-card-content">
-                <p className="story-card-text">{imageCard.caption}</p>
-              </div>
+          {/* Story Content with Auto-detected Images */}
+          <div className="story-content-card">
+            <div className="story-content">
+              {(() => {
+                // Auto-detect Cloudinary URLs in the content
+                const imageUrlRegex = /(https?:\/\/res\.cloudinary\.com\/[^\s]+)/g
+                const parts = story.full_story_content.split(imageUrlRegex)
+                
+                return parts.map((part, idx) => {
+                  // Check if this part is a Cloudinary URL
+                  if (part.match(imageUrlRegex)) {
+                    return (
+                      <img
+                        key={idx}
+                        src={part.trim()}
+                        alt={`Story illustration ${Math.floor(idx / 2) + 1}`}
+                        className="story-image"
+                      />
+                    )
+                  }
+                  
+                  // Regular text - split by paragraphs
+                  return part.split('\n\n').map((paragraph, pIdx) => {
+                    if (paragraph.trim()) {
+                      return <p key={`${idx}-${pIdx}`}>{paragraph.trim()}</p>
+                    }
+                    return null
+                  })
+                })
+              })()}
             </div>
-          ))}
+          </div>
 
           {/* Navigation Section */}
           <div className="navigation-section">
