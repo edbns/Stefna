@@ -97,7 +97,7 @@ const IndividualStoryScreen: React.FC = () => {
   const navigateToStory = async (targetStory: Story) => {
     setLoadingNav(true)
     try {
-      navigate(`/story/${targetStory.slug}`)
+    navigate(`/story/${targetStory.slug}`)
     } finally {
       // Reset loading state after a short delay to allow navigation to complete
       setTimeout(() => setLoadingNav(false), 1000)

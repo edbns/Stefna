@@ -405,7 +405,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     }
                   })()}
                   className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-xs rounded-xl border"
-                  style={{ backgroundColor: '#000000', borderColor: '#333333' }}
+                  style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}
                   disabled={composerState.mode === 'edit' ? !selectedFile : false}
                   maxLength={4000}
                   data-testid="custom-prompt-input"
@@ -486,16 +486,16 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       (composerState.mode === 'custom' && !prompt.trim()) ||
                       (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                       navGenerating
-                    ? 'w-5 h-5 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
-                    : 'w-5 h-5 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
+                    ? 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-black border border-white/30 text-white/50 cursor-not-allowed'
+                    : 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-white border border-white text-black hover:bg-white/90'
                   }
                   aria-label="Generate"
                   title="Generate AI content"
                 >
                   {navGenerating ? (
-                    <div className="w-2 h-2 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <ArrowUp size={8} />
+                    <ArrowUp size={10} />
                   )}
                 </button>
                 </div>
@@ -520,7 +520,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     }
                   })()}
                   className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
-                  style={{ backgroundColor: '#000000', borderColor: '#333333' }}
+                  style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}
                   disabled={composerState.mode === 'edit' ? !selectedFile : false}
                   maxLength={4000}
                   data-testid="custom-prompt-input"
@@ -601,16 +601,16 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       (composerState.mode === 'custom' && !prompt.trim()) ||
                       (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                       navGenerating
-                    ? 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-black text-white/50 cursor-not-allowed'
-                    : 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-white/90'
+                    ? 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-black border border-white/40 text-white/50 cursor-not-allowed'
+                    : 'w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-white border border-white text-black hover:bg-white/90'
                   }
                   aria-label="Generate"
                   title="Generate AI content"
                 >
                   {navGenerating ? (
-                    <div className="w-2.5 h-2.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <ArrowUp size={10} />
+                    <ArrowUp size={12} />
                   )}
                 </button>
                 </div>
@@ -840,24 +840,31 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           </div>
         )}
 
-        {/* Mobile Expand/Collapse Arrow */}
+        {/* Mobile Expand/Collapse Button */}
         {isMobile && (
-          <div className="flex justify-center pb-2 bg-black">
+          <div className="flex justify-center pb-3 bg-black">
             <button
               onClick={() => setIsExpanded && setIsExpanded(!isExpanded)}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 bg-black/80 hover:bg-black/90 animate-bounce"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 bg-white text-black hover:bg-white/90 shadow-lg animate-pulse"
               aria-label={isExpanded ? "Collapse options" : "Expand options"}
+              style={{ animationDuration: '2s' }}
             >
               {isExpanded ? (
-                <ChevronDown 
-                  size={16} 
-                  className="text-white transition-transform duration-300" 
-                />
+                <>
+                  <span className="text-xs font-medium">Hide Options</span>
+                  <ChevronDown 
+                    size={18} 
+                    className="transition-transform duration-300" 
+                  />
+                </>
               ) : (
-                <ChevronUp 
-                  size={16} 
-                  className="text-white transition-transform duration-300" 
-                />
+                <>
+                  <span className="text-xs font-medium">Tap to Edit</span>
+                  <ChevronUp 
+                    size={18} 
+                    className="transition-transform duration-300" 
+                  />
+                </>
               )}
             </button>
           </div>
@@ -866,7 +873,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
         {/* Desktop Layout: Original single row */}
         {!isMobile && (
           /* Desktop Layout: Original single row */
-          <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#333333' }}>
+          <div className="flex items-center justify-between gap-1 flex-wrap rounded-xl p-3 border" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
             {/* Left: Upload button and Mode buttons */}
             <div className="flex items-center gap-2">
               

@@ -8,6 +8,7 @@ import SkeletonGrid from '../components/SkeletonGrid';
 import { useProfile } from '../contexts/ProfileContext';
 import { authenticatedFetch } from '../utils/apiClient';
 import { useToasts } from '../components/ui/Toasts';
+import { useGenerationEvents, getIsGenerationRunning } from '../lib/generationEvents';
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -96,8 +97,8 @@ const MobileGalleryScreen: React.FC = () => {
   const [currentOffset, setCurrentOffset] = useState(0);
   const [lastItemRef, setLastItemRef] = useState<HTMLDivElement | null>(null);
   
-  // Generation loading state
-  const [isGenerating, setIsGenerating] = useState(false);
+  // Use global generation state hook
+  const { isRunning: isGenerating } = useGenerationEvents();
   
 
   // Load user media and token count
@@ -178,17 +179,10 @@ const MobileGalleryScreen: React.FC = () => {
     loadUserData();
   }, []);
 
-  // Listen for generation events to show loading spinner
+  // Listen for generation completion to refresh gallery
   useEffect(() => {
-    const handleGenerationStart = (event: any) => {
-      console.log('🎬 Generation started - showing loading overlay');
-      console.log('🎬 Mobile gallery received generation:start event', event);
-      setIsGenerating(true);
-    };
-
     const handleGenerationEnd = (event: any) => {
-      console.log('✅ Generation completed - hiding loading overlay', event);
-      setIsGenerating(false);
+      console.log('✅ Generation completed - refreshing gallery', event);
       
       // Refresh the gallery to show new media
       setTimeout(() => {
@@ -224,16 +218,13 @@ const MobileGalleryScreen: React.FC = () => {
     };
 
     if (typeof window !== 'undefined') {
-      console.log('🎧 Mobile gallery setting up generation event listeners');
-      window.addEventListener('generation:start', handleGenerationStart);
+      console.log('🎧 Mobile gallery setting up generation:done listener');
       window.addEventListener('generation:done', handleGenerationEnd);
-      
     }
 
     return () => {
       if (typeof window !== 'undefined') {
-        console.log('🧹 Mobile gallery cleaning up generation event listeners');
-        window.removeEventListener('generation:start', handleGenerationStart);
+        console.log('🧹 Mobile gallery cleaning up generation:done listener');
         window.removeEventListener('generation:done', handleGenerationEnd);
       }
     };
@@ -591,7 +582,7 @@ const MobileGalleryScreen: React.FC = () => {
       <div className="pb-20">
         {isLoading ? (
           <div className="px-4 py-4">
-            <SkeletonGrid columns={2} rows={4} />
+            <SkeletonGrid columns={2} rows={10} />
           </div>
         ) : (
           <div className="w-full px-4 py-4">
@@ -615,12 +606,12 @@ const MobileGalleryScreen: React.FC = () => {
               </div>
             )}
             
-            {/* Masonry Layout - Same as website */}
-            <div className="columns-2 gap-3">
+            {/* Two-column grid layout */}
+            <div className="grid grid-cols-2 gap-3">
               {userMedia.map((item, index) => (
                 <div 
                   key={item.id} 
-                  className="break-inside-avoid mb-3 relative"
+                  className="mb-3 relative"
                   ref={index === userMedia.length - 1 ? setLastItemRef : null}
                 >
                   {/* Media with overlay tag and action buttons */}
@@ -642,9 +633,7 @@ const MobileGalleryScreen: React.FC = () => {
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           alt="Generated content"
                           className="w-full h-auto object-cover"
-                          loading="lazy"
                           onLoad={(e) => {
-                            // Ensure smooth loading
                             e.currentTarget.style.opacity = '1';
                           }}
                           onError={(e) => {
