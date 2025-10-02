@@ -3040,19 +3040,19 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
           }
         } else if (request.mode === 'unreal_reflection') {
-          // Unreal Reflection mode: RunPod → Replicate → Fal.ai → Gemini → BFL fallbacks
-          console.log('🎨 [Background] Attempting generation with RunPod nano-banana-edit for Unreal Reflection mode');
+          // Unreal Reflection mode: Replicate → RunPod → Fal.ai → Gemini → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Replicate google/nano-banana for Unreal Reflection mode');
           try {
-            result = await generateWithRunPod(generationParams);
-            console.log('✅ [Background] RunPod Unreal Reflection generation successful');
-          } catch (runpodError) {
-            console.warn('⚠️ [Background] RunPod Unreal Reflection failed, trying Replicate fallback:', runpodError);
+            result = await generateWithReplicateEdit(generationParams);
+            console.log('✅ [Background] Replicate Unreal Reflection generation successful');
+          } catch (replicateError) {
+            console.warn('⚠️ [Background] Replicate Unreal Reflection failed, trying RunPod fallback:', replicateError);
             try {
-              // Try Replicate as fallback for Unreal Reflection mode
-              result = await generateWithReplicateEdit(generationParams);
-              console.log('✅ [Background] Replicate Unreal Reflection fallback successful');
-            } catch (replicateError) {
-              console.warn('⚠️ [Background] Replicate Unreal Reflection failed, trying Fal.ai fallback:', replicateError);
+              // Try RunPod as fallback for Unreal Reflection mode
+              result = await generateWithRunPod(generationParams);
+              console.log('✅ [Background] RunPod Unreal Reflection fallback successful');
+            } catch (runpodError) {
+              console.warn('⚠️ [Background] RunPod Unreal Reflection failed, trying Fal.ai fallback:', runpodError);
               try {
                 // Try Fal.ai as fallback for Unreal Reflection mode
                 result = await generateWithFal(request.mode, generationParams);
@@ -3080,19 +3080,19 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             // Video generation disabled due to high costs
           }
         } else if (request.mode === 'edit') {
-          // Edit My Photo mode: RunPod → Replicate → Fal.ai → Gemini → BFL fallbacks
-          console.log('🎨 [Background] Attempting generation with RunPod nano-banana-edit for Edit mode');
+          // Edit My Photo mode: Replicate → RunPod → Fal.ai → Gemini → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Replicate google/nano-banana for Edit mode');
           try {
-            result = await generateWithRunPod(generationParams);
-            console.log('✅ [Background] RunPod edit generation successful');
-          } catch (runpodError) {
-            console.warn('⚠️ [Background] RunPod edit failed, trying Replicate fallback:', runpodError);
+            result = await generateWithReplicateEdit(generationParams);
+            console.log('✅ [Background] Replicate edit generation successful');
+          } catch (replicateError) {
+            console.warn('⚠️ [Background] Replicate edit failed, trying RunPod fallback:', replicateError);
             try {
-              // Try Replicate as fallback for edit mode
-              result = await generateWithReplicateEdit(generationParams);
-              console.log('✅ [Background] Replicate edit fallback successful');
-            } catch (replicateError) {
-              console.warn('⚠️ [Background] Replicate edit failed, trying Fal.ai fallback:', replicateError);
+              // Try RunPod as fallback for edit mode
+              result = await generateWithRunPod(generationParams);
+              console.log('✅ [Background] RunPod edit fallback successful');
+            } catch (runpodError) {
+              console.warn('⚠️ [Background] RunPod edit failed, trying Fal.ai fallback:', runpodError);
               try {
                 // Try Fal.ai as fallback for edit mode
                 result = await generateWithFal(request.mode, generationParams);
@@ -3113,19 +3113,19 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
           }
         } else if (request.mode === 'parallel_self') {
-          // Parallel Self mode: RunPod → Replicate → Fal.ai → Gemini → BFL fallbacks
-          console.log('🎨 [Background] Attempting generation with RunPod nano-banana-edit for Parallel Self mode');
+          // Parallel Self mode: Replicate → RunPod → Fal.ai → Gemini → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Replicate google/nano-banana for Parallel Self mode');
           try {
-            result = await generateWithRunPod(generationParams);
-            console.log('✅ [Background] RunPod Parallel Self generation successful');
-          } catch (runpodError) {
-            console.warn('⚠️ [Background] RunPod Parallel Self failed, trying Replicate fallback:', runpodError);
+            result = await generateWithReplicateEdit(generationParams);
+            console.log('✅ [Background] Replicate Parallel Self generation successful');
+          } catch (replicateError) {
+            console.warn('⚠️ [Background] Replicate Parallel Self failed, trying RunPod fallback:', replicateError);
             try {
-              // Try Replicate as fallback for Parallel Self mode
-              result = await generateWithReplicateEdit(generationParams);
-              console.log('✅ [Background] Replicate Parallel Self fallback successful');
-            } catch (replicateError) {
-              console.warn('⚠️ [Background] Replicate Parallel Self failed, trying Fal.ai fallback:', replicateError);
+              // Try RunPod as fallback for Parallel Self mode
+              result = await generateWithRunPod(generationParams);
+              console.log('✅ [Background] RunPod Parallel Self fallback successful');
+            } catch (runpodError) {
+              console.warn('⚠️ [Background] RunPod Parallel Self failed, trying Fal.ai fallback:', runpodError);
               try {
                 // Try Fal.ai as fallback for Parallel Self mode
                 result = await generateWithFal(request.mode, generationParams);
