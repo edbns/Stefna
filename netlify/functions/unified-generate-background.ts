@@ -1517,7 +1517,9 @@ async function generateWithReplicateEdit(params: any): Promise<UnifiedGeneration
     console.log(`✅ [Replicate Edit] google/nano-banana generation successful:`, prediction);
 
     // Upload to Cloudinary
-    const outputUrl = prediction.output?.[0];
+    // According to Replicate docs, output is a string, not an array
+    const outputUrl = prediction.output;
+    
     console.log(`🔗 [Replicate Edit] Output URL:`, outputUrl);
     
     if (!outputUrl) {
