@@ -83,7 +83,7 @@ export default function BestPracticesScreen() {
     {
       mode: "Unreal Reflection™",
       title: "Y2K Paparazzi",
-      description: "Ultra-sexy Y2K fashion icons, night scene with paparazzi flash lighting."
+      description: "Y2K fashion icons, night scene with paparazzi flash lighting."
     },
     {
       mode: "Unreal Reflection™",
@@ -171,7 +171,7 @@ export default function BestPracticesScreen() {
       'The Syndicate': '/images/unreal_reflection_the_syndicate.jpg',
       'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.jpg',
       'The Gothic Pact': '/images/unreal_reflection_gothic_pact.jpg',
-      'Oracle of Seoul': '/images/unreal_reflection_oracle_seoul.jpg',
+      'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.jpg',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.jpg',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.jpg'
     }
