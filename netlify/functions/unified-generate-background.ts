@@ -1518,10 +1518,18 @@ async function generateWithReplicateEdit(params: any): Promise<UnifiedGeneration
 
     // Upload to Cloudinary
     const outputUrl = prediction.output?.[0];
+    console.log(`🔗 [Replicate Edit] Output URL:`, outputUrl);
+    
     if (!outputUrl) {
       throw new Error('No output URL received from Replicate');
     }
 
+    // Validate URL format
+    if (typeof outputUrl !== 'string' || !outputUrl.startsWith('http')) {
+      throw new Error(`Invalid output URL format: ${outputUrl}`);
+    }
+
+    console.log(`☁️ [Replicate Edit] Uploading to Cloudinary: ${outputUrl}`);
     const cloudinaryUrl = await uploadUrlToCloudinary(outputUrl);
     return {
       success: true,
