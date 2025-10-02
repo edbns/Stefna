@@ -15,7 +15,7 @@ Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - The Syndicate: Feared inner circle of power, tailored suits, cinematic underworld
 - Yakuza Heir: Raw power and style, irezumi tattoos, Osaka street scenes
 - The Gothic Pact: Gothic royalty in timeless black fashion, candlelit scenes
-- Oracle of Seoul: Modern shamanic presence, hanbok-inspired couture
+- Y2K Paparazzi: Ultra-sexy fashion-forward icons, night scene, paparazzi flash
 - Medusa's Mirror: Greek muse glam, flowing fabrics, marble ruins
 - Chromatic Bloom: Dark magazine cover style with animal symbols
 
@@ -113,11 +113,11 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.55,
     aspect_ratio: '4:5'
   },
-  // 🏮 Oracle of Seoul
+  // 📸 Y2K Paparazzi
   {
-    id: 'unreal_reflection_oracle_seoul',
-    label: 'Oracle of Seoul',
-    prompt: 'Transform this person, couple or group of people in the photo into a member or members of the Oracle of Seoul — a modern shamanic presence expressed through fashion. They wear hanbok-inspired clothing reimagined with high-fashion sensibility: layered jackets, flowing coats, wide sleeves, and wrapped fabrics in rich colors such as deep blue, burgundy, emerald, ivory, or gold. The styling is elegant and regal, but always modern — like a runway look rooted in tradition. Accessories may include rings, earrings, or belts, but never masks or veils. Couples may stand together like mirrored guardians, while groups may gather with subtle hierarchy, one figure slightly more commanding.\n\nTheir posture is natural and unposed — standing with fabrics caught in the wind, leaning against a stone wall, seated in quiet reflection, or walking mid-frame. Their expressions are calm, proud, and unreadable — projecting quiet strength rather than drama.\n\nThe scene changes with the moment:\n- stone steps of a Korean temple at dusk, lanterns softly glowing,\n- a wooden hanok courtyard with shadows from paper doors,\n- a narrow Seoul backstreet at night with rain on the ground,\n- a hilltop view of the city skyline under pale dawn light,\n- a quiet garden with pine trees and stone lanterns.\n\nThe lighting adapts naturally: warm lantern glow, soft moonlight, pale morning mist, or golden dusk shadows.\n\nThe photo feels authentic and cinematic — a modern portrait where tradition and fashion meet power.',
+    id: 'unreal_reflection_y2k_paparazzi',
+    label: 'Y2K Paparazzi',
+    prompt: 'Transform this person, couple, or group of girls in the photo into ultra-sexy, fashion-forward Y2K icons squatting on a city sidewalk at night, dramatically lit by harsh paparazzi flash. Each subject is turned away, looking confidently over her shoulder while casually gathering her hair — glowing skin exposed under the flash, with curves and posture emphasized by the camera angle.\n👗 Female Styling\nShe wears one those style: \na Brown backless mini dress with thin straps, visible skin texture texture hugging waist and hipss\nBlack Micro-Dress – low scoop back texture hugging waist and hipss\nGloss Blackout: glossy latex black texture hugging waist and hipss\nCowl-Neck Backless Mini Dress in Olive Green\nMakeup is natural yet glamorous with sculpted brows, voluminous lashes, and brown lipgloss with brown lipliner\nShe has a small, stylish tattoo that is clearly visible — delicate and minimal, placed naturally on the arm, shoulder, or lower back, adding to her fashion-forward look.\n👠 Accessories\n* wearing tall, black, designer pointed-toe stiletto heeled over-the-knee boots,  a platform mid-calf boots or Shark Lock wide-fit leather knee-high boots\n* Designer-inspired handbags placed near her — small, luxurious, subtly detailed\n* small jewelry: gold hoops, anklets, or fine chain bracelets\n🎬 Scene\n* Sidewalk at night — minimal background\n* Captured like a candid post-party flash moment\n* Ground shows subtle textures, shadows, and reflections\n🎥 Camera Angle\n* Lower than eye-level\n* Emphasis on posture, outfit design, leg lines, handbag position\n💡 Lighting\n* Direct frontal flash (paparazzi style)\n* Creates dramatic contrast and glowing skin\n* Slight reflections on skin, dress, and ground\n⚙️ Technical Rules \n* Identity lock ON — face, body, features must match uploaded photo\n* No extra people — use only subject(s) from original photo\n* Each subject wears one complete outfit — don\'t mix styles\n* Photo-realistic with high detail and accuracy\n* No surrealism, no fantasy artifacts',
     negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -127,7 +127,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     source: 'unreal_reflection',
     guidance_scale: 7.5,
     num_inference_steps: 30,
-    features: ['oracle_seoul', 'hanbok_fashion', 'modern_tradition', 'cinematic_scenes', 'identity_preserved'],
+    features: ['y2k_paparazzi', 'fashion_forward', 'night_scene', 'flash_photography', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 3,
     output_format: 'jpeg',
