@@ -1471,6 +1471,71 @@ async function generateWithStability(params: any): Promise<UnifiedGenerationResp
 }
 
 // Replicate generation with IPA-safe fallback models
+// Replicate Edit Mode - Primary provider for edit mode using google/nano-banana
+async function generateWithReplicateEdit(params: any): Promise<UnifiedGenerationResponse> {
+  console.log('🎨 [Background] Starting Replicate edit generation with google/nano-banana');
+  
+  const REPLICATE_API_KEY = process.env.REPLICATE_API_TOKEN;
+  if (!REPLICATE_API_KEY) {
+    console.warn('⚠️ [Background] Replicate API key not configured');
+    throw new Error('Replicate API key not configured');
+  }
+
+  try {
+    // Prepare the input for google/nano-banana model
+    const replicateInput = {
+      prompt: params.editPrompt || params.prompt,
+      image_input: [
+        params.sourceAssetId, // Main source image
+        ...(params.editImages || []) // Additional images for composition
+      ]
+    };
+
+    console.log(`📤 [Replicate Edit] Calling google/nano-banana with:`, {
+      prompt: replicateInput.prompt,
+      imageCount: replicateInput.image_input.length
+    });
+
+    const response = await fetch('https://api.replicate.com/v1/models/google/nano-banana/predictions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${REPLICATE_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'wait'
+      },
+      body: JSON.stringify({
+        input: replicateInput
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Replicate API error: ${response.status} - ${errorText}`);
+    }
+
+    const prediction = await response.json();
+    console.log(`✅ [Replicate Edit] google/nano-banana generation successful:`, prediction);
+
+    // Upload to Cloudinary
+    const outputUrl = prediction.output?.[0];
+    if (!outputUrl) {
+      throw new Error('No output URL received from Replicate');
+    }
+
+    const cloudinaryUrl = await uploadUrlToCloudinary(outputUrl);
+    return {
+      success: true,
+      status: 'done',
+      provider: 'replicate',
+      outputUrl: cloudinaryUrl
+    };
+
+  } catch (error) {
+    console.error('❌ [Replicate Edit] google/nano-banana failed:', error);
+    throw error;
+  }
+}
+
 async function generateWithReplicate(params: any): Promise<UnifiedGenerationResponse> {
   console.log('🔄 [Background] Starting Replicate fallback generation');
   
@@ -2876,22 +2941,29 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
           }
         } else if (request.mode === 'edit') {
-          // Edit My Photo mode: Fal.ai nano-banana → Gemini → BFL fallbacks
-          console.log('🎨 [Background] Attempting generation with Fal.ai nano-banana/edit for Edit mode');
+          // Edit My Photo mode: Replicate google/nano-banana → Fal.ai → Gemini → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with Replicate google/nano-banana for Edit mode');
           try {
-            result = await generateWithFal(request.mode, generationParams);
-            console.log('✅ [Background] Fal.ai edit generation successful');
-          } catch (falError) {
-            console.warn('⚠️ [Background] Fal.ai edit failed, trying Gemini fallback:', falError);
+            result = await generateWithReplicateEdit(generationParams);
+            console.log('✅ [Background] Replicate edit generation successful');
+          } catch (replicateError) {
+            console.warn('⚠️ [Background] Replicate edit failed, trying Fal.ai fallback:', replicateError);
             try {
-              // Try Gemini as fallback for edit mode
-              result = await generateWithGemini(request.mode, generationParams);
-              console.log('✅ [Background] Gemini edit fallback successful');
-            } catch (geminiError) {
-              console.warn('⚠️ [Background] Gemini edit failed, trying BFL fallbacks:', geminiError);
-              // Try BFL fallbacks for edit mode
-              result = await generateWithBFL('edit', generationParams);
-              console.log('✅ [Background] BFL edit fallback successful');
+              // Try Fal.ai as fallback for edit mode
+              result = await generateWithFal(request.mode, generationParams);
+              console.log('✅ [Background] Fal.ai edit fallback successful');
+            } catch (falError) {
+              console.warn('⚠️ [Background] Fal.ai edit failed, trying Gemini fallback:', falError);
+              try {
+                // Try Gemini as fallback for edit mode
+                result = await generateWithGemini(request.mode, generationParams);
+                console.log('✅ [Background] Gemini edit fallback successful');
+              } catch (geminiError) {
+                console.warn('⚠️ [Background] Gemini edit failed, trying BFL fallbacks:', geminiError);
+                // Try BFL fallbacks for edit mode
+                result = await generateWithBFL('edit', generationParams);
+                console.log('✅ [Background] BFL edit fallback successful');
+              }
             }
           }
         } else if (request.mode === 'parallel_self') {
