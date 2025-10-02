@@ -1619,10 +1619,38 @@ async function generateWithRunPod(params: any): Promise<UnifiedGenerationRespons
       
       if (status.status === 'COMPLETED') {
         const outputUrl = status.output;
+        console.log(`🔗 [RunPod Edit] Raw output:`, JSON.stringify(outputUrl));
+        console.log(`🔗 [RunPod Edit] Output type:`, typeof outputUrl);
+        
         if (outputUrl) {
+          // Handle RunPod output format based on documentation
+          let finalUrl;
+          
+          if (Array.isArray(outputUrl) && outputUrl.length > 0) {
+            // RunPod typically returns array of objects with image_url field
+            const firstResult = outputUrl[0];
+            if (firstResult && firstResult.image_url) {
+              finalUrl = firstResult.image_url;
+            } else if (typeof firstResult === 'string') {
+              finalUrl = firstResult;
+            } else {
+              throw new Error(`Unexpected array format: ${JSON.stringify(firstResult)}`);
+            }
+          } else if (typeof outputUrl === 'string') {
+            finalUrl = outputUrl;
+          } else if (outputUrl && typeof outputUrl === 'object' && outputUrl.image_url) {
+            finalUrl = outputUrl.image_url;
+          } else if (outputUrl && typeof outputUrl === 'object' && outputUrl.url) {
+            finalUrl = outputUrl.url;
+          } else {
+            throw new Error(`Unexpected output format: ${JSON.stringify(outputUrl)}`);
+          }
+          
+          console.log(`🔗 [RunPod Edit] Final URL:`, finalUrl);
           console.log(`✅ [RunPod Edit] Generation completed successfully`);
+          
           // Upload to Cloudinary
-          const cloudinaryUrl = await uploadUrlToCloudinary(outputUrl);
+          const cloudinaryUrl = await uploadUrlToCloudinary(finalUrl);
           return {
             success: true,
             status: 'done',
