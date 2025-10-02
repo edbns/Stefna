@@ -1546,6 +1546,105 @@ async function generateWithReplicateEdit(params: any): Promise<UnifiedGeneration
   }
 }
 
+// RunPod Edit Mode - Additional fallback provider for edit mode using nano-banana-edit
+async function generateWithRunPod(params: any): Promise<UnifiedGenerationResponse> {
+  console.log('🎨 [Background] Starting RunPod edit generation with nano-banana-edit');
+  
+  const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
+  if (!RUNPOD_API_KEY) {
+    console.warn('⚠️ [Background] RunPod API key not configured');
+    throw new Error('RunPod API key not configured');
+  }
+
+  try {
+    // Prepare the input for RunPod nano-banana-edit
+    const runpodInput = {
+      prompt: params.editPrompt || params.prompt,
+      images: [
+        params.sourceAssetId, // Main source image
+        ...(params.editImages || []) // Additional images for composition
+      ],
+      enable_safety_checker: true
+    };
+
+    console.log(`📤 [RunPod Edit] Calling nano-banana-edit with:`, {
+      prompt: runpodInput.prompt,
+      imageCount: runpodInput.images.length
+    });
+
+    const response = await fetch('https://api.runpod.ai/v2/nano-banana-edit/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RUNPOD_API_KEY}`
+      },
+      body: JSON.stringify({
+        input: runpodInput
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`RunPod API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log(`✅ [RunPod Edit] nano-banana-edit generation successful:`, result);
+
+    // RunPod returns a job ID, we need to poll for completion
+    const jobId = result.id;
+    if (!jobId) {
+      throw new Error('No job ID received from RunPod');
+    }
+
+    // Poll for completion
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes max
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second intervals
+      
+      const statusResponse = await fetch(`https://api.runpod.ai/v2/nano-banana-edit/status/${jobId}`, {
+        headers: {
+          'Authorization': `Bearer ${RUNPOD_API_KEY}`
+        }
+      });
+
+      if (!statusResponse.ok) {
+        throw new Error(`RunPod status check failed: ${statusResponse.status}`);
+      }
+
+      const status = await statusResponse.json();
+      console.log(`🔄 [RunPod Edit] Status check ${attempts + 1}:`, status.status);
+      
+      if (status.status === 'COMPLETED') {
+        const outputUrl = status.output;
+        if (outputUrl) {
+          console.log(`✅ [RunPod Edit] Generation completed successfully`);
+          // Upload to Cloudinary
+          const cloudinaryUrl = await uploadUrlToCloudinary(outputUrl);
+          return {
+            success: true,
+            status: 'done',
+            provider: 'runpod',
+            outputUrl: cloudinaryUrl
+          };
+        }
+      } else if (status.status === 'FAILED') {
+        throw new Error(`RunPod generation failed: ${status.error || 'Unknown error'}`);
+      }
+      
+      attempts++;
+    }
+    
+    throw new Error('RunPod generation timed out');
+    
+  } catch (error) {
+    console.error('❌ [RunPod Edit] nano-banana-edit failed:', error);
+    throw error;
+  }
+}
+
 async function generateWithReplicate(params: any): Promise<UnifiedGenerationResponse> {
   console.log('🔄 [Background] Starting Replicate fallback generation');
   
@@ -2951,28 +3050,35 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
             }
           }
         } else if (request.mode === 'edit') {
-          // Edit My Photo mode: Replicate google/nano-banana → Fal.ai → Gemini → BFL fallbacks
-          console.log('🎨 [Background] Attempting generation with Replicate google/nano-banana for Edit mode');
+          // Edit My Photo mode: RunPod → Replicate → Fal.ai → Gemini → BFL fallbacks
+          console.log('🎨 [Background] Attempting generation with RunPod nano-banana-edit for Edit mode');
           try {
-            result = await generateWithReplicateEdit(generationParams);
-            console.log('✅ [Background] Replicate edit generation successful');
-          } catch (replicateError) {
-            console.warn('⚠️ [Background] Replicate edit failed, trying Fal.ai fallback:', replicateError);
+            result = await generateWithRunPod(generationParams);
+            console.log('✅ [Background] RunPod edit generation successful');
+          } catch (runpodError) {
+            console.warn('⚠️ [Background] RunPod edit failed, trying Replicate fallback:', runpodError);
             try {
-              // Try Fal.ai as fallback for edit mode
-              result = await generateWithFal(request.mode, generationParams);
-              console.log('✅ [Background] Fal.ai edit fallback successful');
-            } catch (falError) {
-              console.warn('⚠️ [Background] Fal.ai edit failed, trying Gemini fallback:', falError);
+              // Try Replicate as fallback for edit mode
+              result = await generateWithReplicateEdit(generationParams);
+              console.log('✅ [Background] Replicate edit fallback successful');
+            } catch (replicateError) {
+              console.warn('⚠️ [Background] Replicate edit failed, trying Fal.ai fallback:', replicateError);
               try {
-                // Try Gemini as fallback for edit mode
-                result = await generateWithGemini(request.mode, generationParams);
-                console.log('✅ [Background] Gemini edit fallback successful');
-              } catch (geminiError) {
-                console.warn('⚠️ [Background] Gemini edit failed, trying BFL fallbacks:', geminiError);
-                // Try BFL fallbacks for edit mode
-                result = await generateWithBFL('edit', generationParams);
-                console.log('✅ [Background] BFL edit fallback successful');
+                // Try Fal.ai as fallback for edit mode
+                result = await generateWithFal(request.mode, generationParams);
+                console.log('✅ [Background] Fal.ai edit fallback successful');
+              } catch (falError) {
+                console.warn('⚠️ [Background] Fal.ai edit failed, trying Gemini fallback:', falError);
+                try {
+                  // Try Gemini as fallback for edit mode
+                  result = await generateWithGemini(request.mode, generationParams);
+                  console.log('✅ [Background] Gemini edit fallback successful');
+                } catch (geminiError) {
+                  console.warn('⚠️ [Background] Gemini edit failed, trying BFL fallbacks:', geminiError);
+                  // Try BFL fallbacks for edit mode
+                  result = await generateWithBFL('edit', generationParams);
+                  console.log('✅ [Background] BFL edit fallback successful');
+                }
               }
             }
           }
