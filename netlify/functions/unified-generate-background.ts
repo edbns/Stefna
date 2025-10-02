@@ -1623,11 +1623,15 @@ async function generateWithRunPod(params: any): Promise<UnifiedGenerationRespons
         console.log(`🔗 [RunPod Edit] Output type:`, typeof outputUrl);
         
         if (outputUrl) {
-          // Handle RunPod output format based on documentation
+          // Handle RunPod nano-banana-edit output format
           let finalUrl;
           
-          if (Array.isArray(outputUrl) && outputUrl.length > 0) {
-            // RunPod typically returns array of objects with image_url field
+          if (outputUrl.result) {
+            // Nano Banana / RunPod edit returns: { "result": "https://image.runpod.ai/..." }
+            finalUrl = outputUrl.result;
+            console.log(`💰 [RunPod Edit] Cost: $${outputUrl.cost}`);
+          } else if (Array.isArray(outputUrl) && outputUrl.length > 0) {
+            // Some other RunPod pods return array of objects with image_url field
             const firstResult = outputUrl[0];
             if (firstResult && firstResult.image_url) {
               finalUrl = firstResult.image_url;
