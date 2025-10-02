@@ -82,8 +82,8 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Unreal Reflection™",
-      title: "Oracle of Seoul",
-      description: "Modern prophecy, neon grayscale, futurist yet ancient."
+      title: "Y2K Paparazzi",
+      description: "Ultra-sexy Y2K fashion icons, night scene with paparazzi flash lighting."
     },
     {
       mode: "Unreal Reflection™",
