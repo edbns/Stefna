@@ -24,6 +24,7 @@ import WaitlistForm from './components/WaitlistForm'
 import { useIsMobile } from './hooks/useResponsive'
 import LoadingSpinner from './components/LoadingSpinner'
 import MobileRouteGuard from './components/MobileRouteGuard'
+import authService from './services/authService'
 
 // Scroll to top on route change
 const ScrollToTop: React.FC = () => {
@@ -210,6 +211,9 @@ const App: React.FC = () => {
   useEffect(() => {
     // Initialize auth bootstrap on app start
     initializeAuthBootstrap();
+    
+    // Handle Google OAuth callback
+    authService.handleGoogleCallback();
   }, []);
 
   return (

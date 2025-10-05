@@ -1925,7 +1925,8 @@ const HomeNew: React.FC = () => {
       const currentUser = authService.getCurrentUser()
       const userIdParam = currentUser?.id ? `&userId=${currentUser.id}` : ''
       
-      const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}${userIdParam}`)
+      // Add a timestamp parameter to prevent browser caching
+    const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}${userIdParam}`)
       console.log('📡 Feed response status:', res.status)
       
       if (res.ok) {
@@ -2023,10 +2024,8 @@ const HomeNew: React.FC = () => {
 
         
         if (isInitial) {
-          // console.log('🎯 Setting initial feed with items:', mapped.length, 'first item ID:', mapped[0]?.id) // REMOVED - excessive debug logging
           setFeed(mapped)
         } else {
-          // console.log('🎯 Adding more items to feed:', mapped.length) // REMOVED - excessive debug logging
           setFeed(prev => [...prev, ...mapped])
         }
         

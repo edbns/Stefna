@@ -140,6 +140,43 @@ class AuthService {
     }
   }
 
+  // Handle Google OAuth callback
+  handleGoogleCallback(): void {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authStatus = urlParams.get('auth');
+    const token = urlParams.get('token');
+    const errorMessage = urlParams.get('message');
+
+    if (authStatus === 'success' && token) {
+      try {
+        // Decode JWT token to get user info
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const user: User = {
+          id: payload.userId,
+          email: payload.email,
+          name: payload.name || '',
+          tier: 'free' // Default tier for Google OAuth users
+        };
+
+        this.setAuthState(token, user);
+        
+        // Clean up URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        console.log('🔐 Google OAuth login successful:', user);
+      } catch (error) {
+        console.error('Error processing Google OAuth token:', error);
+        this.clearAuthState();
+      }
+    } else if (authStatus === 'error') {
+      console.error('Google OAuth error:', errorMessage);
+      this.clearAuthState();
+      
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
+
   // Clear auth state on logout
   clearAuthState(): void {
     this.authState = {

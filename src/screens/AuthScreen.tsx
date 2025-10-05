@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
 import authService from '../services/authService'
 import WaitlistForm from '../components/WaitlistForm'
+import GoogleLoginButton from '../components/GoogleLoginButton'
 
 const AuthScreen: React.FC = () => {
   const navigate = useNavigate()
@@ -277,6 +278,29 @@ const AuthScreen: React.FC = () => {
                   </>
                 )}
               </button>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-transparent text-white/40">or</span>
+                </div>
+              </div>
+
+              {/* Google Login Button */}
+              <GoogleLoginButton
+                onSuccess={(token) => {
+                  console.log('Google login successful');
+                  navigate('/');
+                }}
+                onError={(error) => {
+                  setError(`Google login failed: ${error}`);
+                }}
+                disabled={isLoading}
+                className="w-full"
+              />
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP} className="space-y-6">
