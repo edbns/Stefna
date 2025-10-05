@@ -16,6 +16,12 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   const handleGoogleLogin = () => {
     if (disabled) return;
 
+    console.log('Environment variables:', {
+      'import.meta.env.VITE_GOOGLE_CLIENT_ID': import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      'import.meta.env.DEV': import.meta.env.DEV,
+      'import.meta.env.PROD': import.meta.env.PROD,
+    });
+
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
       console.error('Google Client ID not configured');
