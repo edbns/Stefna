@@ -6,6 +6,8 @@ export interface User {
   email: string
   name: string
   tier: string
+  permissions?: string[]
+  platform?: string
 }
 
 export interface AuthState {
@@ -155,7 +157,9 @@ class AuthService {
           id: payload.userId,
           email: payload.email,
           name: payload.name || '',
-          tier: 'free' // Default tier for Google OAuth users
+          tier: 'free', // Default tier for Google OAuth users
+          permissions: payload.permissions || [], // Preserve permissions from JWT
+          platform: payload.platform || 'web'
         };
 
         this.setAuthState(token, user);
