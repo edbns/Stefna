@@ -149,6 +149,8 @@ export const handler: Handler = async (event) => {
         userId, 
         email, 
         authMethod: 'google',
+        permissions: ['canManageFeed'], // Add permission to manage feed settings
+        platform: 'web',
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
       },
