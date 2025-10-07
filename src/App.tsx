@@ -46,7 +46,7 @@ const ComingSoonPage: React.FC = () => {
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center max-w-md p-8">
         <div className="w-16 h-16 mx-auto mb-8">
-          <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain" />
+          <img src="/logo.webp" alt="Logo" className="w-16 h-16 object-contain" />
         </div>
         
         

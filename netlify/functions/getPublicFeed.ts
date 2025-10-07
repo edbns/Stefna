@@ -43,25 +43,25 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'cyber_siren'     as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'cyber_siren' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from cyber_siren_media     where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'cyber_siren'     as type, id::text as original_id, ('cyber_siren-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'cyber_siren' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from cyber_siren_media     where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'presets'         as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'presets'         as type, id::text as original_id, ('presets-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'unreal_reflection'    as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'unreal_reflection' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from unreal_reflection_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'unreal_reflection'    as type, id::text as original_id, ('unreal_reflection-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'unreal_reflection' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from unreal_reflection_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'parallel_self'       as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'parallel_self' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from parallel_self_media       where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'parallel_self'       as type, id::text as original_id, ('parallel_self-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'parallel_self' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from parallel_self_media       where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'ghibli_reaction' as type, id::text as original_id, ('ghibli_reaction-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'custom_prompt'   as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'custom_prompt'   as type, id::text as original_id, ('custom_prompt-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'edit'            as type, id::text as original_id, ('edit-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
     ),
     feed_with_user_likes as (
       select f.*, 
              case when $3::text is not null and exists(
                select 1 from likes l 
-               where l.media_id = f.id 
+               where l.media_id = f.original_id 
                and l.media_type = f.type 
                and l.user_id = $3::text
              ) then 1 else 0 end as user_liked
@@ -83,19 +83,19 @@ export const handler: Handler = async (event) => {
       select user_id from user_settings where share_to_feed = true
     ),
     feed as (
-      select 'cyber_siren'     as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'cyber_siren' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from cyber_siren_media     where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'cyber_siren'     as type, id::text as original_id, ('cyber_siren-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'cyber_siren' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from cyber_siren_media     where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'presets'         as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'presets'         as type, id::text as original_id, ('presets-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'presets' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from presets_media         where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'unreal_reflection'    as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'unreal_reflection' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from unreal_reflection_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'unreal_reflection'    as type, id::text as original_id, ('unreal_reflection-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'unreal_reflection' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from unreal_reflection_media    where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'parallel_self'       as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'parallel_self' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from parallel_self_media       where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'parallel_self'       as type, id::text as original_id, ('parallel_self-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'parallel_self' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from parallel_self_media       where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'ghibli_reaction' as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'ghibli_reaction' as type, id::text as original_id, ('ghibli_reaction-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'ghibli_reaction' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from ghibli_reaction_media where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'custom_prompt'   as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'custom_prompt'   as type, id::text as original_id, ('custom_prompt-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, preset, status, created_at, 'custom_prompt' as "mediaType", preset as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from custom_prompt_media   where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
       union all
-      select 'edit'            as type, id::text, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
+      select 'edit'            as type, id::text as original_id, ('edit-' || id::text) as id, user_id, image_url as "finalUrl", image_url as "imageUrl", source_url, null as preset, status, created_at, 'edit' as "mediaType", null as "presetKey", prompt, obj_url, gltf_url, texture_url, model_3d_metadata from edit_media            where status = 'completed' AND image_url IS NOT NULL AND image_url != '' AND image_url LIKE 'http%'
     )
     select count(*) as total
     from feed f
@@ -114,7 +114,7 @@ export const handler: Handler = async (event) => {
     const totalCount = totalCountResult[0]?.total || 0;
     console.info('🔒 [getPublicFeed] Total items available:', totalCount);
     
-    const rows = await q(sql, [limit, offset, userId || null]);
+    const rows = await q(sql, [limit, offset, (userId || null) as string]);
     console.info('🔒 [getPublicFeed] Feed items found:', rows.length);
     
     // Debug: Log first few items to see their structure

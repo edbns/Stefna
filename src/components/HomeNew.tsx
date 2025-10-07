@@ -3714,6 +3714,9 @@ const HomeNew: React.FC = () => {
   
   return (
     <div className="flex min-h-screen bg-black relative overflow-hidden w-full">
+      {/* SEO H1 - visually hidden but accessible to search engines */}
+      <h1 className="sr-only">AI Photo Editor - Transform Your Photos with Creative AI Effects and Filters | Stefna Visual Studio</h1>
+      
       {/* Hidden file uploader for intent-based uploads */}
       <HiddenUploader />
 
@@ -3725,7 +3728,7 @@ const HomeNew: React.FC = () => {
             <div className="flex items-center justify-between p-4">
               <div className="flex items-end gap-2">
                 <img 
-                  src="/logo.png" 
+                  src="/logo.webp" 
                   alt="Stefna Logo" 
                   className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
                 />
@@ -4334,6 +4337,20 @@ const HomeNew: React.FC = () => {
         </div>
       )}
 
+      {/* SEO Footer - Hidden but accessible for internal links */}
+      <footer className="sr-only">
+        <nav aria-label="Footer navigation">
+          <ul>
+            <li><a href="/">Home - AI Photo Editor</a></li>
+            <li><a href="/bestpractices">Best Practices for AI Photo Editing</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+            <li><a href="/terms">Terms of Service</a></li>
+            <li><a href="/story">AI Generated Stories</a></li>
+            <li><a href="https://www.adobe.com/products/photoshop.html" rel="nofollow external">Adobe Photoshop (External)</a></li>
+            <li><a href="https://www.canva.com" rel="nofollow external">Canva Design Tools (External)</a></li>
+          </ul>
+        </nav>
+      </footer>
 
     </div>
   )

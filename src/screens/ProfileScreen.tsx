@@ -1880,7 +1880,7 @@ const ProfileScreen: React.FC = () => {
             {/* Logo - Above Legal */}
             <div className="py-2 px-3">
               <img
-                src="/logo.png"
+                src="/logo.webp"
                 alt="Stefna Logo"
                 className="h-8 w-auto"
               />

@@ -162,18 +162,18 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
-      'Black Aura': '/images/parallel_self_black_aura.jpg?v=' + Date.now(),
-      'The Untouchable': '/images/parallel_self_untouchable.jpg?v=' + Date.now(),
-      'Neon Proof': '/images/parallel_self_neon_proof.jpg?v=' + Date.now(),
-      'The Mechanic': '/images/parallel_self_the_mechanic.jpg?v=' + Date.now(),
-      'Colorcore': '/images/parallel_self_colorcore.jpg',
-      'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.jpg?v=' + Date.now(),
-      'The Syndicate': '/images/unreal_reflection_the_syndicate.jpg',
-      'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.jpg',
-      'The Gothic Pact': '/images/unreal_reflection_gothic_pact.jpg',
-      'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.jpg',
-      'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.jpg',
-      'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.jpg'
+      'Black Aura': '/images/parallel_self_black_aura.webp?v=' + Date.now(),
+      'The Untouchable': '/images/parallel_self_untouchable.webp?v=' + Date.now(),
+      'Neon Proof': '/images/parallel_self_neon_proof.webp?v=' + Date.now(),
+      'The Mechanic': '/images/parallel_self_the_mechanic.webp?v=' + Date.now(),
+      'Colorcore': '/images/parallel_self_colorcore.webp',
+      'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.webp?v=' + Date.now(),
+      'The Syndicate': '/images/unreal_reflection_the_syndicate.webp',
+      'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.webp',
+      'The Gothic Pact': '/images/unreal_reflection_gothic_pact.webp',
+      'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
+      'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
+      'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp'
     }
     
     const imagePath = imageMap[presetTitle]

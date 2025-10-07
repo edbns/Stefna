@@ -397,11 +397,11 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   placeholder={(() => {
                     switch (composerState.mode) {
                       case 'edit': 
-                        return !selectedFile ? "Upload a photo first to start editing..." : "Change something, add something — your call ... tap ✨ for a little magic."
+                        return !selectedFile ? "Upload a photo first to start editing..." : "Describe your edit..."
                       case 'custom': 
-                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                        return "Describe your image..."
                       default: 
-                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                        return "Describe your image..."
                     }
                   })()}
                   className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-xs rounded-xl border"
@@ -411,17 +411,17 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   data-testid="custom-prompt-input"
                 />
                   
-                  {/* Mobile: Magic Wand positioned like desktop - top-right inside textarea */}
+                  {/* Mobile: Enhance button positioned top-right corner inside textarea */}
                   <button
                     onClick={handleMagicWandEnhance}
                     disabled={isGenerating || !prompt.trim()}
-                    className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                    className="absolute top-1 right-1 px-1.5 py-0.5 flex items-center justify-center text-purple-400 hover:text-purple-300 transition-colors disabled:text-white/30 disabled:cursor-not-allowed text-[10px] font-medium"
                     title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
                   >
                     {isEnhancing ? (
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-2.5 h-2.5 border border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <span className="text-sm">✨</span>
+                      <span>Enhance</span>
                     )}
                   </button>
                 
@@ -512,11 +512,11 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   placeholder={(() => {
                     switch (composerState.mode) {
                       case 'edit': 
-                        return !selectedFile ? "Upload a photo first to start editing..." : "Change something, add something — your call ... tap ✨ for a little magic."
+                        return !selectedFile ? "Upload a photo first to start editing..." : "Describe your edit..."
                       case 'custom': 
-                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                        return "Describe your image..."
                       default: 
-                        return "Type something weird. We'll make it art ... tap ✨ for a little magic."
+                        return "Describe your image..."
                     }
                   })()}
                   className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-sm rounded-xl border"
@@ -526,17 +526,17 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   data-testid="custom-prompt-input"
                 />
                   
-                  {/* Desktop: Magic Wand Enhancement Button */}
+                  {/* Desktop: Enhance Button */}
                   <button
                     onClick={handleMagicWandEnhance}
                     disabled={isGenerating || !prompt.trim()}
-                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white/80 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+                    className="absolute top-1 right-1 px-1.5 py-0.5 flex items-center justify-center text-purple-400 hover:text-purple-300 transition-colors disabled:text-white/30 disabled:cursor-not-allowed text-[11px] font-medium"
                     title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
                   >
                     {isEnhancing ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <span className="text-lg">✨</span>
+                      <span>Enhance</span>
                     )}
                   </button>
                 

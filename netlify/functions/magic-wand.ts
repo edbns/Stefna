@@ -175,20 +175,7 @@ export const handler: Handler = async (event) => {
 
     console.log('🔮 [Magic Wand] Processing prompt enhancement');
 
-    // Check if enhancement is needed
-    const needsEnhancementFlag = needsEnhancement(prompt);
-    console.log('🔮 [Magic Wand] Needs enhancement:', needsEnhancementFlag);
-
-    if (!needsEnhancementFlag) {
-      return json({
-        success: true,
-        originalPrompt: prompt,
-        enhancedPrompt: prompt,
-        confidence: 'high' as const,
-      });
-    }
-
-    // Enhance the prompt using OpenAI
+    // Always enhance when user clicks the button - they want it enhanced!
     console.log('🔮 [Magic Wand] Enhancing prompt with OpenAI...');
     const enhancedPrompt = await callOpenAI([
       { role: 'system', content: MAGIC_WAND_SYSTEM_PROMPT },
