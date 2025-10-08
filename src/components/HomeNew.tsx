@@ -3775,7 +3775,18 @@ const HomeNew: React.FC = () => {
               ) : (
                 <div className="w-8 h-8"></div>
               )}
-              <div className="flex-1"></div> {/* Spacer to push logo to the right */}
+              <div className="flex-1"></div> {/* Spacer to push content to the right */}
+              
+              {/* Login button - only show when NOT logged in and NOT in composer */}
+              {!isAuthenticated && !isComposerOpen && !selectedFile && (
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="px-4 py-2 bg-white text-black text-sm font-medium rounded-full hover:bg-gray-200 transition-colors mr-3"
+                >
+                  Login
+                </button>
+              )}
+              
               <img 
                 src="/logo.webp" 
                 alt="Stefna Logo" 
