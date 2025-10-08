@@ -477,15 +477,17 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             {isMobile ? (
               /* Mobile Layout: Buttons integrated within the textarea container */
               <div className="mx-2 mt-3">
-                {/* OR divider text above prompt box */}
-                <div className="text-center mb-2">
-                  <p className="text-white/30 text-xs">
-                    -OR-
-                  </p>
-                  <p className="text-white/30 text-xs">
-                    Generate from text
-                  </p>
-                </div>
+                {/* OR divider text above prompt box - only show in custom mode (text-to-image) */}
+                {composerState.mode === 'custom' && !selectedFile && (
+                  <div className="text-center mb-2">
+                    <p className="text-white/30 text-xs">
+                      -OR-
+                    </p>
+                    <p className="text-white/30 text-xs">
+                      Generate from text
+                    </p>
+                  </div>
+                )}
                 
                 {/* Textarea without buttons inside */}
                 <div className="relative">
