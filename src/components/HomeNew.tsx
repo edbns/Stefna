@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, X, FileText, ArrowUp, BookOpen } from 'lucide-react'
+import { Plus, X, FileText, ArrowUp, BookOpen, ArrowLeft } from 'lucide-react'
 // Generate simple unique ID for runId
 const generateRunId = () => `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 import { authenticatedFetch, signedFetch } from '../utils/apiClient'
@@ -3756,12 +3756,31 @@ const HomeNew: React.FC = () => {
           {/* Mobile Header - Clean with Logo */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
             <div className="flex items-center justify-between p-4">
-              <div className="w-8 h-8"></div> {/* Spacer for centering */}
+              {/* Back to Home button - only show when composer is open/file is selected */}
+              {(isComposerOpen || selectedFile) ? (
+                <button
+                  onClick={() => {
+                    // Clear file and close composer
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                    setIsComposerOpen(false);
+                    setComposerState(s => ({ ...s, mode: 'custom' }));
+                    navigate('/');
+                  }}
+                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
+                  aria-label="Back to home"
+                >
+                  <ArrowLeft size={20} className="text-black" />
+                </button>
+              ) : (
+                <div className="w-8 h-8"></div> // Spacer for centering when no back button
+              )}
               <img 
                 src="/logo.webp" 
                 alt="Stefna Logo" 
                 className="w-8 h-8 object-contain" 
               />
+              <div className="w-8 h-8"></div> {/* Spacer for centering */}
             </div>
           </div>
 
@@ -3806,30 +3825,32 @@ const HomeNew: React.FC = () => {
           {/* Hidden file input for mobile */}
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
           
-          {/* Mobile Sidebar Navigation */}
-          <MobileSidebar
-            onProfileClick={() => {
-              // Navigate to mobile gallery/profile page
-              navigate('/gallery');
-            }}
-            onLoginClick={() => {
-              // Navigate to auth page
-              navigate('/auth');
-            }}
-            onLogoutClick={() => {
-              // Logout user
-              authService.logout();
-              navigate('/');
-            }}
-            onBestPracticesClick={() => {
-              // Navigate to best practices page
-              navigate('/bestpractices');
-            }}
-            onStoriesClick={() => {
-              navigate('/story');
-            }}
-            isGenerating={navGenerating}
-          />
+          {/* Mobile Sidebar Navigation - hide when composer is open or file is selected */}
+          {!isComposerOpen && !selectedFile && (
+            <MobileSidebar
+              onProfileClick={() => {
+                // Navigate to mobile gallery/profile page
+                navigate('/gallery');
+              }}
+              onLoginClick={() => {
+                // Navigate to auth page
+                navigate('/auth');
+              }}
+              onLogoutClick={() => {
+                // Logout user
+                authService.logout();
+                navigate('/');
+              }}
+              onBestPracticesClick={() => {
+                // Navigate to best practices page
+                navigate('/bestpractices');
+              }}
+              onStoriesClick={() => {
+                navigate('/story');
+              }}
+              isGenerating={navGenerating}
+            />
+          )}
           
           {/* Mobile/Desktop Composer - Unified */}
           {isMobile ? (
