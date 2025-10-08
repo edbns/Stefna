@@ -3773,14 +3773,14 @@ const HomeNew: React.FC = () => {
                   <ArrowLeft size={20} className="text-black" />
                 </button>
               ) : (
-                <div className="w-8 h-8"></div> // Spacer for centering when no back button
+                <div className="w-8 h-8"></div>
               )}
+              <div className="flex-1"></div> {/* Spacer to push logo to the right */}
               <img 
                 src="/logo.webp" 
                 alt="Stefna Logo" 
                 className="w-8 h-8 object-contain" 
               />
-              <div className="w-8 h-8"></div> {/* Spacer for centering */}
             </div>
           </div>
 
