@@ -40,7 +40,7 @@ import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { CyberSirenPicker } from './CyberSirenPicker'
 import { MediaUploadAgreement } from './MediaUploadAgreement'
 import { paramsForI2ISharp } from '../services/infer-params'
-import MobileFloatingNav from './MobileFloatingNav'
+import MobileSidebar from './MobileSidebar'
 import LayeredComposer from './LayeredComposer'
 
 
@@ -204,9 +204,6 @@ const HomeNew: React.FC = () => {
 
   // Mobile detection
   const isMobile = useIsMobile()
-
-  // Mobile composer collapsible state
-  const [isMobileComposerExpanded, setIsMobileComposerExpanded] = useState(false)
 
   // Quota status
   const { quotaReached } = useQuotaStatus()
@@ -773,6 +770,8 @@ const HomeNew: React.FC = () => {
   const [ghibliReactionDropdownOpen, setGhibliReactionDropdownOpen] = useState(false)
   const [selectedCyberSirenPreset, setSelectedCyberSirenPreset] = useState<string | null>(null)
   const [cyberSirenDropdownOpen, setCyberSirenDropdownOpen] = useState(false)
+  const [selectedCombinedPreset, setSelectedCombinedPreset] = useState<string | null>(null)
+  const [combinedPresetsDropdownOpen, setCombinedPresetsDropdownOpen] = useState(false)
   const [selectedParallelSelfPreset, setSelectedParallelSelfPreset] = useState<string | null>(null)
   const [parallelSelfDropdownOpen, setParallelSelfDropdownOpen] = useState(false)
   const [selectedStoryTimePreset, setSelectedStoryTimePreset] = useState<string | null>(null)
@@ -1534,14 +1533,15 @@ const HomeNew: React.FC = () => {
     setPreviewUrl(preview)                   // blob: used only for <img> preview
     storeSelectedFile(file)                  // Store globally for blob: fallback
     
-    // Update composer state
+    // Update composer state and automatically switch to edit mode
     setComposerState(s => ({
       ...s,
       file,
       sourceUrl: preview,
       status: 'idle',
       error: null,
-      runOnOpen: false
+      runOnOpen: false,
+      mode: 'edit' // Automatically switch to edit mode when photo is uploaded
     }))
     
     // Also store in generation store for centralized access
@@ -1552,8 +1552,13 @@ const HomeNew: React.FC = () => {
     useGenerationStore.getState().setPreviewDataUrl(null)
     useGenerationStore.getState().setPreviewBlob(null)
     
-    console.log('✅ File state updated, opening composer')
+    console.log('✅ File state updated, opening composer in edit mode')
     setIsComposerOpen(true)
+    
+    // For mobile, also set the mobile composer open state
+    if (isMobile) {
+      setIsMobileComposerOpen(true)
+    }
   }
 
   // Separate file upload handlers for each mode
@@ -2943,6 +2948,15 @@ const HomeNew: React.FC = () => {
         
         // Don't show additional processing notification - already showed "Added to queue"
         
+        // Redirect to appropriate screen based on device
+        if (isMobile) {
+          console.log('📱 Redirecting to mobile gallery with processing screen');
+          navigate('/gallery');
+        } else {
+          console.log('💻 Redirecting to desktop profile with processing screen');
+          navigate('/profile');
+        }
+        
         // Don't clear composer or stop spinners - wait for completion
         return;
           } else {
@@ -3692,6 +3706,10 @@ const HomeNew: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
+          console.log('📋 User settings response:', data);
+          console.log('📋 Settings object:', data.settings);
+          console.log('📋 media_upload_agreed value:', data.settings?.media_upload_agreed);
+          
           if (data.settings && data.settings.media_upload_agreed) {
             setUserHasAgreed(true);
             console.log('✅ User has agreed to media upload');
@@ -3699,6 +3717,9 @@ const HomeNew: React.FC = () => {
             setUserHasAgreed(false);
             console.log('⚠️ User has not agreed to media upload');
           }
+        } else {
+          console.error('❌ User settings API error:', response.status, response.statusText);
+          setUserHasAgreed(false);
         }
       } catch (error) {
         console.error('Failed to load user agreement status:', error);
@@ -3723,44 +3744,61 @@ const HomeNew: React.FC = () => {
       {/* Mobile View - View Only Experience */}
       {isMobile ? (
         <div className="w-full min-h-screen bg-black">
-          {/* Mobile Header - Transparent with Sticky Logo */}
+          {/* Mobile Header - Clean with Logo */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
             <div className="flex items-center justify-between p-4">
-              <div className="flex items-end gap-2">
-                <img 
-                  src="/logo.webp" 
-                  alt="Stefna Logo" 
-                  className="w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform duration-200" 
-                />
-                <span className="text-white text-sm font-medium beta-shimmer -mb-1">
-                  beta.
-                </span>
-              </div>
               <div className="w-8 h-8"></div> {/* Spacer for centering */}
+              <img 
+                src="/logo.webp" 
+                alt="Stefna Logo" 
+                className="w-8 h-8 object-contain" 
+              />
             </div>
           </div>
 
-          {/* Mobile Feed */}
-          <div className="px-4 pt-20">
-            {isLoadingFeed ? (
-              <div className="flex justify-center items-center py-20">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <MobileFeed
-                feed={feed}
-                onToggleLike={handleToggleLike}
-                userLikes={userLikes}
-                isLoggedIn={!!authService.getToken() || !!localStorage.getItem('auth_token')}
-                onLastItemRef={setLastItemRef}
-                isLoadingMore={isLoadingMore}
-                hasMoreFeed={hasMoreFeed}
-              />
-            )}
-          </div>
+          {/* Mobile Main Content - Upload to Start (only show when no file is selected) */}
+          {!selectedFile && !isComposerOpen && (
+            <div className="flex flex-col items-center justify-center min-h-screen px-6">
+              <p className="text-white/50 text-xs text-center mb-4">
+                Upload a photo to start editing
+              </p>
+              <button
+                onClick={() => {
+                  console.log('🎯 Mobile upload button clicked');
+                  console.log('📁 fileInputRef:', fileInputRef.current);
+                  
+                  // Check authentication first
+                  if (!checkAuthAndRedirect()) {
+                    console.log('❌ Authentication check failed, redirecting...');
+                    return;
+                  }
+                  
+                  console.log('✅ Authentication passed');
+                  
+                  // Close any open dropdowns
+                  closeAllDropdowns();
+                  
+                  // Trigger file input
+                  if (fileInputRef.current) {
+                    console.log('🖱️ Triggering file input click');
+                    fileInputRef.current.click();
+                  } else {
+                    console.error('❌ fileInputRef.current is null');
+                  }
+                }}
+                className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
+                aria-label="Upload photo"
+              >
+                <Plus size={32} className="text-black" />
+              </button>
+            </div>
+          )}
           
-          {/* Mobile Floating Navigation */}
-          <MobileFloatingNav
+          {/* Hidden file input for mobile */}
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+          
+          {/* Mobile Sidebar Navigation */}
+          <MobileSidebar
             onProfileClick={() => {
               // Navigate to mobile gallery/profile page
               navigate('/gallery');
@@ -3814,6 +3852,8 @@ const HomeNew: React.FC = () => {
               setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
               cyberSirenDropdownOpen={cyberSirenDropdownOpen}
               setCyberSirenDropdownOpen={setCyberSirenDropdownOpen}
+              combinedPresetsDropdownOpen={combinedPresetsDropdownOpen}
+              setCombinedPresetsDropdownOpen={setCombinedPresetsDropdownOpen}
               
               // Preset selections
               selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
@@ -3824,6 +3864,8 @@ const HomeNew: React.FC = () => {
               setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
               selectedCyberSirenPreset={selectedCyberSirenPreset}
               setSelectedCyberSirenPreset={setSelectedCyberSirenPreset}
+              selectedCombinedPreset={selectedCombinedPreset}
+              setSelectedCombinedPreset={setSelectedCombinedPreset}
               
               // Video states
               isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}
@@ -3846,10 +3888,6 @@ const HomeNew: React.FC = () => {
               
               // Mobile state
               isMobile={true}
-              
-              // Collapsible state
-              isExpanded={isMobileComposerExpanded}
-              setIsExpanded={setIsMobileComposerExpanded}
               
               // Handlers
               closeComposer={() => {
@@ -3929,6 +3967,8 @@ const HomeNew: React.FC = () => {
                 setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
                 cyberSirenDropdownOpen={cyberSirenDropdownOpen}
                 setCyberSirenDropdownOpen={setCyberSirenDropdownOpen}
+                combinedPresetsDropdownOpen={combinedPresetsDropdownOpen}
+                setCombinedPresetsDropdownOpen={setCombinedPresetsDropdownOpen}
                 
                 // Preset selections
                 selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
@@ -3939,6 +3979,8 @@ const HomeNew: React.FC = () => {
                 setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
                 selectedCyberSirenPreset={selectedCyberSirenPreset}
                 setSelectedCyberSirenPreset={setSelectedCyberSirenPreset}
+                selectedCombinedPreset={selectedCombinedPreset}
+                setSelectedCombinedPreset={setSelectedCombinedPreset}
                 
                 // Video states
                 isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}
@@ -4242,6 +4284,8 @@ const HomeNew: React.FC = () => {
             setGhibliReactionDropdownOpen={setGhibliReactionDropdownOpen}
             cyberSirenDropdownOpen={cyberSirenDropdownOpen}
             setCyberSirenDropdownOpen={setCyberSirenDropdownOpen}
+            combinedPresetsDropdownOpen={combinedPresetsDropdownOpen}
+            setCombinedPresetsDropdownOpen={setCombinedPresetsDropdownOpen}
             
             // Preset selections
             selectedUnrealReflectionPreset={selectedUnrealReflectionPreset}
@@ -4252,6 +4296,8 @@ const HomeNew: React.FC = () => {
             setSelectedGhibliReactionPreset={setSelectedGhibliReactionPreset}
             selectedCyberSirenPreset={selectedCyberSirenPreset}
             setSelectedCyberSirenPreset={setSelectedCyberSirenPreset}
+            selectedCombinedPreset={selectedCombinedPreset}
+            setSelectedCombinedPreset={setSelectedCombinedPreset}
             
             // Video states
             isUnrealReflectionVideoEnabled={isUnrealReflectionVideoEnabled}

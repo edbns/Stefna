@@ -6,6 +6,7 @@ import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
 import { GhibliReactionPicker } from './GhibliReactionPicker'
 import { CyberSirenPicker } from './CyberSirenPicker'
+import { CombinedPresetPicker } from './CombinedPresetPicker'
 
 // Import all the preset constants and types
 import { UNREAL_REFLECTION_PRESETS } from '../presets/unrealReflection'
@@ -56,6 +57,12 @@ interface LayeredComposerProps {
   setSelectedGhibliReactionPreset: (preset: string | null) => void
   selectedCyberSirenPreset: string | null
   setSelectedCyberSirenPreset: (preset: string | null) => void
+  
+  // Combined presets (for mobile)
+  combinedPresetsDropdownOpen: boolean
+  setCombinedPresetsDropdownOpen: (open: boolean) => void
+  selectedCombinedPreset: string | null
+  setSelectedCombinedPreset: (preset: string | null) => void
   
   // Video states
   isUnrealReflectionVideoEnabled: boolean
@@ -140,6 +147,10 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   setSelectedGhibliReactionPreset,
   selectedCyberSirenPreset,
   setSelectedCyberSirenPreset,
+  combinedPresetsDropdownOpen,
+  setCombinedPresetsDropdownOpen,
+  selectedCombinedPreset,
+  setSelectedCombinedPreset,
   isUnrealReflectionVideoEnabled,
   setIsUnrealReflectionVideoEnabled,
   isGenerating,
@@ -243,6 +254,143 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
   return (
     <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0' : 'bottom-2 left-1/2 transform -translate-x-1/2 w-[60%] min-w-[600px]'} z-[999999]`}>
+      {/* Mobile: Media Preview Right Under Header (Always Visible When Uploaded) */}
+      {isMobile && previewUrl && (
+        <>
+          <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-[999998] flex justify-center">
+            <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 max-w-sm" style={{ backgroundColor: '#000000' }}>
+              
+              {/* Media display */}
+              <div className="flex justify-center mb-3">
+                {isVideoPreview ? (
+                  <video 
+                    ref={(el) => {
+                      if (mediaRef.current) {
+                        (mediaRef.current as any) = el
+                      }
+                    }} 
+                    src={previewUrl} 
+                    className="max-h-64 w-auto object-contain" 
+                    controls 
+                    onLoadedMetadata={measure} 
+                    onLoadedData={measure} 
+                  />
+                ) : (
+                  <img 
+                    ref={(el) => {
+                      if (mediaRef.current) {
+                        (mediaRef.current as any) = el as HTMLImageElement
+                      }
+                    }} 
+                    src={previewUrl} 
+                    alt="Uploaded media" 
+                    className="max-h-64 w-auto object-contain" 
+                    onLoad={measure}
+                    onError={(e) => {
+                      console.error('❌ Image failed to load:', previewUrl, e)
+                    }}
+                  />
+                )}
+              </div>
+              
+              {/* Close button */}
+              <div className="flex justify-center mb-3">
+                <button
+                  onClick={() => {
+                    // Clear preview
+                    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+                    if (fileInput) fileInput.value = ''
+                    
+                    // Clear the selected file in parent component
+                    onClearFile()
+                    
+                    // Close the composer (this sets isComposerOpen to false in parent)
+                    closeComposer()
+                    
+                    // Reset composer to default state (switch back to Custom mode)
+                    setComposerState((s: any) => ({ ...s, mode: 'custom' }))
+                    setSelectedMode(null)
+                    closeAllDropdowns()
+                    
+                    // Reset preset selection states
+                    if (setCombinedPresetsDropdownOpen) {
+                      setCombinedPresetsDropdownOpen(false)
+                    }
+                    if (setSelectedCombinedPreset) {
+                      setSelectedCombinedPreset(null)
+                    }
+                    
+                    // Auto-collapse when media is removed
+                    if (setIsExpanded) {
+                      setIsExpanded(false)
+                    }
+                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
+                  aria-label="Remove media"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Action buttons - positioned directly under media preview, full width */}
+          <div className="fixed left-0 right-0 px-4 z-[999997]" style={{ top: '420px' }}>
+            <div className="flex gap-2">
+              {/* Describe Button */}
+              <button
+                onClick={() => {
+                  // Switch to edit mode to show prompt box
+                  setComposerState((s: any) => ({ ...s, mode: 'edit' }))
+                  closeAllDropdowns()
+                }}
+                className="flex-1 py-3 px-4 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+              >
+                Describe
+              </button>
+              
+              {/* Get This Look Button */}
+              <button
+                onClick={() => {
+                  // Switch to combined presets mode
+                  setComposerState((s: any) => ({ ...s, mode: 'combined-presets' }))
+                  closeAllDropdowns()
+                  setCombinedPresetsDropdownOpen(true)
+                }}
+                className="flex-1 py-3 px-4 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+              >
+                Get This Look
+              </button>
+            </div>
+          </div>
+          
+          {/* Inline Combined Presets - show directly under buttons with proper scrolling */}
+          {composerState.mode === 'combined-presets' && combinedPresetsDropdownOpen && (
+            <div className="fixed left-0 right-0 px-4 z-[999996] overflow-y-auto" style={{ top: '490px', bottom: '80px' }}>
+              <CombinedPresetPicker
+                value={selectedCombinedPreset || undefined}
+                onChange={async (presetId, type) => {
+                  setSelectedCombinedPreset(presetId)
+                  setCombinedPresetsDropdownOpen(false)
+                  
+                  // Auto-generate based on preset type
+                  if (type === 'unreal') {
+                    await dispatchGenerate('unrealreflection', {
+                      unrealReflectionPresetId: presetId
+                    })
+                  } else if (type === 'parallel') {
+                    await dispatchGenerate('parallelself', {
+                      parallelSelfPresetId: presetId
+                    })
+                  }
+                }}
+                disabled={!isAuthenticated}
+              />
+            </div>
+          )}
+        </>
+      )}
+
       {/* Photo preview container - shows above composer when photo is uploaded (desktop only, mobile shows in expanded section) */}
       {previewUrl && composerState.mode !== 'custom' && !isMobile && (
         <div className="mb-4 flex justify-center">
@@ -313,74 +461,6 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       {/* Composer bar - always visible with all existing functionality */}
       <div className={`${isMobile ? 'flex-1 flex flex-col' : 'px-4 py-3'}`}>
         
-        {/* Mobile: Media Preview Above Prompt (Always Visible When Uploaded) */}
-        {isMobile && previewUrl && composerState.mode !== 'custom' && (
-          <div className="flex justify-center px-4 py-3">
-            <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 border max-w-xs" style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}>
-              
-              {/* Media display */}
-              <div className="flex justify-center mb-3">
-                {isVideoPreview ? (
-                  <video 
-                    ref={(el) => {
-                      if (mediaRef.current) {
-                        (mediaRef.current as any) = el
-                      }
-                    }} 
-                    src={previewUrl} 
-                    className="max-h-48 w-auto object-contain" 
-                    controls 
-                    onLoadedMetadata={measure} 
-                    onLoadedData={measure} 
-                  />
-                ) : (
-                  <img 
-                    ref={(el) => {
-                      if (mediaRef.current) {
-                        (mediaRef.current as any) = el as HTMLImageElement
-                      }
-                    }} 
-                    src={previewUrl} 
-                    alt="Uploaded media" 
-                    className="max-h-48 w-auto object-contain" 
-                    onLoad={measure}
-                    onError={(e) => {
-                      console.error('❌ Image failed to load:', previewUrl, e)
-                    }}
-                  />
-                )}
-              </div>
-              
-              {/* Close button under the media */}
-              <div className="flex justify-center">
-                <button
-                  onClick={() => {
-                    // Clear preview
-                    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-                    if (fileInput) fileInput.value = ''
-                    
-                    // Clear the selected file in parent component
-                    onClearFile()
-                    
-                    // Reset composer to default state (switch back to Custom mode)
-                    setComposerState((s: any) => ({ ...s, mode: 'custom' }))
-                    setSelectedMode(null)
-                    closeAllDropdowns()
-                    
-                    // Auto-collapse when media is removed
-                    if (setIsExpanded) {
-                      setIsExpanded(false)
-                    }
-                  }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white hover:bg-white/10"
-                  aria-label="Remove media"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Prompt Input - ALWAYS VISIBLE (Custom is default, Edit when photo uploaded) */}
         {(['custom', 'edit'].includes(composerState.mode || '') || !composerState.mode) && (
@@ -840,35 +920,6 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           </div>
         )}
 
-        {/* Mobile Expand/Collapse Button */}
-        {isMobile && (
-          <div className="flex justify-center pb-3 bg-black">
-            <button
-              onClick={() => setIsExpanded && setIsExpanded(!isExpanded)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 bg-white text-black hover:bg-white/90 shadow-lg animate-pulse"
-              aria-label={isExpanded ? "Collapse options" : "Expand options"}
-              style={{ animationDuration: '2s' }}
-            >
-              {isExpanded ? (
-                <>
-                  <span className="text-xs font-medium">Hide Options</span>
-                  <ChevronDown 
-                    size={18} 
-                    className="transition-transform duration-300" 
-                  />
-                </>
-              ) : (
-                <>
-                  <span className="text-xs font-medium">Tap to Edit</span>
-                  <ChevronUp 
-                    size={18} 
-                    className="transition-transform duration-300" 
-                  />
-                </>
-              )}
-            </button>
-          </div>
-        )}
 
         {/* Desktop Layout: Original single row */}
         {!isMobile && (
