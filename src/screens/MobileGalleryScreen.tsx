@@ -542,7 +542,7 @@ const MobileGalleryScreen: React.FC = () => {
               {userMedia.map((item, index) => (
                 <div 
                   key={item.id} 
-                  className="mb-3 relative"
+                  className="relative"
                   ref={index === userMedia.length - 1 ? setLastItemRef : null}
                 >
                   {/* Media with overlay tag and action buttons */}
@@ -564,9 +564,6 @@ const MobileGalleryScreen: React.FC = () => {
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           alt="Generated content"
                           className="w-full h-auto object-cover"
-                          onLoad={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                          }}
                           onError={(e) => {
                             // Handle broken images by showing placeholder
                             const img = e.currentTarget;
@@ -587,7 +584,6 @@ const MobileGalleryScreen: React.FC = () => {
                             // Insert placeholder after the broken image
                             img.parentNode?.insertBefore(placeholder, img.nextSibling);
                           }}
-                          style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                         />
                       )}
                       
