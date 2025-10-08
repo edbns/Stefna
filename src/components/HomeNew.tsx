@@ -2366,6 +2366,12 @@ const HomeNew: React.FC = () => {
       
       // Show single unified queue toast immediately
       notifyQueue({ title: 'Added to queue', message: 'We will start processing it shortly' });
+    
+    // 📱 MOBILE: Redirect to gallery immediately after starting generation
+    if (isMobile) {
+      console.log('📱 Redirecting mobile to gallery immediately');
+      navigate('/gallery');
+    }
 
     // Get current profile settings from context (real-time state)
     // Note: profileData is already available from the top-level useProfile() hook
@@ -2788,9 +2794,13 @@ const HomeNew: React.FC = () => {
       let sourceWidth: number | undefined;
       let sourceHeight: number | undefined;
       
+      console.log(`🔍 [DEBUG] sourceUrl check:`, { sourceUrl: sourceUrl.substring(0, 50), isBlob: sourceUrl.startsWith('blob:'), hasSelectedFile: !!selectedFile });
+      
       if (sourceUrl.startsWith('blob:')) {
         // Avoid fetch(blob:) due to CSP; prefer the actual File when available
+        console.log(`📤 [DEBUG] Starting prepareSourceAsset for blob URL...`);
         const prepared = await prepareSourceAsset(selectedFile || sourceUrl, { showPreviewImmediately: false });
+        console.log(`✅ [DEBUG] prepareSourceAsset completed:`, { url: prepared.url?.substring(0, 50), width: prepared.width, height: prepared.height });
         sourceUrl = prepared.url;
         sourceWidth = prepared.width;
         sourceHeight = prepared.height;
@@ -2813,6 +2823,7 @@ const HomeNew: React.FC = () => {
       }
 
       // Use the unified service
+      console.log(`🎬 [DEBUG] About to call simpleGenService.generate with sourceUrl:`, sourceUrl.substring(0, 50));
       const simpleGenService = SimpleGenerationService.getInstance();
       const result = await simpleGenService.generate({
         mode: serviceMode,
@@ -2948,18 +2959,16 @@ const HomeNew: React.FC = () => {
         
         // Don't show additional processing notification - already showed "Added to queue"
         
-        // Redirect to appropriate screen based on device
-        if (isMobile) {
-          console.log('📱 Redirecting to mobile gallery with processing screen');
-          navigate('/gallery');
-        } else {
-          console.log('💻 Redirecting to desktop profile with processing screen');
+        // 💻 DESKTOP: Redirect to profile to show processing screen
+        // (Mobile already redirected to gallery at generation start)
+        if (!isMobile) {
+          console.log('💻 Redirecting desktop to profile with processing screen');
           navigate('/profile');
         }
         
         // Don't clear composer or stop spinners - wait for completion
         return;
-          } else {
+      } else {
         // Generation failed
         console.error('❌ [Unified] Generation failed:', result.error);
         
