@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Plus, FileText, ArrowUp, ChevronUp, ChevronDown } from 'lucide-react'
+import { X, Plus, FileText, ArrowUp, ChevronUp, ChevronDown, Wand2 } from 'lucide-react'
 import { generationStart } from '../lib/generationEvents'
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
 import { ParallelSelfPicker } from './ParallelSelfPicker'
@@ -337,19 +337,24 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           {/* Action buttons - positioned directly under media preview, full width */}
           <div className="fixed left-0 right-0 px-4 z-[999997]" style={{ top: '420px' }}>
             <div className="flex gap-2">
-              {/* Describe Button */}
+              {/* Your Prompt Button - Active (white) when in edit mode, grey when not */}
               <button
                 onClick={() => {
                   // Switch to edit mode to show prompt box
                   setComposerState((s: any) => ({ ...s, mode: 'edit' }))
                   closeAllDropdowns()
                 }}
-                className="flex-1 py-3 px-4 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+                className={`flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-colors shadow-lg ${
+                  composerState.mode === 'edit' || composerState.mode === 'custom'
+                    ? 'bg-white text-black hover:bg-white/90'
+                    : 'text-white hover:bg-[#444444]'
+                }`}
+                style={composerState.mode === 'edit' || composerState.mode === 'custom' ? {} : { backgroundColor: '#333333' }}
               >
-                Describe
+                Your Prompt
               </button>
               
-              {/* Get This Look Button */}
+              {/* Get These Looks Button - Active (white) when in combined-presets mode, grey when not */}
               <button
                 onClick={() => {
                   // Switch to combined presets mode
@@ -357,9 +362,14 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                   closeAllDropdowns()
                   setCombinedPresetsDropdownOpen(true)
                 }}
-                className="flex-1 py-3 px-4 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+                className={`flex-1 py-3 px-4 text-sm font-medium rounded-lg transition-colors shadow-lg ${
+                  composerState.mode === 'combined-presets'
+                    ? 'bg-white text-black hover:bg-white/90'
+                    : 'text-white hover:bg-[#444444]'
+                }`}
+                style={composerState.mode === 'combined-presets' ? {} : { backgroundColor: '#333333' }}
               >
-                Get This Look
+                Get These Looks
               </button>
             </div>
           </div>
@@ -467,47 +477,69 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           <div>
             {isMobile ? (
               /* Mobile Layout: Buttons integrated within the textarea container */
-              <div className="relative mx-2 mt-3">
-                <textarea
-                  value={prompt}
-                  onChange={(e) => {
-                    console.log('🎯 Prompt input changed:', e.target.value);
-                    setPrompt(e.target.value);
-                  }}
-                  placeholder={(() => {
-                    switch (composerState.mode) {
-                      case 'edit': 
-                        return !selectedFile ? "Upload a photo first to start editing..." : "Describe your edit..."
-                      case 'custom': 
-                        return "Describe your image..."
-                      default: 
-                        return "Describe your image..."
-                    }
-                  })()}
-                  className="w-full px-3 py-2 pr-10 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-20 text-xs rounded-xl border"
-                  style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}
-                  disabled={composerState.mode === 'edit' ? !selectedFile : false}
-                  maxLength={4000}
-                  data-testid="custom-prompt-input"
-                />
+              <div className="mx-2 mt-3">
+                {/* OR divider text above prompt box */}
+                <div className="text-center mb-2">
+                  <p className="text-white/30 text-xs">
+                    -OR-
+                  </p>
+                  <p className="text-white/30 text-xs">
+                    Generate from text
+                  </p>
+                </div>
+                
+                {/* Textarea without buttons inside */}
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => {
+                      console.log('🎯 Prompt input changed:', e.target.value);
+                      setPrompt(e.target.value);
+                    }}
+                    placeholder={(() => {
+                      switch (composerState.mode) {
+                        case 'edit': 
+                          return !selectedFile ? "Upload a photo first to start editing..." : "Describe your edit..."
+                        case 'custom': 
+                          return "Describe your image..."
+                        default: 
+                          return "Describe your image..."
+                      }
+                    })()}
+                    className="w-full px-3 py-2 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-32 text-xs rounded-xl border"
+                    style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}
+                    disabled={composerState.mode === 'edit' ? !selectedFile : false}
+                    maxLength={4000}
+                    data-testid="custom-prompt-input"
+                  />
                   
-                  {/* Mobile: Enhance button positioned top-right corner inside textarea */}
+                  {/* Character count - bottom-right inside textarea */}
+                  <div className="absolute bottom-2 right-2">
+                    <span className="text-white/30 text-xs">{prompt.length}/3000</span>
+                  </div>
+                </div>
+                
+                {/* Action buttons below prompt box */}
+                <div className="flex gap-2 mt-2 mb-4">
+                  {/* Enhance Button */}
                   <button
                     onClick={handleMagicWandEnhance}
                     disabled={isGenerating || !prompt.trim()}
-                    className="absolute top-1 right-1 px-1.5 py-0.5 flex items-center justify-center text-purple-400 hover:text-purple-300 transition-colors disabled:text-white/30 disabled:cursor-not-allowed text-[10px] font-medium"
+                    className="flex-1 py-2.5 px-4 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-500 transition-colors shadow-lg disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     title={composerState.mode === 'edit' ? "Enhance studio prompt with AI (free)" : "Enhance prompt with AI (free)"}
                   >
                     {isEnhancing ? (
-                      <div className="w-2.5 h-2.5 border border-white/30 border-t-white rounded-full animate-spin" />
+                      <>
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Enhancing...</span>
+                      </>
                     ) : (
-                      <span>Enhance</span>
+                      <>
+                        <Wand2 size={14} />
+                        <span>Enhance</span>
+                      </>
                     )}
                   </button>
-                
-                {/* Mobile: Character count and Generate Button positioned like desktop - bottom-right inside textarea */}
-                <div className="absolute bottom-3 right-2 flex items-center gap-1">
-                  <span className="text-white/30 text-xs">{prompt.length}/3000</span>
                   
                   {/* Generate Button */}
                   <button
@@ -566,16 +598,22 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       (composerState.mode === 'custom' && !prompt.trim()) ||
                       (composerState.mode === 'cyber-siren' && !selectedCyberSirenPreset) ||
                       navGenerating
-                    ? 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-black border border-white/30 text-white/50 cursor-not-allowed'
-                    : 'w-6 h-6 rounded-full flex items-center justify-center transition-colors bg-white border border-white text-black hover:bg-white/90'
+                    ? 'flex-1 py-2.5 px-4 bg-white/10 text-white/30 text-xs font-medium rounded-lg cursor-not-allowed shadow-lg flex items-center justify-center gap-2'
+                    : 'flex-1 py-2.5 px-4 bg-white text-black text-xs font-medium rounded-lg hover:bg-white/90 transition-colors shadow-lg flex items-center justify-center gap-2'
                   }
                   aria-label="Generate"
                   title="Generate AI content"
                 >
                   {navGenerating ? (
-                    <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <>
+                      <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span>Generating...</span>
+                    </>
                   ) : (
-                    <ArrowUp size={10} />
+                    <>
+                      <ArrowUp size={14} />
+                      <span>Generate</span>
+                    </>
                   )}
                 </button>
                 </div>
@@ -700,8 +738,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
         )}
 
 
-        {/* Mobile Collapsible Section */}
-        {isMobile && (
+        {/* Mobile Collapsible Section - REMOVED: No longer needed with new UX */}
+        {false && isMobile && (
           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
 
             {/* Mode Buttons in Expanded Section */}

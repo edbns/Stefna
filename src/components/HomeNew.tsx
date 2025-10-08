@@ -3758,7 +3758,7 @@ const HomeNew: React.FC = () => {
 
           {/* Mobile Main Content - Upload to Start (only show when no file is selected) */}
           {!selectedFile && !isComposerOpen && (
-            <div className="flex flex-col items-center justify-center min-h-screen px-6">
+            <div className="flex flex-col items-center px-6 pt-48">
               <p className="text-white/50 text-xs text-center mb-4">
                 Upload a photo to start editing
               </p>

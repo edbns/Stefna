@@ -13,8 +13,8 @@ export function CombinedPresetPicker({
   onChange,
   disabled = false,
 }: CombinedPresetPickerProps) {
-  // Combine all presets from both modes
-  const allPresets = [
+  // Combine all presets from both modes with custom order
+  const allPresetsRaw = [
     ...UNREAL_REFLECTION_PRESETS.map(preset => ({
       ...preset,
       type: 'unreal' as const
@@ -23,6 +23,19 @@ export function CombinedPresetPicker({
       ...preset,
       type: 'parallel' as const
     }))
+  ];
+
+  // Custom order: Y2K Paparazzi first, The Untouchable second, Gothic Pact and Medusa's Mirror at the end
+  const priorityOrder = ['Y2K Paparazzi', 'The Untouchable'];
+  const deprioritizedOrder = ['The Gothic Pact', 'Medusa\'s Mirror'];
+  
+  const allPresets = [
+    // Priority presets first
+    ...allPresetsRaw.filter(p => priorityOrder.includes(p.label)),
+    // Middle presets (everything except priority and deprioritized)
+    ...allPresetsRaw.filter(p => !priorityOrder.includes(p.label) && !deprioritizedOrder.includes(p.label)),
+    // Deprioritized presets last
+    ...allPresetsRaw.filter(p => deprioritizedOrder.includes(p.label))
   ];
 
   // Image mapping for presets based on best practices
@@ -46,8 +59,8 @@ export function CombinedPresetPicker({
   };
 
   return (
-    <div className="rounded-xl shadow-2xl p-3 w-full" style={{ backgroundColor: '#000000' }}>
-      <div className="grid grid-cols-2 gap-2 pb-4">
+    <div className="w-full">
+      <div className="rounded-xl shadow-2xl p-3 grid grid-cols-2 gap-2" style={{ backgroundColor: '#000000' }}>
         {allPresets.map((preset) => (
           <button
             key={preset.id}

@@ -9,6 +9,7 @@ import { useProfile } from '../contexts/ProfileContext';
 import { authenticatedFetch } from '../utils/apiClient';
 import { useToasts } from '../components/ui/Toasts';
 import { useGenerationEvents, getIsGenerationRunning } from '../lib/generationEvents';
+import MobileSidebar from '../components/MobileSidebar';
 
 const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
   if (!maybeUrl) return maybeUrl
@@ -497,89 +498,19 @@ const MobileGalleryScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Header */}
-      <div className="bg-black/50 backdrop-blur-md z-40">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center text-white hover:text-white/80 transition-colors"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          
-          <h1 className="text-white text-lg font-semibold">My Gallery</h1>
-          
-          <div className="w-16"></div> {/* Spacer for centering */}
-        </div>
-      </div>
+      {/* Sticky Back Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
+        aria-label="Go back"
+      >
+        <ArrowLeft size={20} className="text-black" />
+      </button>
 
-      {/* Stats Row */}
-      <div className="px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* Tokens */}
-          <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
-            <span className="text-white text-sm font-medium">{tokenCount} Tokens</span>
-          </div>
-
-          {/* Invite */}
-          <button
-            onClick={async () => {
-              try {
-                // Use email-based referral system (not referral code)
-                const referrerEmail = authService.getCurrentUser()?.email;
-                if (!referrerEmail) {
-                  notifyError({ title: 'Error', message: 'Unable to get your email for referral' });
-                  return;
-                }
-                
-                const shareUrl = `${window.location.origin}/auth?referrer=${encodeURIComponent(referrerEmail)}`;
-                
-                if (navigator.share) {
-                  await navigator.share({
-                    title: 'Join me on Stefna AI',
-                    text: 'Create amazing AI art with me!',
-                    url: shareUrl
-                  });
-                } else {
-                  await navigator.clipboard.writeText(shareUrl);
-                  notifyReady({ title: 'Link Copied', message: 'Invite link copied to clipboard!' });
-                }
-              } catch (error) {
-                console.error('Share failed:', error);
-                notifyError({ title: 'Share Failed', message: 'Could not share invite link' });
-              }
-            }}
-            className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2 hover:bg-white/20 transition-colors"
-          >
-            <span className="text-white text-sm font-medium">Invite</span>
-          </button>
-
-          {/* Share to Feed Toggle */}
-          <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
-            <span className="text-white text-sm font-medium">Share to Feed</span>
-            <button
-              onClick={() => {
-                const newValue = !profileData.shareToFeed;
-                updateProfile({ shareToFeed: newValue });
-                updateUserSettings(newValue);
-              }}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
-                profileData.shareToFeed ? 'bg-white' : 'bg-white/20'
-              }`}
-            >
-              <span
-                className={`inline-block h-3 w-3 transform rounded-full bg-black transition-transform duration-200 ${
-                  profileData.shareToFeed ? 'translate-x-5' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Stats Row - REMOVED: Token, Invite, and Share to Feed moved to sidebar */}
 
       {/* Content */}
-      <div className="pb-20">
+      <div className="pb-20 pt-16">
         {isLoading ? (
           <div className="px-4 py-4">
             <SkeletonGrid columns={2} rows={10} />
@@ -838,19 +769,6 @@ const MobileGalleryScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile Floating Navigation - Logout Only */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => {
-            authService.logout();
-            navigate('/');
-          }}
-          className="w-14 h-14 bg-black rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
-          title="Logout"
-        >
-          <LogOut size={24} className="text-white" />
-        </button>
-      </div>
     </div>
   );
 };

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Menu, X, LogIn, User, LogOut, BookOpen, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, LogIn, User, LogOut, Coins, UserPlus, Image } from 'lucide-react';
 import authService from '../services/authService';
+import { useToasts } from './ui/Toasts';
 
 interface MobileSidebarProps {
   onProfileClick: () => void;
@@ -20,7 +21,9 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
   isGenerating = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [tokenCount, setTokenCount] = useState<number | null>(null);
   const isAuthenticated = authService.isAuthenticated();
+  const { notifyReady, notifyError } = useToasts();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -30,12 +33,39 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
     setIsOpen(false);
   };
 
+  // Fetch token count when authenticated
+  useEffect(() => {
+    const fetchTokenCount = async () => {
+      if (isAuthenticated) {
+        try {
+          const token = authService.getToken();
+          const response = await fetch('/.netlify/functions/getQuota', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          const data = await response.json();
+          // Use currentBalance directly - same as desktop profile
+          setTokenCount(data.currentBalance || 0);
+        } catch (error) {
+          console.error('Failed to fetch token count:', error);
+          setTokenCount(0);
+        }
+      }
+    };
+
+    if (isOpen) {
+      fetchTokenCount();
+    }
+  }, [isAuthenticated, isOpen]);
+
   return (
     <>
-      {/* Hamburger Menu Button */}
+      {/* Hamburger Menu Button - Always on top */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 text-white hover:text-white/70 transition-colors"
+        className="fixed top-4 left-4 z-[9999] text-white hover:text-white/70 transition-colors"
         title="Menu"
       >
         <Menu size={24} />
@@ -44,13 +74,13 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
       {/* Sidebar Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
           onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed top-0 left-0 z-50 h-full w-80 bg-black transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed top-0 left-0 z-[9999] h-full w-80 bg-black transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Sidebar Header */}
@@ -65,49 +95,67 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
         {/* Sidebar Content */}
         <div className="px-4 py-2 space-y-2">
-          {/* Get The Look */}
-          <button
-            onClick={() => {
-              onBestPracticesClick();
-              closeSidebar();
-            }}
-            className="w-full flex items-center gap-3 p-3 text-white hover:text-white/70 transition-colors"
-          >
-            <BookOpen size={20} />
-            <span className="font-medium">Get The Look</span>
-          </button>
-
-          {/* Stories - HIDDEN */}
-          {/* <button
-            onClick={() => {
-              onStoriesClick();
-              closeSidebar();
-            }}
-            className="w-full flex items-center gap-3 p-3 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            <FileText size={20} className="text-white" />
-            <span className="text-white font-medium">Stories</span>
-          </button> */}
-
-          {/* Profile/Login */}
-          {isAuthenticated ? (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  onProfileClick();
-                  closeSidebar();
-                }}
-                className="w-full flex items-center gap-3 p-3 text-white hover:text-white/70 transition-colors"
-              >
-                <User size={20} />
-                <span className="font-medium">My Profile</span>
-              </button>
-              {/* Loading spinner around profile button when generating */}
-              {isGenerating && (
-                <div className="absolute inset-0 rounded-lg border-2 border-white/30 border-t-white animate-spin"></div>
-              )}
+          {/* Token Count - Only visible when logged in */}
+          {isAuthenticated && (
+            <div className="w-full flex items-center gap-3 p-3 text-white border-b border-white/10">
+              <Coins size={20} />
+              <span className="font-medium">Tokens: {tokenCount !== null ? tokenCount : '...'}</span>
             </div>
-          ) : (
+          )}
+
+          {/* My Media */}
+          {isAuthenticated ? (
+            <button
+              onClick={() => {
+                onProfileClick();
+                closeSidebar();
+              }}
+              className="w-full flex items-center gap-3 p-3 text-white hover:text-white/70 transition-colors"
+            >
+              <Image size={20} />
+              <span className="font-medium">My Media</span>
+            </button>
+          ) : null}
+
+          {/* Invite - Only visible when logged in */}
+          {isAuthenticated && (
+            <button
+              onClick={async () => {
+                try {
+                  // Use email-based referral system (not referral code)
+                  const referrerEmail = authService.getCurrentUser()?.email;
+                  if (!referrerEmail) {
+                    notifyError({ title: 'Error', message: 'Unable to get your email for referral' });
+                    return;
+                  }
+                  
+                  const shareUrl = `${window.location.origin}/auth?referrer=${encodeURIComponent(referrerEmail)}`;
+                  
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: 'Join me on Stefna AI',
+                      text: 'Create amazing AI art with me!',
+                      url: shareUrl
+                    });
+                  } else {
+                    await navigator.clipboard.writeText(shareUrl);
+                    notifyReady({ title: 'Link Copied', message: 'Invite link copied to clipboard!' });
+                  }
+                  closeSidebar();
+                } catch (error) {
+                  console.error('Share failed:', error);
+                  notifyError({ title: 'Share Failed', message: 'Could not share invite link' });
+                }
+              }}
+              className="w-full flex items-center gap-3 p-3 text-white hover:text-white/70 transition-colors"
+            >
+              <UserPlus size={20} />
+              <span className="font-medium">Invite</span>
+            </button>
+          )}
+
+          {/* Login - Only visible when NOT logged in */}
+          {!isAuthenticated && (
             <button
               onClick={() => {
                 onLoginClick();
