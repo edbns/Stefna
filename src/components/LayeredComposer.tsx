@@ -260,11 +260,11 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       {/* Mobile: Media Preview Right Under Header (Always Visible When Uploaded) */}
       {isMobile && previewUrl && (
         <>
-          <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-[999998] flex justify-center">
-            <div className="rounded-2xl p-4 shadow-2xl shadow-black/20 max-w-sm" style={{ backgroundColor: '#000000' }}>
+          <div className="fixed left-1/2 transform -translate-x-1/2 z-[999998] flex justify-center" style={{ top: 'max(64px, 8vh)' }}>
+            <div className="rounded-2xl p-2 shadow-2xl shadow-black/20 max-w-sm" style={{ backgroundColor: '#000000' }}>
               
               {/* Media display */}
-              <div className="flex justify-center mb-3">
+              <div className="flex justify-center mb-2">
                 {isVideoPreview ? (
                   <video 
                     ref={(el) => {
@@ -273,7 +273,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       }
                     }} 
                     src={previewUrl} 
-                    className="max-h-64 w-auto object-contain" 
+                    className="w-auto object-contain" 
+                    style={{ maxHeight: 'min(256px, 25vh)' }}
                     controls 
                     onLoadedMetadata={measure} 
                     onLoadedData={measure} 
@@ -287,7 +288,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     }} 
                     src={previewUrl} 
                     alt="Uploaded media" 
-                    className="max-h-64 w-auto object-contain" 
+                    className="w-auto object-contain" 
+                    style={{ maxHeight: 'min(256px, 25vh)' }}
                     onLoad={measure}
                     onError={(e) => {
                       console.error('❌ Image failed to load:', previewUrl, e)
@@ -297,7 +299,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               </div>
               
               {/* Close button */}
-              <div className="flex justify-center mb-3">
+              <div className="flex justify-center mb-1">
                 <button
                   onClick={() => {
                     // Clear preview
@@ -338,7 +340,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           </div>
           
           {/* Action buttons - positioned directly under media preview, full width */}
-          <div className="fixed left-0 right-0 px-4 z-[999997]" style={{ top: '420px' }}>
+          <div className="fixed left-0 right-0 px-4 z-[999997]" style={{ top: 'max(360px, 36vh)' }}>
             <div className="flex gap-2">
               {/* Your Prompt Button - Active (white) when in edit mode, grey when not */}
               <button
@@ -379,7 +381,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           
           {/* Inline Combined Presets - show directly under buttons with proper scrolling */}
           {composerState.mode === 'combined-presets' && combinedPresetsDropdownOpen && (
-            <div className="fixed left-0 right-0 px-4 z-[999996] overflow-y-auto pb-4" style={{ top: '490px', bottom: '0px' }}>
+            <div className="fixed left-0 right-0 px-4 z-[999996] overflow-y-auto pb-4" style={{ top: 'max(430px, 43vh)', maxHeight: 'calc(100vh - max(430px, 43vh))' }}>
               <CombinedPresetPicker
                 value={selectedCombinedPreset || undefined}
                 onChange={async (presetId, type) => {

@@ -127,7 +127,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {/* Floating stack */}
-      <div className="fixed z-[100] right-4 top-24 flex w-[min(92vw,380px)] flex-col gap-2">
+      <div className="fixed z-[99999999] right-4 top-24 flex w-[min(92vw,380px)] flex-col gap-2">
         <AnimatePresence initial={false}>
           {visible.map((t) => (
             <motion.div
