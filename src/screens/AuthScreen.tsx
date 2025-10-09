@@ -201,22 +201,22 @@ const AuthScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
+    <div className="min-h-screen bg-black flex items-center justify-center p-3 sm:p-6">
       <div className="max-w-md w-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <img src="/logo.webp" alt="Stefna" className="w-16 h-16 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">
+        <div className="text-center mb-4 sm:mb-8">
+          <img src="/logo.webp" alt="Stefna" className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-xl sm:text-2xl font-bold text-white mb-1.5 sm:mb-2">
             {step === 'email' ? 'Sign in to Stefna' : 'Enter Login Code'}
           </h1>
-          <p className="text-white/60">
+          <p className="text-white/60 text-sm sm:text-base px-2">
             {step === 'email' 
               ? 'Enter your email to receive a login code'
               : `We sent a 6-digit code to ${email}`
             }
           </p>
           {step === 'otp' && (
-            <p className="text-white/40 text-sm mt-2">
+            <p className="text-white/40 text-xs sm:text-sm mt-1.5 sm:mt-2 px-2">
               No code? Check in your <span className="text-red-400 font-medium">spam</span> folder
             </p>
           )}
@@ -224,10 +224,10 @@ const AuthScreen: React.FC = () => {
 
         {/* Referral Bonus Indicator */}
         {referrerEmail && (
-          <div className="mb-6 bg-[#333333] border border-[#333333] rounded-xl p-4">
+          <div className="mb-3 sm:mb-6 bg-[#333333] border border-[#333333] rounded-xl p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <CheckCircle size={16} className="text-gray-400" />
-              <span className="text-sm font-medium text-white">
+              <CheckCircle size={14} className="text-gray-400 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-white">
                 You're invited by {referrerEmail}! Get 10 bonus credits when you sign up
               </span>
             </div>
@@ -235,9 +235,9 @@ const AuthScreen: React.FC = () => {
         )}
 
         {/* Form */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl p-8">
+        <div className="bg-white/5 backdrop-blur-md border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-8">
           {step === 'email' ? (
-            <form onSubmit={handleRequestOTP} className="space-y-6">
+            <form onSubmit={handleRequestOTP} className="space-y-4 sm:space-y-6">
               {/* Email Input */}
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
@@ -250,7 +250,7 @@ const AuthScreen: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
                     required
                   />
                 </div>
@@ -260,7 +260,7 @@ const AuthScreen: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || !email}
-                className={`w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
+                className={`w-full py-2.5 sm:py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
                   email && !isLoading
                     ? 'bg-white text-black hover:bg-white/90'
                     : 'bg-white/10 text-white/40 cursor-not-allowed'
@@ -303,7 +303,7 @@ const AuthScreen: React.FC = () => {
               />
             </form>
           ) : (
-            <form onSubmit={handleVerifyOTP} className="space-y-6">
+            <form onSubmit={handleVerifyOTP} className="space-y-4 sm:space-y-6">
               {/* OTP Input */}
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
@@ -331,7 +331,7 @@ const AuthScreen: React.FC = () => {
                     }
                   }}
                   placeholder="Enter 6-digit code"
-                  className="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg tracking-widest"
+                  className="w-full px-4 py-3 sm:py-4 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-base sm:text-lg tracking-widest"
                   maxLength={6}
                   required
                 />
@@ -343,18 +343,18 @@ const AuthScreen: React.FC = () => {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={isResending || isLoading || resendTimer > 0}
-                  className="text-white/60 hover:text-white text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-white/60 hover:text-white text-xs sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isResending ? 'Sending...' : resendTimer > 0 ? `Resend code (${formatCountdown(resendTimer)})` : 'Resend code'}
                 </button>
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <button
                   type="submit"
                   disabled={isLoading || otp.length !== 6}
-                  className={`w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
+                  className={`w-full py-2.5 sm:py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
                     otp.length === 6 && !isLoading
                       ? 'bg-white text-black hover:bg-white/90'
                       : 'bg-white/10 text-white/40 cursor-not-allowed'
@@ -377,7 +377,7 @@ const AuthScreen: React.FC = () => {
                   type="button"
                   onClick={handleBackToEmail}
                   disabled={isLoading}
-                  className="w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 bg-white/5 text-white hover:bg-white/10"
+                  className="w-full py-2.5 sm:py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 bg-white/5 text-white hover:bg-white/10"
                 >
                   <ArrowLeft size={16} />
                   <span>Back to Email</span>

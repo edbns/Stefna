@@ -26,6 +26,7 @@ class AuthService {
     refreshToken: null
   }
   private authChangeListeners: ((authState: AuthState) => void)[] = []
+  private tokenExpirationCheckInterval: NodeJS.Timeout | null = null
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -36,6 +37,7 @@ class AuthService {
 
   private constructor() {
     this.loadAuthState()
+    this.startTokenExpirationCheck()
   }
 
   // Load auth state from localStorage
@@ -136,6 +138,11 @@ class AuthService {
       tokenType: typeof this.authState.token
     });
     
+    // Start token expiration checking
+    if (!wasAuthenticated) {
+      this.startTokenExpirationCheck()
+    }
+    
     // Notify listeners if auth state changed
     if (!wasAuthenticated) {
       this.notifyAuthChange()
@@ -183,6 +190,9 @@ class AuthService {
 
   // Clear auth state on logout
   clearAuthState(): void {
+    // Stop token expiration checking
+    this.stopTokenExpirationCheck()
+    
     this.authState = {
       isAuthenticated: false,
       user: null,
@@ -268,6 +278,104 @@ class AuthService {
       return parts.length === 3
     } catch {
       return false
+    }
+  }
+
+  // Decode JWT token and extract expiration time
+  private getTokenExpiration(token: string): number | null {
+    try {
+      const parts = token.split('.')
+      if (parts.length !== 3) return null
+      
+      const payload = JSON.parse(atob(parts[1]))
+      return payload.exp ? payload.exp * 1000 : null // Convert to milliseconds
+    } catch (error) {
+      console.error('Error decoding token:', error)
+      return null
+    }
+  }
+
+  // Check if token is expired
+  isTokenExpired(): boolean {
+    if (!this.authState.token) return true
+    
+    const expiration = this.getTokenExpiration(this.authState.token)
+    if (!expiration) return false // Can't determine, assume valid
+    
+    const now = Date.now()
+    const isExpired = now >= expiration
+    
+    if (isExpired) {
+      console.log('🔐 Token has expired')
+    }
+    
+    return isExpired
+  }
+
+  // Start automatic token expiration checking
+  private startTokenExpirationCheck(): void {
+    // Check every 60 seconds
+    this.tokenExpirationCheckInterval = setInterval(() => {
+      if (this.authState.isAuthenticated && this.isTokenExpired()) {
+        console.log('🔐 Token expired, attempting to refresh...')
+        this.handleTokenExpiration()
+      }
+    }, 60000) // Check every minute
+    
+    // Also do an immediate check
+    if (this.authState.isAuthenticated && this.isTokenExpired()) {
+      console.log('🔐 Token expired on startup, attempting to refresh...')
+      this.handleTokenExpiration()
+    }
+  }
+
+  // Stop automatic token expiration checking
+  private stopTokenExpirationCheck(): void {
+    if (this.tokenExpirationCheckInterval) {
+      clearInterval(this.tokenExpirationCheckInterval)
+      this.tokenExpirationCheckInterval = null
+    }
+  }
+
+  // Handle token expiration - try to refresh, otherwise logout
+  private async handleTokenExpiration(): Promise<void> {
+    try {
+      // Try to refresh the token
+      const refreshed = await this.refreshAccessToken()
+      
+      if (refreshed) {
+        console.log('✅ Token refreshed successfully')
+        return
+      }
+      
+      // If refresh failed, logout the user
+      console.log('❌ Token refresh failed, logging out user')
+      this.handleSessionExpired()
+    } catch (error) {
+      console.error('Error handling token expiration:', error)
+      this.handleSessionExpired()
+    }
+  }
+
+  // Handle session expired - show alert and logout
+  private handleSessionExpired(): void {
+    // Stop checking for expiration
+    this.stopTokenExpirationCheck()
+    
+    // Clear auth state
+    this.clearAuthState()
+    
+    // Notify listeners
+    this.notifyAuthChange()
+    
+    // Show alert to user
+    if (typeof window !== 'undefined' && typeof alert !== 'undefined') {
+      alert('Session Expired\n\nFor your security, please sign in again.')
+    }
+    
+    // Redirect to auth page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth'
     }
   }
 

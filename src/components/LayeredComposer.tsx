@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Plus, FileText, ArrowUp, ChevronUp, ChevronDown, Wand2 } from 'lucide-react'
 import { UnrealReflectionPicker } from './UnrealReflectionPicker'
@@ -192,13 +192,171 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 }) => {
   const navigate = useNavigate()
   
+  // Track keyboard visibility for smart media resizing
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
+  
+  // Detect keyboard open/close
+  useEffect(() => {
+    if (!isMobile) return
+    
+    const handleResize = () => {
+      // On mobile, when keyboard opens, viewport height decreases significantly
+      const viewportHeight = window.visualViewport?.height || window.innerHeight
+      const screenHeight = window.screen.height
+      
+      // If viewport is significantly smaller than screen, keyboard is likely open
+      const keyboardOpen = viewportHeight < screenHeight * 0.75
+      setIsKeyboardVisible(keyboardOpen)
+    }
+    
+    // Use visualViewport API if available (better for keyboard detection)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize)
+    } else {
+      window.addEventListener('resize', handleResize)
+    }
+    
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize)
+      } else {
+        window.removeEventListener('resize', handleResize)
+      }
+    }
+  }, [isMobile])
+  
+  // Calculate smart media height based on current mode and keyboard state
+  const getSmartMediaHeight = () => {
+    if (!isMobile) return 'max-h-96'
+    
+    // Keyboard is open - make it smallest
+    if (isKeyboardVisible) {
+      return 'clamp(120px, 14vh, 160px)'
+    }
+    
+    // "Get These Looks" mode ONLY - smaller to show presets grid
+    if (composerState.mode === 'combined-presets') {
+      return 'clamp(150px, 18vh, 200px)'
+    }
+    
+    // "Your Prompt" mode OR initial upload - BIGGER (no presets needed)
+    // This applies to: 'edit', 'custom', or no mode selected yet
+    return 'clamp(240px, 32vh, 320px)'
+  }
+  
+  // Calculate smart media top position
+  const getSmartMediaPosition = () => {
+    if (!isMobile) return 'clamp(64px, 8vh, 72px)'
+    
+    // Only move media UP when showing presets or keyboard is open
+    if (isKeyboardVisible || composerState.mode === 'combined-presets') {
+      return 'clamp(64px, 8vh, 72px)'
+    }
+    
+    // "Your Prompt" mode and initial upload - position LOWER for big preview
+    return 'clamp(120px, 16vh, 160px)'
+  }
+  
+  // Calculate smart button position based on current mode
+  const getSmartButtonPosition = () => {
+    if (!isMobile) return 'clamp(290px, 34vh, 360px)'
+    
+    // Only compact position when showing presets or keyboard is open
+    if (isKeyboardVisible || composerState.mode === 'combined-presets') {
+      return 'clamp(250px, 30vh, 300px)'
+    }
+    
+    // "Your Prompt" mode and initial - buttons positioned lower, close to prompt box
+    return 'clamp(400px, 52vh, 500px)'
+  }
+  
+  // Calculate smart presets position (below buttons)
+  const getSmartPresetsPosition = () => {
+    if (!isMobile) return 'clamp(345px, 40vh, 420px)'
+    
+    // Keyboard is open - position higher
+    if (isKeyboardVisible) {
+      return 'clamp(270px, 32vh, 310px)'
+    }
+    
+    // Get These Looks mode - standard position below compact buttons
+    if (composerState.mode === 'combined-presets') {
+      return 'clamp(300px, 36vh, 350px)'
+    }
+    
+    // Default (big media mode) - position much lower
+    return 'clamp(450px, 58vh, 550px)'
+  }
+  
+  // Comprehensive state reset function
+  const resetComposerToDefault = useCallback(() => {
+    console.log('🔄 Resetting composer to default state')
+    
+    // Reset composer mode to custom (default)
+    setComposerState((s: any) => ({ ...s, mode: 'custom', status: 'idle' }))
+    
+    // Clear all selections
+    setSelectedMode(null)
+    setSelectedUnrealReflectionPreset(null)
+    setSelectedParallelSelfPreset(null)
+    setSelectedGhibliReactionPreset(null)
+    setSelectedCyberSirenPreset(null)
+    setSelectedCombinedPreset(null)
+    
+    // Close all dropdowns
+    setPresetsOpen(false)
+    setUnrealReflectionDropdownOpen(false)
+    setParallelSelfDropdownOpen(false)
+    setGhibliReactionDropdownOpen(false)
+    setCyberSirenDropdownOpen(false)
+    setCombinedPresetsDropdownOpen(false)
+    
+    // Clear prompt
+    setPrompt('')
+    
+    // Reset video toggle
+    setIsUnrealReflectionVideoEnabled(false)
+    
+    // Clear file
+    onClearFile()
+    
+    // Reset expansion state (mobile)
+    if (setIsExpanded) {
+      setIsExpanded(false)
+    }
+    
+    // Clear file input
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ''
+    }
+    
+    console.log('✅ Composer reset complete')
+  }, [
+    setComposerState,
+    setSelectedMode,
+    setSelectedUnrealReflectionPreset,
+    setSelectedParallelSelfPreset,
+    setSelectedGhibliReactionPreset,
+    setSelectedCyberSirenPreset,
+    setSelectedCombinedPreset,
+    setPresetsOpen,
+    setUnrealReflectionDropdownOpen,
+    setParallelSelfDropdownOpen,
+    setGhibliReactionDropdownOpen,
+    setCyberSirenDropdownOpen,
+    setCombinedPresetsDropdownOpen,
+    setPrompt,
+    setIsUnrealReflectionVideoEnabled,
+    onClearFile,
+    setIsExpanded
+  ])
+  
   // Add event listeners for composer state management
   useEffect(() => {
     const handleClearComposerState = () => {
       console.log('🧹 LayeredComposer: Clear composer state event received')
-      setComposerState((s: any) => ({ ...s, mode: null }))
-      setSelectedMode(null)
-      closeAllDropdowns()
+      resetComposerToDefault()
     }
 
     const handleResetHiddenUploader = () => {
@@ -213,7 +371,48 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       window.removeEventListener('clear-composer-state', handleClearComposerState)
       window.removeEventListener('reset-hidden-uploader', handleResetHiddenUploader)
     }
-  }, [setComposerState, setSelectedMode, closeAllDropdowns])
+  }, [resetComposerToDefault])
+  
+  // Reset composer on route/navigation changes (mobile only)
+  useEffect(() => {
+    if (!isMobile) return
+    
+    const handleNavigation = () => {
+      console.log('🧭 Navigation detected, resetting composer')
+      resetComposerToDefault()
+    }
+    
+    // Listen for popstate (browser back/forward)
+    window.addEventListener('popstate', handleNavigation)
+    
+    // Listen for custom navigation events
+    window.addEventListener('composer-reset', handleNavigation)
+    
+    return () => {
+      window.removeEventListener('popstate', handleNavigation)
+      window.removeEventListener('composer-reset', handleNavigation)
+    }
+  }, [isMobile, resetComposerToDefault])
+  
+  // Reset composer after generation completes
+  useEffect(() => {
+    if (!isMobile) return
+    
+    const handleGenerationDone = () => {
+      console.log('✅ Generation done, resetting composer after delay')
+      // Small delay to allow user to see the result
+      setTimeout(() => {
+        resetComposerToDefault()
+      }, 1500)
+    }
+    
+    // Listen for the generation:done event from generationEvents
+    window.addEventListener('generation:done', handleGenerationDone)
+    
+    return () => {
+      window.removeEventListener('generation:done', handleGenerationDone)
+    }
+  }, [isMobile, resetComposerToDefault])
 
   // Auto-expand when media is uploaded (mobile only)
   useEffect(() => {
@@ -260,11 +459,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
       {/* Mobile: Media Preview Right Under Header (Always Visible When Uploaded) */}
       {isMobile && previewUrl && (
         <>
-          <div className="fixed left-1/2 transform -translate-x-1/2 z-[999998] flex justify-center" style={{ top: 'max(64px, 8vh)' }}>
-            <div className="rounded-2xl p-2 shadow-2xl shadow-black/20 max-w-sm" style={{ backgroundColor: '#000000' }}>
-              
-              {/* Media display */}
-              <div className="flex justify-center mb-2">
+          {/* Inline media with close button overlay - dynamically positioned */}
+          <div className="fixed left-1/2 transform -translate-x-1/2 z-[999990] flex justify-center px-4 transition-all duration-300" style={{ top: getSmartMediaPosition(), maxWidth: '100vw' }}>
+            <div className="relative">
                 {isVideoPreview ? (
                   <video 
                     ref={(el) => {
@@ -273,8 +470,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       }
                     }} 
                     src={previewUrl} 
-                    className="w-auto object-contain" 
-                    style={{ maxHeight: 'min(256px, 25vh)' }}
+                  className="w-auto object-contain max-w-[90vw] shadow-2xl transition-all duration-300" 
+                  style={{ maxHeight: getSmartMediaHeight() }}
                     controls 
                     onLoadedMetadata={measure} 
                     onLoadedData={measure} 
@@ -288,64 +485,41 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     }} 
                     src={previewUrl} 
                     alt="Uploaded media" 
-                    className="w-auto object-contain" 
-                    style={{ maxHeight: 'min(256px, 25vh)' }}
+                  className="w-auto object-contain max-w-[90vw] shadow-2xl transition-all duration-300" 
+                  style={{ maxHeight: getSmartMediaHeight() }}
                     onLoad={measure}
                     onError={(e) => {
                       console.error('❌ Image failed to load:', previewUrl, e)
                     }}
                   />
                 )}
-              </div>
               
-              {/* Close button */}
-              <div className="flex justify-center mb-1">
+              {/* Close button - top right corner of media */}
                 <button
                   onClick={() => {
-                    // Clear preview
-                    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-                    if (fileInput) fileInput.value = ''
-                    
-                    // Clear the selected file in parent component
-                    onClearFile()
+                  console.log('🗑️ Mobile close button clicked - resetting composer')
                     
                     // Close the composer (this sets isComposerOpen to false in parent)
                     closeComposer()
                     
-                    // Reset composer to default state (switch back to Custom mode)
-                    setComposerState((s: any) => ({ ...s, mode: 'custom' }))
-                    setSelectedMode(null)
-                    closeAllDropdowns()
-                    
-                    // Reset preset selection states
-                    if (setCombinedPresetsDropdownOpen) {
-                      setCombinedPresetsDropdownOpen(false)
-                    }
-                    if (setSelectedCombinedPreset) {
-                      setSelectedCombinedPreset(null)
-                    }
-                    
-                    // Auto-collapse when media is removed
-                    if (setIsExpanded) {
-                      setIsExpanded(false)
-                    }
-                  }}
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
+                  // Reset everything to default state
+                  resetComposerToDefault()
+                }}
+                className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors bg-white text-black hover:bg-gray-200 shadow-lg"
                   aria-label="Remove media"
                 >
-                  <X size={16} />
+                <X size={14} />
                 </button>
-              </div>
             </div>
           </div>
           
-          {/* Action buttons - positioned directly under media preview, full width */}
-          <div className="fixed left-0 right-0 px-4 z-[999997]" style={{ top: 'max(360px, 36vh)' }}>
+          {/* Action buttons - positioned under media preview with smart spacing */}
+          <div className="fixed left-0 right-0 px-4 z-[999995] transition-all duration-300" style={{ top: getSmartButtonPosition() }}>
             <div className="flex gap-2">
               {/* Your Prompt Button - Active (white) when in edit mode, grey when not */}
               <button
                 onClick={() => {
-                  // Switch to edit mode to show prompt box
+                  // Switch to edit mode to show prompt box (triggers big media view)
                   setComposerState((s: any) => ({ ...s, mode: 'edit' }))
                   closeAllDropdowns()
                 }}
@@ -362,7 +536,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               {/* Get These Looks Button - Active (white) when in combined-presets mode, grey when not */}
               <button
                 onClick={() => {
-                  // Switch to combined presets mode
+                  // Switch to combined presets mode (triggers compact media view)
                   setComposerState((s: any) => ({ ...s, mode: 'combined-presets' }))
                   closeAllDropdowns()
                   setCombinedPresetsDropdownOpen(true)
@@ -379,9 +553,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </div>
           </div>
           
-          {/* Inline Combined Presets - show directly under buttons with proper scrolling */}
+          {/* Inline Combined Presets - show directly under buttons with smart scrolling */}
           {composerState.mode === 'combined-presets' && combinedPresetsDropdownOpen && (
-            <div className="fixed left-0 right-0 px-4 z-[999996] overflow-y-auto pb-4" style={{ top: 'max(430px, 43vh)', maxHeight: 'calc(100vh - max(430px, 43vh))' }}>
+            <div className="fixed left-0 right-0 px-4 z-[999994] overflow-y-auto pb-4 bg-black/95 transition-all duration-300" style={{ top: getSmartPresetsPosition(), bottom: '0' }}>
               <CombinedPresetPicker
                 value={selectedCombinedPreset || undefined}
                 onChange={async (presetId, type) => {
@@ -448,20 +622,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             <div className="flex justify-center">
               <button
                 onClick={() => {
-                  // Clear preview
-                  const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-                  if (fileInput) fileInput.value = ''
-                  
-                  // Clear the selected file in parent component
-                  onClearFile()
-                  
-                  // Reset composer to default state (switch back to Custom mode)
-                  setComposerState((s: any) => ({ ...s, mode: 'custom' }))
-                  setSelectedMode(null)
-                  closeAllDropdowns()
+                  console.log('🗑️ Desktop close button clicked - resetting composer')
                   
                   // Close composer
                   closeComposer()
+                  
+                  // Reset everything to default state
+                  resetComposerToDefault()
                 }}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-black text-white hover:bg-white/10"
                 aria-label="Remove media"
@@ -500,6 +667,14 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       console.log('🎯 Prompt input changed:', e.target.value);
                       setPrompt(e.target.value);
                     }}
+                    onFocus={(e) => {
+                      // Scroll textarea into view when keyboard appears
+                      if (isMobile) {
+                        setTimeout(() => {
+                          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
+                      }
+                    }}
                     placeholder={(() => {
                       switch (composerState.mode) {
                         case 'edit': 
@@ -510,8 +685,13 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                           return "Describe your image..."
                       }
                     })()}
-                    className="w-full px-3 py-2 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 h-32 text-xs rounded-xl border"
-                    style={{ backgroundColor: '#000000', borderColor: '#ffffff' }}
+                    className="w-full px-3 py-2 text-white placeholder-white/70 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 text-xs rounded-xl border"
+                    style={{ 
+                      backgroundColor: '#000000', 
+                      borderColor: '#ffffff',
+                      height: 'clamp(100px, 14vh, 120px)',
+                      paddingBottom: isMobile && !selectedFile ? '46px' : '8px'
+                    }}
                     disabled={composerState.mode === 'edit' ? !selectedFile : false}
                     maxLength={4000}
                     data-testid="custom-prompt-input"
@@ -522,10 +702,10 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     <div className="absolute bottom-3 left-2">
                       <button
                         onClick={onMobileUploadClick}
-                        className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
+                        className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
                         aria-label="Upload photo"
                       >
-                        <Plus size={20} className="text-black" />
+                        <Plus size={18} className="text-black" />
                       </button>
                     </div>
                   )}
