@@ -205,6 +205,25 @@ const HomeNew: React.FC = () => {
   // Mobile detection
   const isMobile = useIsMobile()
 
+  // Prevent body scrolling on mobile when no content to scroll
+  useEffect(() => {
+    if (isMobile && !isComposerOpen && !selectedFile) {
+      // Prevent scrolling on mobile main screen
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      // Re-enable scrolling when needed
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+  }, [isMobile, isComposerOpen, selectedFile])
+
   // Quota status
   const { quotaReached } = useQuotaStatus()
   
