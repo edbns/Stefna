@@ -3756,7 +3756,7 @@ const HomeNew: React.FC = () => {
 
       {/* Mobile View - View Only Experience */}
       {isMobile ? (
-        <div className="w-full min-h-screen bg-black">
+        <div className="w-full h-screen bg-black overflow-hidden">
           {/* Mobile Header - Clean with Logo */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
             <div className="flex items-center justify-between p-4">
@@ -3791,7 +3791,7 @@ const HomeNew: React.FC = () => {
 
           {/* Mobile Main Content - Login prompt when not authenticated */}
           {!isAuthenticated && !isComposerOpen && !selectedFile && (
-            <div className="flex flex-col items-center justify-center px-4 pt-64">
+            <div className="flex flex-col items-center justify-center px-4" style={{ minHeight: 'calc(100vh - 80px)' }}>
               <p className="text-white/30 text-xs text-center mb-4">
                 Login to get started
               </p>

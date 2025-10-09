@@ -379,7 +379,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           
           {/* Inline Combined Presets - show directly under buttons with proper scrolling */}
           {composerState.mode === 'combined-presets' && combinedPresetsDropdownOpen && (
-            <div className="fixed left-0 right-0 px-4 z-[999996] overflow-y-auto" style={{ top: '490px', bottom: '80px' }}>
+            <div className="fixed left-0 right-0 px-4 z-[999996] overflow-y-auto pb-4" style={{ top: '490px', bottom: '0px' }}>
               <CombinedPresetPicker
                 value={selectedCombinedPreset || undefined}
                 onChange={async (presetId, type) => {
