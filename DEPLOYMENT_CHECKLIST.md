@@ -10,10 +10,11 @@
 
 ### 2. ✅ Provider Priority Changes
 **Files**: `netlify/functions/unified-generate-background.ts`
+- **Custom Text-to-Image**: RunPod Seedream-v4-T2I → BFL → Stability.ai (PRIMARY: RunPod)
 - **Studio/Edit Mode**: Fal.ai → Replicate → RunPod → Gemini
 - **Unreal Reflection**: Fal.ai → Replicate → RunPod → Gemini  
 - **Parallel Self**: Fal.ai → Replicate → RunPod → Gemini
-- **Impact**: Better quality and cost efficiency with Fal.ai nano-banana/edit as primary
+- **Impact**: Better quality and cost efficiency. RunPod T2I provides high-quality text-to-image generation
 
 ### 3. ✅ SEO Improvements (Google Search Console Fixes)
 **Files**: `index.html`, `src/components/HomeNew.tsx`, `public/sitemap.xml`, `netlify.toml`
