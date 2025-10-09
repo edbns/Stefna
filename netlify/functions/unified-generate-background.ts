@@ -1557,12 +1557,18 @@ async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenera
   }
 
   try {
+    // Use 3:4 portrait aspect ratio (social media friendly)
+    const aspectRatio = params.aspect_ratio || "3:4";
+    
     const replicateInput = {
       prompt: params.prompt || params.customPrompt,
-      aspect_ratio: params.aspect_ratio || "1:1" // Default square, can use 4:3, 16:9, etc.
+      aspect_ratio: aspectRatio
     };
 
-    console.log(`📤 [Replicate Seedream] Calling bytedance/seedream-4 with prompt:`, replicateInput.prompt.substring(0, 100));
+    console.log(`📤 [Replicate Seedream] Calling bytedance/seedream-4 with:`, {
+      prompt: replicateInput.prompt.substring(0, 100),
+      aspect_ratio: aspectRatio
+    });
 
     const response = await fetch('https://api.replicate.com/v1/models/bytedance/seedream-4/predictions', {
       method: 'POST',
@@ -1599,17 +1605,17 @@ async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenera
       };
     }
 
-    // If not completed yet, poll for completion
+    // If not completed yet, poll for completion (match BFL polling strategy)
     const predictionId = result.id;
     if (!predictionId) {
       throw new Error('No prediction ID received from Replicate');
     }
 
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes max
+    const maxAttempts = 30; // 2.5 minutes max (faster than BFL's 5 min)
     
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second intervals
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second intervals (same as BFL)
       
       const statusResponse = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
         headers: {
@@ -1622,7 +1628,7 @@ async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenera
       }
 
       const status = await statusResponse.json();
-      console.log(`🔄 [Replicate Seedream] Status check ${attempts + 1}:`, status.status);
+      console.log(`🔄 [Replicate Seedream] Status check ${attempts + 1}/${maxAttempts}:`, status.status);
       
       if (status.status === 'succeeded') {
         const outputUrl = Array.isArray(status.output) ? status.output[0] : status.output;
@@ -1643,7 +1649,7 @@ async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenera
       attempts++;
     }
     
-    throw new Error('Replicate Seedream generation timed out after 5 minutes');
+    throw new Error('Replicate Seedream generation timed out after 2.5 minutes');
     
   } catch (error) {
     console.error('❌ [Replicate Seedream] bytedance/seedream-4 failed:', error);
