@@ -89,6 +89,9 @@ interface LayeredComposerProps {
   isExpanded?: boolean
   setIsExpanded?: (expanded: boolean) => void
   
+  // Mobile upload handler
+  onMobileUploadClick?: () => void
+  
   // Handlers
   closeComposer: () => void
   checkAuthAndRedirect: () => boolean
@@ -164,6 +167,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   isMobile,
   isExpanded = false,
   setIsExpanded,
+  onMobileUploadClick,
   closeComposer,
   checkAuthAndRedirect,
   handlePresetClick,
@@ -481,10 +485,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                 {composerState.mode === 'custom' && !selectedFile && (
                   <div className="text-center mb-2">
                     <p className="text-white/30 text-xs">
-                      -OR-
-                    </p>
-                    <p className="text-white/30 text-xs">
-                      Generate from text
+                      Generate from text   -OR- Upload a photo to edit
                     </p>
                   </div>
                 )}
@@ -513,6 +514,19 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     maxLength={4000}
                     data-testid="custom-prompt-input"
                   />
+                  
+                  {/* Upload Button - bottom-left inside prompt box (mobile only, when no file) */}
+                  {isMobile && !selectedFile && onMobileUploadClick && (
+                    <div className="absolute bottom-3 left-2">
+                      <button
+                        onClick={onMobileUploadClick}
+                        className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
+                        aria-label="Upload photo"
+                      >
+                        <Plus size={20} className="text-black" />
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Character count - bottom-right inside textarea */}
                   <div className="absolute bottom-2 right-2">

@@ -62,14 +62,16 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
 
   return (
     <>
-      {/* Hamburger Menu Button - Always on top */}
-      <button
-        onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-[9999] text-white hover:text-white/70 transition-colors"
-        title="Menu"
-      >
-        <Menu size={24} />
-      </button>
+      {/* Hamburger Menu Button - Only show when authenticated */}
+      {isAuthenticated && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-[9999] text-white hover:text-white/70 transition-colors"
+          title="Menu"
+        >
+          <Menu size={24} />
+        </button>
+      )}
 
       {/* Sidebar Overlay */}
       {isOpen && (
@@ -151,20 +153,6 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
             >
               <UserPlus size={20} />
               <span className="font-medium">Invite</span>
-            </button>
-          )}
-
-          {/* Login - Only visible when NOT logged in */}
-          {!isAuthenticated && (
-            <button
-              onClick={() => {
-                onLoginClick();
-                closeSidebar();
-              }}
-              className="w-full flex items-center gap-3 p-3 text-white hover:text-white/70 transition-colors"
-            >
-              <LogIn size={20} />
-              <span className="font-medium">Login</span>
             </button>
           )}
 

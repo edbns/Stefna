@@ -3777,16 +3777,6 @@ const HomeNew: React.FC = () => {
               )}
               <div className="flex-1"></div> {/* Spacer to push content to the right */}
               
-              {/* Login button - only show when NOT logged in and NOT in composer */}
-              {!isAuthenticated && !isComposerOpen && !selectedFile && (
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="px-4 py-2 bg-white text-black text-sm font-medium rounded-full hover:bg-gray-200 transition-colors mr-3"
-                >
-                  Login
-                </button>
-              )}
-              
               <img 
                 src="/logo.webp" 
                 alt="Stefna Logo" 
@@ -3795,40 +3785,17 @@ const HomeNew: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Main Content - Upload to Start (only show when no file is selected) */}
-          {!selectedFile && !isComposerOpen && (
-            <div className="flex flex-col items-center px-6 pt-48">
-              <p className="text-white/50 text-xs text-center mb-4">
-                Upload a photo to start editing
+          {/* Mobile Main Content - Login prompt when not authenticated */}
+          {!isAuthenticated && !isComposerOpen && !selectedFile && (
+            <div className="flex flex-col items-center justify-center px-4 pt-64">
+              <p className="text-white/30 text-xs text-center mb-4">
+                Login to get started
               </p>
               <button
-                onClick={() => {
-                  console.log('🎯 Mobile upload button clicked');
-                  console.log('📁 fileInputRef:', fileInputRef.current);
-                  
-                  // Check authentication first
-                  if (!checkAuthAndRedirect()) {
-                    console.log('❌ Authentication check failed, redirecting...');
-                    return;
-                  }
-                  
-                  console.log('✅ Authentication passed');
-                  
-                  // Close any open dropdowns
-                  closeAllDropdowns();
-                  
-                  // Trigger file input
-                  if (fileInputRef.current) {
-                    console.log('🖱️ Triggering file input click');
-                    fileInputRef.current.click();
-                  } else {
-                    console.error('❌ fileInputRef.current is null');
-                  }
-                }}
-                className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-colors shadow-lg"
-                aria-label="Upload photo"
+                onClick={() => navigate('/auth')}
+                className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:bg-gray-200 transition-colors"
               >
-                <Plus size={32} className="text-black" />
+                Login
               </button>
             </div>
           )}
@@ -3836,8 +3803,8 @@ const HomeNew: React.FC = () => {
           {/* Hidden file input for mobile */}
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
           
-          {/* Mobile Sidebar Navigation - hide when composer is open or file is selected */}
-          {!isComposerOpen && !selectedFile && (
+          {/* Mobile Sidebar Navigation - only show when authenticated and not in composer */}
+          {isAuthenticated && !isComposerOpen && !selectedFile && (
             <MobileSidebar
               onProfileClick={() => {
                 // Navigate to mobile gallery/profile page
@@ -3929,6 +3896,16 @@ const HomeNew: React.FC = () => {
               
               // Mobile state
               isMobile={true}
+              
+              // Upload handler for mobile
+              onMobileUploadClick={() => {
+                console.log('🎯 Mobile upload button clicked');
+                if (!checkAuthAndRedirect()) return;
+                closeAllDropdowns();
+                if (fileInputRef.current) {
+                  fileInputRef.current.click();
+                }
+              }}
               
               // Handlers
               closeComposer={() => {
