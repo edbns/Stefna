@@ -229,63 +229,67 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
   const getSmartMediaHeight = () => {
     if (!isMobile) return 'max-h-96'
     
-    // Keyboard is open - make it smallest
+    // Keyboard is open - very small but visible
     if (isKeyboardVisible) {
-      return 'clamp(120px, 14vh, 160px)'
+      return 'clamp(80px, 10vh, 100px)'
     }
     
-    // "Get These Looks" mode ONLY - smaller to show presets grid
+    // "Get These Looks" mode - medium size for presets
     if (composerState.mode === 'combined-presets') {
-      return 'clamp(150px, 18vh, 200px)'
+      return 'clamp(140px, 16vh, 170px)'
     }
     
-    // "Your Prompt" mode OR initial upload - BIGGER (no presets needed)
-    // This applies to: 'edit', 'custom', or no mode selected yet
-    return 'clamp(240px, 32vh, 320px)'
+    // "Your Prompt" mode - standard size for all screens
+    if (composerState.mode === 'edit' || composerState.mode === 'custom') {
+      return 'clamp(160px, 20vh, 200px)'
+    }
+    
+    // Default
+    return 'clamp(160px, 20vh, 200px)'
   }
   
-  // Calculate smart media top position
+  // Calculate smart media top position - keep consistent at top
   const getSmartMediaPosition = () => {
     if (!isMobile) return 'clamp(64px, 8vh, 72px)'
     
-    // Only move media UP when showing presets or keyboard is open
-    if (isKeyboardVisible || composerState.mode === 'combined-presets') {
-      return 'clamp(64px, 8vh, 72px)'
-    }
-    
-    // "Your Prompt" mode and initial upload - position LOWER for big preview
-    return 'clamp(120px, 16vh, 160px)'
+    // Always keep at top for consistency
+    return 'clamp(64px, 8vh, 72px)'
   }
   
   // Calculate smart button position based on current mode
   const getSmartButtonPosition = () => {
     if (!isMobile) return 'clamp(290px, 34vh, 360px)'
     
-    // Only compact position when showing presets or keyboard is open
-    if (isKeyboardVisible || composerState.mode === 'combined-presets') {
-      return 'clamp(250px, 30vh, 300px)'
+    // Keyboard is open - position safe above keyboard
+    if (isKeyboardVisible) {
+      return 'clamp(180px, 22vh, 220px)'
     }
     
-    // "Your Prompt" mode and initial - buttons positioned lower, close to prompt box
-    return 'clamp(400px, 52vh, 500px)'
+    // Get These Looks mode - standard position
+    if (composerState.mode === 'combined-presets') {
+      return 'clamp(230px, 28vh, 270px)'
+    }
+    
+    // Your Prompt mode - position to avoid overlapping with prompt box
+    if (composerState.mode === 'edit' || composerState.mode === 'custom') {
+      return 'clamp(250px, 30vh, 290px)'
+    }
+    
+    // Default
+    return 'clamp(250px, 30vh, 290px)'
   }
   
   // Calculate smart presets position (below buttons)
   const getSmartPresetsPosition = () => {
     if (!isMobile) return 'clamp(345px, 40vh, 420px)'
     
-    // Keyboard is open - position higher
+    // Keyboard is open - compact
     if (isKeyboardVisible) {
-      return 'clamp(270px, 32vh, 310px)'
+      return 'clamp(230px, 28vh, 270px)'
     }
     
-    // Get These Looks mode - standard position below compact buttons
-    if (composerState.mode === 'combined-presets') {
-      return 'clamp(300px, 36vh, 350px)'
-    }
-    
-    // Default (big media mode) - position much lower
-    return 'clamp(450px, 58vh, 550px)'
+    // Get These Looks mode - below buttons
+    return 'clamp(280px, 34vh, 320px)'
   }
   
   // Comprehensive state reset function
@@ -668,11 +672,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                       setPrompt(e.target.value);
                     }}
                     onFocus={(e) => {
-                      // Scroll textarea into view when keyboard appears
+                      // Let browser handle keyboard naturally - don't force scroll
                       if (isMobile) {
-                        setTimeout(() => {
-                          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 300);
+                        console.log('📝 Textarea focused, keyboard will appear')
                       }
                     }}
                     placeholder={(() => {
@@ -689,7 +691,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     style={{ 
                       backgroundColor: '#000000', 
                       borderColor: '#ffffff',
-                      height: 'clamp(100px, 14vh, 120px)',
+                      height: 'clamp(110px, 15vh, 130px)',
                       paddingBottom: isMobile && !selectedFile ? '46px' : '8px'
                     }}
                     disabled={composerState.mode === 'edit' ? !selectedFile : false}
