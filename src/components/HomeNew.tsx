@@ -2371,6 +2371,10 @@ const HomeNew: React.FC = () => {
     if (isMobile) {
       console.log('📱 Redirecting mobile to gallery immediately');
       navigate('/gallery');
+    } else {
+      // 💻 DESKTOP: Redirect to profile immediately after starting generation
+      console.log('💻 Redirecting desktop to profile immediately');
+      navigate('/profile');
     }
 
     // Get current profile settings from context (real-time state)
