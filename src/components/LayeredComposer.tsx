@@ -231,64 +231,42 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
     
     // Keyboard is open - very small but visible
     if (isKeyboardVisible) {
-      return 'clamp(80px, 10vh, 100px)'
+      return 'clamp(100px, 12vh, 120px)'
     }
     
-    // "Get These Looks" mode - medium size for presets
+    // "Get These Looks" mode - smaller to show presets
     if (composerState.mode === 'combined-presets') {
       return 'clamp(140px, 16vh, 170px)'
     }
     
-    // "Your Prompt" mode - standard size for all screens
+    // "Your Prompt" mode - BIG to showcase the photo
     if (composerState.mode === 'edit' || composerState.mode === 'custom') {
-      return 'clamp(160px, 20vh, 200px)'
+      return 'clamp(200px, 26vh, 260px)'
     }
     
     // Default
-    return 'clamp(160px, 20vh, 200px)'
+    return 'clamp(200px, 26vh, 260px)'
   }
   
-  // Calculate smart media top position - keep consistent at top
+  // Calculate smart media top position - always at top
   const getSmartMediaPosition = () => {
     if (!isMobile) return 'clamp(64px, 8vh, 72px)'
     
-    // Always keep at top for consistency
+    // Always keep at top
     return 'clamp(64px, 8vh, 72px)'
   }
   
-  // Calculate smart button position based on current mode
+  // Calculate smart button position (only used for "Get These Looks" mode with top positioning)
   const getSmartButtonPosition = () => {
-    if (!isMobile) return 'clamp(290px, 34vh, 360px)'
-    
-    // Keyboard is open - position safe above keyboard
-    if (isKeyboardVisible) {
-      return 'clamp(180px, 22vh, 220px)'
-    }
-    
-    // Get These Looks mode - standard position
-    if (composerState.mode === 'combined-presets') {
-      return 'clamp(230px, 28vh, 270px)'
-    }
-    
-    // Your Prompt mode - position to avoid overlapping with prompt box
-    if (composerState.mode === 'edit' || composerState.mode === 'custom') {
-      return 'clamp(250px, 30vh, 290px)'
-    }
-    
-    // Default
-    return 'clamp(250px, 30vh, 290px)'
+    // Get These Looks mode - position from top to make room for presets
+    return 'clamp(230px, 28vh, 270px)'
   }
   
-  // Calculate smart presets position (below buttons)
+  // Calculate smart presets position (below buttons in "Get These Looks" mode)
   const getSmartPresetsPosition = () => {
     if (!isMobile) return 'clamp(345px, 40vh, 420px)'
     
-    // Keyboard is open - compact
-    if (isKeyboardVisible) {
-      return 'clamp(230px, 28vh, 270px)'
-    }
-    
-    // Get These Looks mode - below buttons
+    // Position below buttons in Get These Looks mode
     return 'clamp(280px, 34vh, 320px)'
   }
   
@@ -517,8 +495,15 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </div>
           </div>
           
-          {/* Action buttons - positioned under media preview with smart spacing */}
-          <div className="fixed left-0 right-0 px-4 z-[999995] transition-all duration-300" style={{ top: getSmartButtonPosition() }}>
+          {/* Action buttons - positioned dynamically */}
+          <div 
+            className="fixed left-0 right-0 px-4 z-[999995] transition-all duration-300"
+            style={
+              composerState.mode === 'combined-presets' 
+                ? { top: getSmartButtonPosition() } 
+                : { bottom: 'clamp(195px, 27vh, 240px)' } // Position from bottom, right on top of prompt box
+            }
+          >
             <div className="flex gap-2">
               {/* Your Prompt Button - Active (white) when in edit mode, grey when not */}
               <button
