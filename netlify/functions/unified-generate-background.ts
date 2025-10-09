@@ -1546,7 +1546,7 @@ async function generateWithReplicateEdit(params: any): Promise<UnifiedGeneration
   }
 }
 
-// Replicate Seedream-4 Text-to-Image - Primary provider for custom mode
+// Replicate Seedream-4 Text-to-Image - Secondary fallback for custom mode
 async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenerationResponse> {
   console.log('🎨 [Background] Starting Replicate text-to-image with Seedream-4');
   
@@ -1653,6 +1653,121 @@ async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenera
     
   } catch (error) {
     console.error('❌ [Replicate Seedream] bytedance/seedream-4 failed:', error);
+    throw error;
+  }
+}
+
+// RunPod Text-to-Image - Final fallback for custom mode using seedream-v4-t2i
+async function generateWithRunPodT2I(params: any): Promise<UnifiedGenerationResponse> {
+  console.log('🎨 [Background] Starting RunPod text-to-image generation with seedream-v4-t2i');
+  
+  const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
+  if (!RUNPOD_API_KEY) {
+    console.warn('⚠️ [Background] RunPod API key not configured');
+    throw new Error('RunPod API key not configured');
+  }
+
+  try {
+    // Prepare the input for RunPod seedream-v4-t2i
+    const runpodInput = {
+      prompt: params.prompt || params.customPrompt,
+      negative_prompt: params.negative_prompt || "",
+      size: "2048*2048",
+      seed: -1, // Random seed
+      enable_safety_checker: true
+    };
+
+    console.log(`📤 [RunPod T2I] Calling seedream-v4-t2i with prompt:`, runpodInput.prompt.substring(0, 100));
+
+    const response = await fetch('https://api.runpod.ai/v2/seedream-v4-t2i/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RUNPOD_API_KEY}`
+      },
+      body: JSON.stringify({
+        input: runpodInput
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`RunPod T2I API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log(`✅ [RunPod T2I] seedream-v4-t2i job submitted:`, result);
+
+    // RunPod returns a job ID, we need to poll for completion
+    const jobId = result.id;
+    if (!jobId) {
+      throw new Error('No job ID received from RunPod T2I');
+    }
+
+    // Poll for completion
+    let attempts = 0;
+    const maxAttempts = 30; // 2.5 minutes max
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second intervals
+      
+      const statusResponse = await fetch(`https://api.runpod.ai/v2/seedream-v4-t2i/status/${jobId}`, {
+        headers: {
+          'Authorization': `Bearer ${RUNPOD_API_KEY}`
+        }
+      });
+
+      if (!statusResponse.ok) {
+        throw new Error(`RunPod T2I status check failed: ${statusResponse.status}`);
+      }
+
+      const status = await statusResponse.json();
+      console.log(`🔄 [RunPod T2I] Status check ${attempts + 1}/${maxAttempts}:`, status.status);
+      
+      if (status.status === 'COMPLETED') {
+        const outputUrl = status.output;
+        console.log(`🔗 [RunPod T2I] Raw output:`, JSON.stringify(outputUrl));
+        
+        if (outputUrl) {
+          let finalUrl;
+          
+          if (outputUrl.result) {
+            finalUrl = outputUrl.result;
+            if (outputUrl.cost) {
+              console.log(`💰 [RunPod T2I] Cost: $${outputUrl.cost}`);
+            }
+          } else if (Array.isArray(outputUrl) && outputUrl.length > 0) {
+            finalUrl = typeof outputUrl[0] === 'string' ? outputUrl[0] : outputUrl[0].image_url || outputUrl[0].url;
+          } else if (typeof outputUrl === 'string') {
+            finalUrl = outputUrl;
+          } else if (outputUrl && typeof outputUrl === 'object') {
+            finalUrl = outputUrl.image_url || outputUrl.url;
+          } else {
+            throw new Error(`Unexpected output format: ${JSON.stringify(outputUrl)}`);
+          }
+          
+          console.log(`✅ [RunPod T2I] Generation completed:`, finalUrl);
+          
+          // Upload to Cloudinary
+          const cloudinaryUrl = await uploadUrlToCloudinary(finalUrl);
+          return {
+            success: true,
+            status: 'done',
+            provider: 'runpod-t2i',
+            outputUrl: cloudinaryUrl
+          };
+        }
+      } else if (status.status === 'FAILED') {
+        throw new Error(`RunPod T2I generation failed: ${status.error || 'Unknown error'}`);
+      }
+      
+      attempts++;
+    }
+    
+    throw new Error('RunPod T2I generation timed out after 2.5 minutes');
+    
+  } catch (error) {
+    console.error('❌ [RunPod T2I] seedream-v4-t2i failed:', error);
     throw error;
   }
 }
@@ -3135,24 +3250,30 @@ async function processGeneration(request: UnifiedGenerationRequest, userToken: s
           result = await generateWithBFL(request.mode, generationParams);
           console.log('✅ [Background] BFL API generation successful');
         } else if (request.mode === 'custom') {
-          // Custom mode: Replicate Seedream-4 (primary) → BFL → Stability.ai fallbacks
-          console.log('🎨 [Background] Attempting generation with Replicate Seedream-4 as primary for custom mode');
+          // Custom mode: BFL (primary) → Replicate Seedream-4 → Stability.ai → RunPod fallbacks
+          console.log('🎨 [Background] Attempting generation with BFL as primary for custom mode');
           try {
-            result = await generateWithReplicateSeedream(generationParams);
-            console.log('✅ [Background] Replicate Seedream-4 generation successful');
-          } catch (replicateError) {
-            console.warn('⚠️ [Background] Replicate Seedream-4 failed, trying BFL fallback:', replicateError);
+            result = await generateWithBFL(request.mode, generationParams);
+            console.log('✅ [Background] BFL generation successful');
+          } catch (bflError) {
+            console.warn('⚠️ [Background] BFL failed, trying Replicate Seedream-4 fallback:', bflError);
             try {
-              result = await generateWithBFL(request.mode, generationParams);
-              console.log('✅ [Background] BFL fallback generation successful');
-            } catch (bflError) {
-              console.warn('⚠️ [Background] BFL failed, trying Stability.ai fallback:', bflError);
+              result = await generateWithReplicateSeedream(generationParams);
+              console.log('✅ [Background] Replicate Seedream-4 fallback generation successful');
+            } catch (replicateError) {
+              console.warn('⚠️ [Background] Replicate Seedream-4 failed, trying Stability.ai fallback:', replicateError);
               try {
                 result = await generateWithStability(generationParams);
                 console.log('✅ [Background] Stability.ai fallback generation successful');
               } catch (stabilityError) {
-                console.error('❌ [Background] All providers failed for Custom mode');
-                throw new Error(`All providers failed. Replicate: ${replicateError}. BFL: ${bflError}. Stability: ${stabilityError}`);
+                console.warn('⚠️ [Background] Stability.ai failed, trying RunPod T2I fallback:', stabilityError);
+                try {
+                  result = await generateWithRunPodT2I(generationParams);
+                  console.log('✅ [Background] RunPod T2I fallback generation successful');
+                } catch (runpodError) {
+                  console.error('❌ [Background] All providers failed for Custom mode');
+                  throw new Error(`All providers failed. BFL: ${bflError}. Replicate: ${replicateError}. Stability: ${stabilityError}. RunPod: ${runpodError}`);
+                }
               }
             }
           }

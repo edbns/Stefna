@@ -10,11 +10,11 @@
 
 ### 2. ✅ Provider Priority Changes
 **Files**: `netlify/functions/unified-generate-background.ts`
-- **Custom Text-to-Image**: Replicate Seedream-4 → BFL → Stability.ai (PRIMARY: Replicate)
+- **Custom Text-to-Image**: BFL → Replicate Seedream-4 → Stability.ai → RunPod (PRIMARY: BFL)
 - **Studio/Edit Mode**: Fal.ai → Replicate → RunPod → Gemini
 - **Unreal Reflection**: Fal.ai → Replicate → RunPod → Gemini  
 - **Parallel Self**: Fal.ai → Replicate → RunPod → Gemini
-- **Impact**: Better quality and cost efficiency. Replicate Seedream-4 provides high-quality text-to-image generation
+- **Impact**: BFL as primary for quality, Replicate Seedream-4 (3:4 aspect ratio) as strong secondary, comprehensive fallback chain
 
 ### 3. ✅ SEO Improvements (Google Search Console Fixes)
 **Files**: `index.html`, `src/components/HomeNew.tsx`, `public/sitemap.xml`, `netlify.toml`
