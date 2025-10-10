@@ -2049,10 +2049,10 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
     throw new Error("Invalid input for BFL API generation: missing source image or prompt too short");
   }
   
-  // Validate image_strength for image-to-image models
-  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'cyber_siren' ? 0.35 : mode === 'edit' ? 0.7 : 0.45;
+  // Validate image_strength for image-to-image models and text-to-image
+  const imageStrength = mode === 'ghibli_reaction' ? 0.55 : mode === 'cyber_siren' ? 0.35 : mode === 'edit' ? 0.7 : mode === 'custom' ? 0.8 : 0.45;
   if (imageStrength <= 0 || imageStrength > 1) {
-    throw new Error("Invalid image_strength for BFL API image-to-image generation");
+    throw new Error("Invalid image_strength for BFL API generation");
   }
 
   let lastError: Error | null = null;
