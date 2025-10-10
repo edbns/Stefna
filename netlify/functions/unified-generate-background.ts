@@ -2065,8 +2065,8 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
       let bflInput: any = {
         prompt: params.prompt,
         prompt_upsampling: params.prompt_upsampling ?? true,
-        safety_tolerance: params.safety_tolerance ?? 3,
-        output_format: params.output_format ?? "jpeg"
+        safety_tolerance: params.safety_tolerance ?? 6, // Increased to 6 for artistic content (0-6 scale)
+        output_format: params.output_format ?? "png" // PNG for better quality
       };
 
       // 🎯 PROMPT ENHANCEMENT
@@ -2139,12 +2139,13 @@ async function generateWithBFL(mode: GenerationMode, params: any): Promise<Unifi
         console.log(`📐 [BFL API] Ultra model - using aspect_ratio: ${aspectRatio}`);
         
         // Ultra models support raw mode for more natural look
-        bflInput.raw = params.raw ?? (mode === 'unreal_reflection' ? true : false); // Use preset value or true for unreal_reflection, false for others
+        // For custom mode, explicitly use raw: false to avoid safety flagging (matches BFL playground)
+        bflInput.raw = params.raw ?? (mode === 'unreal_reflection' ? true : false); // Use preset value or true for unreal_reflection, false for custom/others
         
         // Add additional Ultra model parameters
         bflInput.prompt_upsampling = params.prompt_upsampling ?? true; // Enhance prompt for better results
-        bflInput.safety_tolerance = params.safety_tolerance ?? 3; // Content moderation level (0-6)
-        bflInput.output_format = params.output_format ?? 'jpeg'; // Output format
+        bflInput.safety_tolerance = params.safety_tolerance ?? 6; // Content moderation level (0-6, higher = more permissive)
+        bflInput.output_format = params.output_format ?? 'png'; // PNG for better quality
         
         // Add optional seed for consistency
         bflInput.seed = Math.floor(Math.random() * 1000000);
