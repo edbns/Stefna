@@ -1562,7 +1562,8 @@ async function generateWithReplicateSeedream(params: any): Promise<UnifiedGenera
     
     const replicateInput = {
       prompt: params.prompt || params.customPrompt,
-      aspect_ratio: aspectRatio
+      aspect_ratio: aspectRatio,
+      disable_safety_checker: true // Disable for 18+ platform
     };
 
     console.log(`📤 [Replicate Seedream] Calling bytedance/seedream-4 with:`, {
@@ -1674,7 +1675,7 @@ async function generateWithRunPodT2I(params: any): Promise<UnifiedGenerationResp
       negative_prompt: params.negative_prompt || "",
       size: "2048*2048",
       seed: -1, // Random seed
-      enable_safety_checker: true
+      enable_safety_checker: false // Disabled for 18+ platform
     };
 
     console.log(`📤 [RunPod T2I] Calling seedream-v4-t2i with prompt:`, runpodInput.prompt.substring(0, 100));
@@ -1790,7 +1791,7 @@ async function generateWithRunPod(params: any): Promise<UnifiedGenerationRespons
         params.sourceAssetId, // Main source image
         ...(params.editImages || []) // Additional images for composition
       ],
-      enable_safety_checker: true
+      enable_safety_checker: false // Disabled for 18+ platform
     };
 
     console.log(`📤 [RunPod Edit] Calling nano-banana-edit with:`, {
@@ -2551,7 +2552,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Use nano-banana/edit with single image
         const editInput: any = {
           image_urls: [uploadedImageUrl], // Use main image as base (array format)
-          prompt: params.editPrompt || params.prompt
+          prompt: params.editPrompt || params.prompt,
+          enable_safety_checker: false // Disable safety checker for 18+ platform
         };
 
         // 🎯 PROMPT ENHANCEMENT FOR EDIT MODE
@@ -2678,7 +2680,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Use nano-banana/edit with single image
         const unrealReflectionInput: any = {
           image_urls: [uploadedImageUrl], // Use main image as base (array format)
-          prompt: params.prompt
+          prompt: params.prompt,
+          enable_safety_checker: false // Disable safety checker for 18+ platform
         };
 
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR UNREAL REFLECTION MODE
@@ -2801,7 +2804,8 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
         // Use nano-banana/edit with single image
         const parallelSelfInput: any = {
           image_urls: [uploadedImageUrl], // Use main image as base (array format)
-          prompt: params.prompt
+          prompt: params.prompt,
+          enable_safety_checker: false // Disable safety checker for 18+ platform
         };
 
         // 🎯 GROUP-AWARE PROMPT SCAFFOLDING FOR PARALLEL SELF MODE
@@ -3005,6 +3009,9 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           input.height = params.sourceHeight;
           console.log(`📐 [Fal.ai] Preserving original aspect ratio: ${params.sourceWidth}x${params.sourceHeight}`);
         }
+        
+        // Disable safety checker for 18+ platform
+        input.enable_safety_checker = false;
         
         // Add negative prompt for Ghibli/Emotion to prevent anime stylization
         if (mode === 'ghibli_reaction' || mode === 'unreal_reflection') {
