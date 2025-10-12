@@ -11,11 +11,18 @@ import { useToasts } from '../components/ui/Toasts';
 import { useGenerationEvents, getIsGenerationRunning } from '../lib/generationEvents';
 import MobileSidebar from '../components/MobileSidebar';
 
-const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefined => {
+const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined, optimize: boolean = false): string | undefined => {
   if (!maybeUrl) return maybeUrl
   
-  // If already absolute URL, return as-is
-  if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl
+  // If already absolute URL, return as-is (or optimize if it's Cloudinary)
+  if (/^https?:\/\//i.test(maybeUrl)) {
+    // If it's a Cloudinary URL and we want to optimize it
+    if (optimize && maybeUrl.includes('res.cloudinary.com')) {
+      // Add optimization parameters before /upload/
+      return maybeUrl.replace('/upload/', '/upload/q_auto,f_auto,w_400,c_limit/');
+    }
+    return maybeUrl;
+  }
   
   const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || ''
   if (!cloud) {
@@ -23,9 +30,10 @@ const toAbsoluteCloudinaryUrl = (maybeUrl: string | undefined): string | undefin
     return maybeUrl;
   }
   
-  // Clean the URL and construct absolute Cloudinary URL
+  // Clean the URL and construct absolute Cloudinary URL with optimization
   const cleanUrl = maybeUrl.replace(/^\/+/, '');
-  return `https://res.cloudinary.com/${cloud}/image/upload/${cleanUrl}`;
+  const transformation = optimize ? 'q_auto,f_auto,w_400,c_limit/' : '';
+  return `https://res.cloudinary.com/${cloud}/image/upload/${transformation}${cleanUrl}`;
 }
 
 // Reusable function to transform database media to UserMedia format
@@ -91,6 +99,7 @@ const MobileGalleryScreen: React.FC = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [deletingMediaIds, setDeletingMediaIds] = useState<Set<string>>(new Set());
   const [tokenCount, setTokenCount] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   
   // Infinite scroll state - same as home page
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -100,6 +109,11 @@ const MobileGalleryScreen: React.FC = () => {
   
   // Use global generation state hook
   const { isRunning: isGenerating } = useGenerationEvents();
+  
+  // Handle image load
+  const handleImageLoad = (mediaId: string) => {
+    setLoadedImages(prev => new Set(prev).add(mediaId));
+  };
   
 
   // Load user media and token count
@@ -548,26 +562,35 @@ const MobileGalleryScreen: React.FC = () => {
                   {/* Media with overlay tag and action buttons */}
                   <div className="relative group">
                     <div 
-                      className="relative cursor-pointer aspect-square overflow-hidden"
+                      className="relative cursor-pointer aspect-square overflow-hidden bg-white/5"
                       onClick={() => handleMediaClick(item)}
                     >
+                      {/* Loading skeleton */}
+                      {!loadedImages.has(item.id) && (
+                        <div className="absolute inset-0 bg-white/5 animate-pulse" />
+                      )}
+                      
                       {item.type === 'video' ? (
                         <video
-                          src={toAbsoluteCloudinaryUrl(item.url) || item.url}
+                          src={toAbsoluteCloudinaryUrl(item.url, true) || item.url}
                           className="w-full h-full object-cover"
                           controls
                           playsInline
                           muted
+                          onLoadedData={() => handleImageLoad(item.id)}
                         />
                       ) : (
                         <img
-                          src={toAbsoluteCloudinaryUrl(item.url) || item.url}
+                          src={toAbsoluteCloudinaryUrl(item.url, true) || item.url}
                           alt="Generated content"
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          onLoad={() => handleImageLoad(item.id)}
                           onError={(e) => {
                             // Handle broken images by showing placeholder
                             const img = e.currentTarget;
                             img.style.display = 'none';
+                            handleImageLoad(item.id);
                             
                             // Create placeholder div
                             const placeholder = document.createElement('div');
