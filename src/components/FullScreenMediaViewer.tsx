@@ -30,9 +30,19 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(startIndex)
   const current = useMemo(() => media[currentIndex], [media, currentIndex])
 
+  // Only reset index when viewer is opened, not on every startIndex change
   useEffect(() => {
-    setCurrentIndex(startIndex)
-  }, [startIndex])
+    if (isOpen) {
+      setCurrentIndex(startIndex)
+    }
+  }, [isOpen, startIndex])
+  
+  // Ensure currentIndex stays within bounds when media array changes
+  useEffect(() => {
+    if (currentIndex >= media.length && media.length > 0) {
+      setCurrentIndex(media.length - 1)
+    }
+  }, [media.length, currentIndex])
 
   useEffect(() => {
     if (!isOpen) return
@@ -110,6 +120,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
           <div className="relative">
             {current.type === 'video' ? (
               <video 
+                key={current.id}
                 src={current.url} 
                 className="max-w-[85vw] max-h-[85vh] object-contain" 
                 controls 
@@ -118,6 +129,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
               />
             ) : (
               <img 
+                key={current.id}
                 src={current.url} 
                 alt={current.prompt || 'AI Generated Image'} 
                 className="max-w-[85vw] max-h-[85vh] object-contain" 
