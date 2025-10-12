@@ -85,7 +85,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
       {isAuthenticated && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-[9999] text-white hover:text-white/70 transition-colors"
+          className="fixed top-4 left-4 z-[9999999] text-white hover:text-white/70 transition-colors"
           title="Menu"
         >
           <Menu size={24} />
@@ -93,7 +93,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
       )}
 
       {/* Full-Screen Sidebar Overlay */}
-      <div className={`fixed inset-0 z-[9999] bg-black transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-0 z-[9999999] bg-black transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Sidebar Header */}
