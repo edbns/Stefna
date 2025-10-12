@@ -236,12 +236,8 @@ const ProfileScreen: React.FC = () => {
       if (!token) return
 
       console.log('🔄 Loading profile from database...')
-      const response = await fetch('/.netlify/functions/get-user-profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await authenticatedFetch('/.netlify/functions/get-user-profile', {
+        method: 'GET'
       })
 
       if (response.ok) {

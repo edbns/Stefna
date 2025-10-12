@@ -2264,12 +2264,8 @@ const HomeNew: React.FC = () => {
         hasToken: !!token, 
         tokenPreview: token ? `${token.substring(0, 20)}...` : 'none' 
       })
-      const response = await fetch('/.netlify/functions/get-user-profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await authenticatedFetch('/.netlify/functions/get-user-profile', {
+        method: 'GET'
       })
 
       if (response.ok) {
@@ -3730,10 +3726,8 @@ const HomeNew: React.FC = () => {
         const token = authService.getToken();
         if (!token) return;
         
-        const response = await fetch('/.netlify/functions/user-settings', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await authenticatedFetch('/.netlify/functions/user-settings', {
+          method: 'GET'
         });
         
         if (response.ok) {

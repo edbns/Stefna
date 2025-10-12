@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, LogIn, User, LogOut, Coins, UserPlus, Image } from 'lucide-react';
 import authService from '../services/authService';
 import { useToasts } from './ui/Toasts';
+import { authenticatedFetch } from '../utils/apiClient';
 
 interface MobileSidebarProps {
   onProfileClick: () => void;
@@ -39,11 +40,8 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
       if (isAuthenticated) {
         try {
           const token = authService.getToken();
-          const response = await fetch('/.netlify/functions/getQuota', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+          const response = await authenticatedFetch('/.netlify/functions/getQuota', {
+            method: 'GET'
           });
           const data = await response.json();
           // Use currentBalance directly - same as desktop profile

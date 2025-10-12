@@ -1,7 +1,8 @@
 // src/services/authBootstrap.ts
 import authService from './authService';
 import { ensureAndUpdateProfile, needsOnboarding } from './profile';
-import { UserMediaItem as UserMedia } from '../types/media'
+import { UserMediaItem as UserMedia } from '../types/media';
+import { authenticatedFetch } from '../utils/apiClient';
 
 let isBootstrapInitialized = false;
 
@@ -83,10 +84,8 @@ export async function bootstrapAuth() {
     }
 
     // Validate token and get user info
-    const response = await fetch('/.netlify/functions/get-user-profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+    const response = await authenticatedFetch('/.netlify/functions/get-user-profile', {
+      method: 'GET'
     })
 
     if (response.ok) {
