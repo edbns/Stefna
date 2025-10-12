@@ -586,52 +586,6 @@ const MobileGalleryScreen: React.FC = () => {
                           }}
                         />
                       )}
-                      
-                      {/* Tag overlay */}
-                      <div className="absolute bottom-2 left-2">
-                        <span className="px-2 py-1 bg-black/70 text-white text-xs rounded-full border border-white/20 backdrop-blur-sm">
-                          {getMediaTypeDisplay(item)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Action buttons overlay */}
-                    <div className="absolute top-2 right-2 flex space-x-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShare(item);
-                        }}
-                        className="p-2 text-white"
-                        title="Share"
-                      >
-                        <Share2 size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(item);
-                        }}
-                        className="p-2 text-white"
-                        title="Download"
-                      >
-                        <Download size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(item);
-                        }}
-                        disabled={deletingMediaIds.has(item.id)}
-                        className="p-2 text-red-400 disabled:opacity-50"
-                        title="Delete"
-                      >
-                        {deletingMediaIds.has(item.id) ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 size={16} />
-                        )}
-                      </button>
                     </div>
                   </div>
                 </div>
