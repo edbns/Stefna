@@ -513,7 +513,7 @@ const MobileGalleryScreen: React.FC = () => {
       <div className="pb-20 pt-16">
         {isLoading ? (
           <div className="px-4 py-4">
-            <SkeletonGrid columns={2} rows={10} />
+            <SkeletonGrid columns={3} rows={10} />
           </div>
         ) : (
           <div className="w-full px-4 py-4">
@@ -537,8 +537,8 @@ const MobileGalleryScreen: React.FC = () => {
               </div>
             )}
             
-            {/* Two-column grid layout */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Three-column grid layout */}
+            <div className="grid grid-cols-3 gap-1">
               {userMedia.map((item, index) => (
                 <div 
                   key={item.id} 
@@ -548,13 +548,13 @@ const MobileGalleryScreen: React.FC = () => {
                   {/* Media with overlay tag and action buttons */}
                   <div className="relative group">
                     <div 
-                      className="relative cursor-pointer"
+                      className="relative cursor-pointer aspect-square overflow-hidden"
                       onClick={() => handleMediaClick(item)}
                     >
                       {item.type === 'video' ? (
                         <video
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
-                          className="w-full h-auto object-cover"
+                          className="w-full h-full object-cover"
                           controls
                           playsInline
                           muted
@@ -563,7 +563,7 @@ const MobileGalleryScreen: React.FC = () => {
                         <img
                           src={toAbsoluteCloudinaryUrl(item.url) || item.url}
                           alt="Generated content"
-                          className="w-full h-auto object-cover"
+                          className="w-full h-full object-cover"
                           onError={(e) => {
                             // Handle broken images by showing placeholder
                             const img = e.currentTarget;
@@ -571,7 +571,7 @@ const MobileGalleryScreen: React.FC = () => {
                             
                             // Create placeholder div
                             const placeholder = document.createElement('div');
-                            placeholder.className = 'w-full h-48 bg-white/10 rounded-lg flex items-center justify-center';
+                            placeholder.className = 'w-full h-full bg-white/10 flex items-center justify-center';
                             placeholder.innerHTML = `
                               <div class="text-center text-white/40">
                                 <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
