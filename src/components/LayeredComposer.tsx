@@ -1424,8 +1424,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
 
       </div>
       
-      {/* Social Media Icons - Under Composer (hide Instagram and Threads) */}
-      <div className={`flex items-center justify-center space-x-1.5 ${isMobile ? 'mt-2 mb-2' : 'mt-1'}`}>
+      {/* Social Media Icons - Under Composer (Desktop only, hide Instagram and Threads) */}
+      {!isMobile && (
+      <div className="flex items-center justify-center space-x-1.5 mt-1">
         <a
           href="https://x.com/StefnaXYZ"
           target="_blank"
@@ -1472,6 +1473,7 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
           <YouTubeIcon size={16} className="text-white" />
         </a>
       </div>
+      )}
       
       {/* Media Upload Agreement Modal */}
       {showUploadAgreement && (
