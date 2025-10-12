@@ -3804,7 +3804,7 @@ const HomeNew: React.FC = () => {
 
           {/* Mobile Main Content - Login prompt when not authenticated */}
           {!isAuthenticated && !isComposerOpen && !selectedFile && (
-            <div className="flex flex-col items-center justify-center px-4" style={{ minHeight: 'calc(100vh - 80px)' }}>
+            <div className="flex flex-col items-center justify-center px-4" style={{ minHeight: 'calc(100vh - 300px)' }}>
               <p className="text-white/30 text-xs text-center mb-4">
                 Login to get started
               </p>
