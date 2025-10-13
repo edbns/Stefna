@@ -12,9 +12,9 @@ Identity-adjacent, not fantasy. Stylized, not cosplay.
 Built for scroll-stopping visuals that feel mysterious, ethereal, and beautiful.
 
 Enhanced prompts optimized for Nano Banana's verbosity preferences:
-- The Syndicate: Feared inner circle of power, tailored suits, cinematic underworld
+- Black Bloom: Botanical portrait with black flowers, mystical midnight garden
 - Yakuza Heir: Raw power and style, irezumi tattoos, Osaka street scenes
-- The Gothic Pact: Gothic royalty in timeless black fashion, candlelit scenes
+- Blueberry Bliss: Futuristic latex fashion in deep blue and lilac palette
 - Y2K Paparazzi: Ultra-sexy fashion-forward icons, night scene, paparazzi flash
 - Medusa's Mirror: Greek muse glam, flowing fabrics, marble ruins
 - Chromatic Bloom: Dark magazine cover style with animal symbols
@@ -47,12 +47,12 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
-  // 🕴️ The Syndicate
+  // 🖤 Black Bloom
   {
     id: 'unreal_reflection_the_syndicate',
-    label: 'The Syndicate',
-    prompt: 'Transform this person, couple or group of people in the photo into a member or members of The Syndicate — a feared and untouchable inner circle of power. If male, they wear tailored black suits, long coats, or sharp collared shirts — sometimes with gloves or dark sunglasses, always perfectly composed. If female, they appear in couture-style dresses, satin gowns, or sleek power suits — elegant, cold, and intimidating. Couples may stand together like a mafia heir and spouse, while groups may form a silent circle or hierarchy, one larger bodyguard figure half in shadow.\n\nTheir posture is natural and unstaged — leaning against a luxury car, seated at a dim table with half-finished drinks, adjusting a cufflink, standing half-turned in a doorway, or caught mid-stride in a quiet hallway. The lighting changes with the setting: golden light spilling through blinds in a smoky private room, the cold blue of a deserted garage lit by a single bulb, or warm streetlights reflecting off wet pavement at night.\n\nThe environment suggests wealth and secrecy — places like a hidden lounge with leather chairs and cigars, an abandoned luxury hotel lobby, a rain-soaked parking lot beside a black Mercedes, or a curtained backroom of a club.\n\nThe mood is tense and cinematic, but completely real — as if this was a leaked photo from the underworld, capturing their authority without posing. Always photorealistic, fashion-forward, and intimidating.',
-    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
+    label: 'Black Bloom',
+    prompt: 'Transform this exact woman (or group of women) into a botanical portrait styled with high-fashion elegance. Her outfit, accessories, and scene are crafted entirely from a curated selection of soft-textured black flowers, designed to evoke sensuality, mystery, and ethereal power.\n\n🌺 Approved Flowers Only\nUse only the following flower types — no others:\n* Black Peonies – for fullness and drape\n* Black Orchids – elegance and focal points\n* Black Hibiscus – sculptural shapes, shoulder accents\n* Black Cherry Blossoms – scattered delicately in hair or on skin\n* Black Baby\'s Breath – soft halo, filler detail\n* Black Roses – depth and romance\n❌ No colorful or fantasy hybrid flowers ✅ All flowers must be realistic, soft-textured, and match the black palette\n\n🎨 Color Direction: Black Edition Only\nEverything — dress, accessories, flowers, background — is rendered in shades of black:\n* Matte black, satin black, deep charcoal\n* Occasional highlights in silver or deep graphite for contour and depth\n* No visible bright colors, no green stems, no color contrast\n* Scene feels moody, elegant, and sculptural\n✅ Black-on-black layering must remain readable through light, shadow, and texture contrast ❌ No neon, no blue tint, no gothic blood red\n\n💄 Makeup & Face\nShe wears dramatic soft-glam makeup with bold details:\n* Eyes: charcoal shimmer, winged eyeliner, defined lashes\n* Skin: radiant matte or semi-matte finish, golden or neutral undertone\n* Lips: deep rosewood or soft blackened plum\n* Cheeks: muted mauve or dusty rose, lightly contoured\n* ✅ Eyebrows shaped, lashes bold — editorial ready\n* ❌ No bare face, no zombie effects\n\n👗 Floral Fashion Design\n* Dress sculpted entirely from black petals and blooms\n* Petals form cups, sleeves, corset folds, thigh-high petal splits\n* Strategic openings show natural skin — elegant, not vulgar\n* Petal layering mimics couture draping\n* Optional: black rose neckline, orchid cuff, or peony cascade from waist\n\n💇‍♀️ Hair Styling\n* Long styled waves, sleek braids, or low chignon with black cherry blossoms or orchids\n* Hair is elegant, polished, with clear shape — not messy\n* Optional: matte black flower crown or petal-studded pins\n\n🧍‍♀️ Posing (Solo or Group)\n* Side or ¾ angle poses, soft lean, hand gently touching lips or lifting hair\n* Legs crossed or tucked elegantly\n* Expressions: powerful, hypnotic, soft — never stiff\nGroup logic:\n* Each woman has unique floral placement\n* Composition forms soft arc or triangle\n* No clones, no duplicates, natural chemistry\n\n🌿 Background & Scene\n* A mystical midnight garden or dark floral clearing\n* Ground is black moss, or soft layered petals in deep shades\n* Glowing pollen or dew particles floating\n* Soft mist + faint silver light beams from moonlight or hidden source\n✅ Scene must feel natural and cinematic, not artificial ❌ No walls, beds, greenhouses, or studio lighting\n\n✅ Technical Lock\n* 100% identity preservation\n* Shadows and petal light interplay must feel real\n* No chrome shine, fantasy filters, or plastic effects',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, colorful flowers, green stems, bright colors, neon, blue tint, gothic blood red, bare face, zombie effects, messy hair, walls, beds, greenhouses, studio lighting, chrome shine, fantasy filters, plastic effects',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
@@ -61,7 +61,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     source: 'unreal_reflection',
     guidance_scale: 7.5,
     num_inference_steps: 30,
-    features: ['the_syndicate', 'power_suits', 'cinematic_lighting', 'authority', 'identity_preserved'],
+    features: ['black_bloom', 'botanical_fashion', 'black_flowers', 'mystical_garden', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 6,
     output_format: 'jpeg',
@@ -91,12 +91,12 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     image_prompt_strength: 0.55,
     aspect_ratio: '4:5'
   },
-  // 🖤 The Gothic Pact
+  // 🫐 Blueberry Bliss
   {
     id: 'unreal_reflection_gothic_pact',
-    label: 'The Gothic Pact',
-    prompt: 'Transform this person, couple or group of people in the photo into a member or members of The Gothic Pact — gothic royalty in timeless black high fashion. If male, they wear sharp dark suits, long coats, or high collars with velvet or satin detail. If female, they wear lace gowns, corseted dresses, veils, or dramatic jewelry with pearls and silver. Tattoos or jewelry may glint faintly, but nothing exaggerated. Couples may appear bound together in secrecy, while groups may gather like a silent court.\n\nTheir posture is natural, not staged — seated with calm intensity, leaning into shadow, walking mid-frame, or standing side by side. Their expressions remain regal and unreadable.\n\nThe scene changes with the moment:\n- a candlelit cathedral ruin with golden light spilling across broken stone,\n- a moonlit balcony with mist curling through the night air,\n- a decaying mansion hall lined with faded portraits,\n- a shadowy room filled with candles and heavy velvet curtains,\n- a Gothic garden at twilight with bare trees and wrought iron gates.\n\nThe lighting adapts to the place: flickering candlelight, pale silver moonlight, stained glass reflections, or soft dawn shadows.\n\nThe photo should always feel real, cinematic, and fashion-forward — like a leaked portrait of a Gothic dynasty, not a posed photoshoot.',
-    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
+    label: 'Blueberry Bliss',
+    prompt: 'Transform this person, couple, trio, or group (1–4 total) into fierce futuristic fashion models in a glossy, hyper-stylized editorial scene. The entire world — from clothes to backdrop — is immersed in a high-contrast deep blue and lilac color palette. Full-body latex is mandatory. No other materials.\n\n👯 Group Format\n* 1 to 4 subjects\n* Each subject strikes a bold pose: kneeling, crouching, hands on hips, looking over shoulder, or chin tilted\n* No soft or passive stances. Power + posture.\n\n👗 LATEX-ONLY FASHION STYLING\nEach subject wears 1 full latex look in either deep blue or glowing lilac — no color mixing inside outfits. Examples:\n1. Deep blue latex catsuit — full body, zipped high collar, gloss finish\n2. Lilac latex corset mini dress — tight, high hem, exaggerated curves\n3. Glossy indigo latex trench coat — open, with matching thigh-high boots\n4. Lilac latex jumpsuit with cutouts — sculpted hips, long sleeves\n5. One-shoulder blue latex bodysuit — paired with latex gloves and platform boots\n6. Matching latex masks or visors (optional — for 1 subject only)\n⚠️ Strict latex rule: No silk, chiffon, mesh, or mixed materials. No jewelry unless latex.\n\n💇 Hair & Makeup\n* Hair is tightly styled — slicked back, sharp bob, or sculptural shapes\n* Makeup pops with contrast:\n    * Blue eyeliner wings + lilac glossy lips\n    * Violet chrome highlight + cold-toned contour\n    * Eyes fully open, lashes defined — do not obscure makeup\n* Optional: tiny chrome blue face sticker accents (only 1–2 subjects max)\n\n🫐 Signature Prop: Melted Blueberry Latex Orb\n* A surreal glossy latex orb sits on the floor, cracked open like a giant blueberry\n* Inside: gooey purple light spills out — hyper-detailed, glowing latex goo\n* Other options:\n    * Subject places heel on the orb, squishing it\n    * One crouches beside it with hand dipped into the "berry latex"\n\n🪩 Background & Set Design\n* Set is fully color-coded in latex textures — lilac and deep blue ONLY\n* Glossy reflective floor\n* Curved latex wall panels with sharp blue-to-lilac lighting\n* Optional: futuristic latex-draped chair, podium, or steps for posing\n\n💡 Lighting\n* Studio-grade direct lighting, from low angles\n* Creates sharply defined shadows and latex shine pop\n* Use blue-toned key light and lilac rim lighting — high drama\n\n📸 Photography Style\n* High-gloss magazine cover energy\n* Subjects look sculpted, untouchable\n* No realism. Full fashion fantasy.\n\n⚙️ Technical Rules\n* Identity lock ON — match facial and body features\n* All subjects from original photo only\n* No background clutter, no fruit realism\n* Props, latex, and environment must be deep blue or lilac ONLY\n* No mixed materials — 100% latex universe',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, silk, chiffon, mesh, mixed materials, jewelry, soft poses, passive stances, realistic fruit, background clutter, green, red, yellow, orange, warm colors',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
@@ -105,7 +105,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     source: 'unreal_reflection',
     guidance_scale: 7.5,
     num_inference_steps: 30,
-    features: ['gothic_pact', 'gothic_royalty', 'dark_fashion', 'cinematic_scenes', 'identity_preserved'],
+    features: ['blueberry_bliss', 'latex_fashion', 'futuristic_editorial', 'blue_lilac_palette', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 6,
     output_format: 'jpeg',

@@ -25,9 +25,9 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Y2K Paparazzi first, The Untouchable second, Gothic Pact and Medusa's Mirror at the end
+  // Custom order: Y2K Paparazzi first, The Untouchable second, Blueberry Bliss and Medusa's Mirror at the end
   const priorityOrder = ['Y2K Paparazzi', 'The Untouchable'];
-  const deprioritizedOrder = ['The Gothic Pact', 'Medusa\'s Mirror'];
+  const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   const allPresets = [
     // Priority presets first
@@ -47,9 +47,9 @@ export function CombinedPresetPicker({
       'The Mechanic': '/images/parallel_self_the_mechanic.webp',
       'Colorcore': '/images/parallel_self_colorcore.webp',
       'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.webp',
-      'The Syndicate': '/images/unreal_reflection_the_syndicate.webp',
+      'Black Bloom': '/images/unreal_reflection_black_bloom.webp',
       'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.webp',
-      'The Gothic Pact': '/images/unreal_reflection_gothic_pact.webp',
+      'Blueberry Bliss': '/images/unreal_reflection_blueberry_bliss.webp',
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp'
