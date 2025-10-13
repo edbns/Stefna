@@ -67,8 +67,8 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Unreal Reflection™",
-      title: "The Syndicate",
-      description: "Modern mafia myth, leather, shadow, grayscale drama."
+      title: "Black Bloom",
+      description: "Botanical portrait with black flowers in a mystical midnight garden."
     },
     {
       mode: "Unreal Reflection™",
@@ -77,8 +77,8 @@ export default function BestPracticesScreen() {
     },
     {
       mode: "Unreal Reflection™",
-      title: "The Gothic Pact",
-      description: "Dark pact aesthetic, veils, stares, ornate shadows."
+      title: "Blueberry Bliss",
+      description: "Futuristic latex fashion in glossy deep blue and lilac palette."
     },
     {
       mode: "Unreal Reflection™",
@@ -168,9 +168,9 @@ export default function BestPracticesScreen() {
       'The Mechanic': '/images/parallel_self_the_mechanic.webp?v=' + Date.now(),
       'Colorcore': '/images/parallel_self_colorcore.webp',
       'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.webp?v=' + Date.now(),
-      'The Syndicate': '/images/unreal_reflection_the_syndicate.webp',
+      'Black Bloom': '/images/unreal_reflection_black_bloom.webp',
       'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.webp',
-      'The Gothic Pact': '/images/unreal_reflection_gothic_pact.webp',
+      'Blueberry Bliss': '/images/unreal_reflection_blueberry_bliss.webp',
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp'
