@@ -63,14 +63,16 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
   // Get the creation date from the media item
   const getCreationDate = (media: UserMedia) => {
     if (media.timestamp) {
-      return new Date(media.timestamp).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
+      const date = new Date(media.timestamp);
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const day = date.getDate();
+      const year = date.getFullYear();
+      const time = date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
         minute: '2-digit',
-        hour12: true
-      })
+        hour12: true 
+      });
+      return `${month} ${day}, ${year}, ${time}`;
     }
     return 'Unknown date'
   }
@@ -144,7 +146,7 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
 
             {/* Date/Time - Top Center (inside media frame) */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30">
-              <span className="text-white text-sm bg-black/70 px-3 py-1 rounded-full backdrop-blur-sm font-medium">
+              <span className="text-white text-xs bg-black/70 px-2 py-0.5 rounded-full backdrop-blur-sm">
                 {getCreationDate(current)}
               </span>
             </div>
@@ -155,12 +157,13 @@ const FullScreenMediaViewer: React.FC<FullScreenMediaViewerProps> = ({
                 item={current} 
                 presetKey={current.metadata?.presetKey || current.presetKey}
                 onClick={() => {}} 
+                size="sm"
                 className="bg-black/70 backdrop-blur-sm"
               />
               
               {/* 3D Tag - Show if media has 3D model */}
               {(current.obj_url || current.gltf_url) && (
-                <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-white text-xs font-medium">
+                <div className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-white text-xs">
                   3D
                 </div>
               )}
