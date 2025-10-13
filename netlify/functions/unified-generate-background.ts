@@ -273,21 +273,25 @@ function getAspectRatioForMode(mode: string): string {
     case 'unreal_reflection':
     case 'custom':
     case 'presets':
-      return '4:5'; // Instagram/Facebook/X-friendly portrait
+    case 'edit':
+    case 'parallel_self':
+      return '9:16'; // TikTok/Reels/Stories vertical format
 
     case 'cyber_siren':
-      return '16:9'; // Cinematic wide (Stability.ai)
+      return '9:16'; // Changed to vertical for social media
 
     case 'story_time':
       return '6:19'; // Vertical for TikTok/Reels (Kling video)
 
     default:
-      return '1:1'; // Safe fallback
+      return '9:16'; // Default to vertical social media format
   }
 }
 
 function getDimensionsForAspectRatio(aspectRatio: string): { width: number, height: number } {
   switch (aspectRatio) {
+    case '9:16':
+      return { width: 720, height: 1280 }; // TikTok/Reels/Stories vertical
     case '4:5':
       return { width: 1024, height: 1280 };
     case '3:4':

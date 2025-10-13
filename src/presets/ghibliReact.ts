@@ -52,7 +52,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.35,
-    aspect_ratio: '3:4',
+    aspect_ratio: '9:16',
     features: ['ghibli_style', 'emotional_reaction', 'tears', 'soft_lighting', 'identity_preserved']
   },
   {
@@ -73,7 +73,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.35,
-    aspect_ratio: '3:4',
+    aspect_ratio: '9:16',
     features: ['ghibli_style', 'emotional_reaction', 'shock', 'soft_lighting', 'identity_preserved']
   },
   {
@@ -94,7 +94,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.35,
-    aspect_ratio: '3:4',
+    aspect_ratio: '9:16',
     features: ['ghibli_style', 'emotional_reaction', 'sparkles', 'soft_lighting', 'identity_preserved']
   },
   {
@@ -115,7 +115,7 @@ export const GHIBLI_REACTION_PRESETS: GhibliReactionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.35,
-    aspect_ratio: '3:4',
+    aspect_ratio: '9:16',
     features: ['ghibli_style', 'emotional_reaction', 'love', 'bokeh_glow', 'soft_lighting', 'identity_preserved']
   }
 ];

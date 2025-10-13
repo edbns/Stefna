@@ -72,7 +72,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.58,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 👑 The Untouchable
   {
@@ -94,7 +94,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.57,
-    aspect_ratio: '1:1'
+    aspect_ratio: '9:16'
   },
   // 🌅 Neon Proof
   {
@@ -116,7 +116,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.59,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 🔧 The Mechanic
   {
@@ -138,7 +138,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.58,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 🎨 Colorcore
   {
@@ -160,7 +160,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     output_format: 'jpeg',
     raw: false,
     image_prompt_strength: 0.6,
-    aspect_ratio: '1:1',
+    aspect_ratio: '9:16',
     isRandomized: true,
     basePrompt: 'Create a single photoreal square image (aspect ratio 1:1) that contains four vertically oriented portrait frames, arranged in a 2x2 grid (two at the top, two at the bottom). Each portrait frame must follow a 6:19 vertical aspect ratio inside the square layout, showing the same subject(s) — person, couple, or group — in different poses, outfits, and expressions. All people in the input image must appear in every frame. No cropping or solo close-ups. Keep group integrity consistent. Each of the four portrait frames must be evenly spaced with clean white borders between each frame, and a thick white outer margin around the entire grid. The four frames are tall, vertical portraits, arranged like this: 🟨🟨 🟨🟨 FRAMING: Upper body only, from the waist up. Show head, shoulders, torso, and arms only. No legs or full body shots. Use a solid {COLOR} background in all 4 frames — {COLOR_DESCRIPTION}. No patterns, textures, props, or gradient. All outfits and accessories must follow a {COLOR} theme, but vary between the frames. Include a mix of fashion aesthetics: casual, sexy, streetwear, modest, etc. IMPORTANT GENDER-SPECIFIC STYLING: Women wear ONLY feminine clothing: {FEMALE_STYLING}. Men wear ONLY masculine clothing: {MALE_STYLING}. Never dress men in women\'s clothing or women in men\'s clothing. Each person keeps their gender-appropriate styling across all 4 frames. Couples or groups should show slight changes per frame — jacket off/on, different pose or accessories — but remain harmonious and gender-appropriate. CUTE ANIMALS: Some frames (1 or 2 maximum) may include exactly ONE adorable animal per frame (puppies, kittens, bunnies, or piglets) being held, cuddled, or on shoulder. IMPORTANT: Each frame with an animal must show ONLY ONE animal - never multiple animals in the same frame. When animals appear, they must have color-matching accessories (bow, collar, ribbon, or bandana) that match the {COLOR} theme. Animals should look real, photoreal, and extremely cute. Poses per frame (each frame must show a different one): {POSES}. Lighting: bright studio style — high clarity, no shadows, clean beauty light across all 4 frames. Final image must look like a professional 2×2 collage with a unified aesthetic: strong {COLOR} pop, styling variation, expressive energy, and clean white grid borders.'
   },
@@ -184,7 +184,7 @@ export const PARALLEL_SELF_PRESETS: ParallelSelfPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.57,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   }
 ];
 

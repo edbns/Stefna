@@ -67,7 +67,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 🐉 Yakuza Heir
   {
@@ -89,7 +89,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 🫐 Blueberry Bliss
   {
@@ -111,7 +111,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 📸 Y2K Paparazzi
   {
@@ -133,7 +133,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 🏛️ Medusa\'s Mirror
   {
@@ -155,7 +155,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   },
   // 🌺 Chromatic Bloom
   {
@@ -177,7 +177,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '4:5'
+    aspect_ratio: '9:16'
   }
 ];
 
