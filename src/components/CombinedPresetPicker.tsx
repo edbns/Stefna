@@ -47,9 +47,9 @@ export function CombinedPresetPicker({
       'The Mechanic': '/images/parallel_self_the_mechanic.webp',
       'Colorcore': '/images/parallel_self_colorcore.webp',
       'Getaway Lookbook': '/images/parallel_self_getaway_lookbook.webp',
-      'Black Bloom': '/images/unreal_reflection_black_bloom.webp',
+      'Black Bloom': '/images/unreal_reflection_black_bloom.jpg',
       'Yakuza Heir': '/images/unreal_reflection_yakuza_heir.webp',
-      'Blueberry Bliss': '/images/unreal_reflection_blueberry_bliss.webp',
+      'Blueberry Bliss': '/images/unreal_reflection_blueberry_bliss.jpg',
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp'
