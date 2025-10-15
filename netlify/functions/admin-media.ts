@@ -66,7 +66,7 @@ const adminMediaHandler: Handler = async (event) => {
         paramIndex++
       }
 
-      // Get media from all tables
+      // Get media from all tables with deduplication at database level
       const media = await q(`
         WITH all_media AS (
           SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
@@ -82,14 +82,19 @@ const adminMediaHandler: Handler = async (event) => {
           SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'parallel_self' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM parallel_self_media WHERE status = 'completed' AND image_url IS NOT NULL
+        ),
+        deduplicated_media AS (
+          SELECT DISTINCT ON (type, id) *
+          FROM all_media
+          ${whereClause}
+          ORDER BY type, id, created_at DESC
         )
-        SELECT * FROM all_media
-        ${whereClause}
+        SELECT * FROM deduplicated_media
         ORDER BY created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `, [...queryParams, limitNum, offsetNum]);
 
-      // Get total count
+      // Get total count with deduplication
       const totalCount = await q(`
         WITH all_media AS (
           SELECT 'edit' as type, id::text, user_id, image_url as "finalUrl", source_url, null as preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM edit_media WHERE status = 'completed' AND image_url IS NOT NULL
@@ -105,9 +110,14 @@ const adminMediaHandler: Handler = async (event) => {
           SELECT 'presets' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM presets_media WHERE status = 'completed' AND image_url IS NOT NULL
           UNION ALL
           SELECT 'parallel_self' as type, id::text, user_id, image_url as "finalUrl", source_url, preset, status, created_at, prompt, GREATEST(COALESCE(likes_count, 0), 0) as likes_count, metadata FROM parallel_self_media WHERE status = 'completed' AND image_url IS NOT NULL
+        ),
+        deduplicated_media AS (
+          SELECT DISTINCT ON (type, id) *
+          FROM all_media
+          ${whereClause}
+          ORDER BY type, id, created_at DESC
         )
-        SELECT COUNT(*) as total FROM all_media
-        ${whereClause}
+        SELECT COUNT(*) as total FROM deduplicated_media
       `, queryParams);
 
       // Get media statistics
@@ -127,7 +137,7 @@ const adminMediaHandler: Handler = async (event) => {
         ) all_media
       `);
 
-      console.log(`✅ [Admin] Retrieved ${media.length} media items`)
+      console.log(`✅ [Admin] Retrieved ${media.length} deduplicated media items (offset: ${offsetNum}, limit: ${limitNum})`)
       
       return json({
         media,

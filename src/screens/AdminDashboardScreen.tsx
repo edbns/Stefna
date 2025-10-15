@@ -129,20 +129,24 @@ const AdminDashboardScreen: React.FC = () => {
           likesCount: item.likes_count || 0
         }))
 
-        // Remove duplicates based on type and id combination
-        const deduplicatedMedia = transformedMedia.filter((media: any, index: number, array: any[]) => 
-          array.findIndex((m: any) => m.type === media.type && m.id === media.id) === index
-        )
-        
         if (reset) {
-          setMedia(deduplicatedMedia)
-          setMediaOffset(MEDIA_LIMIT)
+          // On reset, just use the new media directly (already deduplicated by backend)
+          setMedia(transformedMedia)
+          setMediaOffset(transformedMedia.length)
+          setHasMoreMedia(transformedMedia.length === MEDIA_LIMIT)
         } else {
-          setMedia(prev => [...prev, ...deduplicatedMedia])
-          setMediaOffset(prev => prev + MEDIA_LIMIT)
+          // When appending, deduplicate against ALL existing media
+          setMedia(prev => {
+            const existingKeys = new Set(prev.map(m => `${m.type}-${m.id}`))
+            const newUniqueMedia = transformedMedia.filter((m: any) => 
+              !existingKeys.has(`${m.type}-${m.id}`)
+            )
+            return [...prev, ...newUniqueMedia]
+          })
+          // Increment offset by the number of items we actually received from backend
+          setMediaOffset(prev => prev + transformedMedia.length)
+          setHasMoreMedia(transformedMedia.length === MEDIA_LIMIT)
         }
-        
-        setHasMoreMedia(transformedMedia.length === MEDIA_LIMIT)
       }
     } catch (error) {
       console.error('Failed to load media:', error)
