@@ -49,6 +49,8 @@ const AdminDashboardScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [searchTerm, setSearchTerm] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null)
   const [mediaOffset, setMediaOffset] = useState(0)
   const [hasMoreMedia, setHasMoreMedia] = useState(true)
@@ -90,6 +92,19 @@ const AdminDashboardScreen: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [activeTab, hasMoreMedia, isLoadingMoreMedia])
 
+  // Reload media when filters change
+  useEffect(() => {
+    if (activeTab === 'media' && isAuthenticated) {
+      const timeoutId = setTimeout(() => {
+        loadMedia(true)
+        setMediaOffset(0)
+        setHasMoreMedia(true)
+      }, 500) // Debounce search
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [searchTerm, startDate, endDate])
+
   const loadUsers = async () => {
     try {
       setIsLoading(true)
@@ -112,7 +127,14 @@ const AdminDashboardScreen: React.FC = () => {
       if (reset) setIsLoading(true)
       
       const offset = reset ? 0 : mediaOffset
-      const response = await fetch(`/.netlify/functions/admin-media?limit=${MEDIA_LIMIT}&offset=${offset}`, {
+      
+      // Build query string with optional date filters
+      let queryParams = `limit=${MEDIA_LIMIT}&offset=${offset}`
+      if (searchTerm) queryParams += `&search=${encodeURIComponent(searchTerm)}`
+      if (startDate) queryParams += `&startDate=${startDate}`
+      if (endDate) queryParams += `&endDate=${endDate}`
+      
+      const response = await fetch(`/.netlify/functions/admin-media?${queryParams}`, {
         headers: { 'X-Admin-Secret': adminSecret }
       })
       if (response.ok) {
@@ -718,16 +740,46 @@ const AdminDashboardScreen: React.FC = () => {
           
           {activeTab === 'media' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="space-y-4">
                 <h2 className="text-xl font-semibold">Media Management</h2>
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-wrap items-center gap-3">
                   <input
                     type="text"
-                    placeholder="Search media..."
+                    placeholder="Search by prompt or user ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-black placeholder-gray-400"
                   />
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-700">From:</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-black"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-700">To:</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-black"
+                    />
+                  </div>
+                  {(searchTerm || startDate || endDate) && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm('')
+                        setStartDate('')
+                        setEndDate('')
+                      }}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                   {isLoading && <span className="text-sm text-gray-500">Loading...</span>}
                 </div>
               </div>

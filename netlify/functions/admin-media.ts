@@ -35,13 +35,13 @@ const adminMediaHandler: Handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       // Get all media with pagination and filtering
-      const { limit = '50', offset = '0', type, status, search } = event.queryStringParameters || {}
+      const { limit = '50', offset = '0', type, status, search, startDate, endDate } = event.queryStringParameters || {}
       
       // Ensure valid numbers
       const limitNum = Math.max(1, Math.min(1000, parseInt(limit) || 50));
       const offsetNum = Math.max(0, parseInt(offset) || 0);
       
-      console.log('🔍 [Admin] Fetching media with filters:', { limit: limitNum, offset: offsetNum, type, status, search })
+      console.log('🔍 [Admin] Fetching media with filters:', { limit: limitNum, offset: offsetNum, type, status, search, startDate, endDate })
       
       // Build dynamic query based on filters
       let whereClause = "WHERE 1=1"
@@ -63,6 +63,19 @@ const adminMediaHandler: Handler = async (event) => {
       if (search) {
         whereClause += ` AND (prompt ILIKE $${paramIndex} OR user_id ILIKE $${paramIndex})`
         queryParams.push(`%${search}%`)
+        paramIndex++
+      }
+
+      if (startDate) {
+        whereClause += ` AND created_at >= $${paramIndex}::timestamp`
+        queryParams.push(startDate)
+        paramIndex++
+      }
+
+      if (endDate) {
+        // Add one day to end date to include the entire day
+        whereClause += ` AND created_at < ($${paramIndex}::timestamp + INTERVAL '1 day')`
+        queryParams.push(endDate)
         paramIndex++
       }
 
