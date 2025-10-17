@@ -4,7 +4,7 @@ export function setupGlobalErrorHandling() {
   window.addEventListener('unhandledrejection', (event) => {
     const msg = String(event.reason || '');
     
-    // Filter out common blocked request errors
+    // Filter out common blocked request errors and non-critical errors
     if (msg.includes('ERR_BLOCKED_BY_CLIENT') || 
         msg.includes('net::ERR_BLOCKED_BY_CLIENT') ||
         msg.includes('Failed to fetch') ||
@@ -12,25 +12,43 @@ export function setupGlobalErrorHandling() {
         msg.includes('analytics') ||
         msg.includes('tracking') ||
         msg.includes('telemetry') ||
-        msg.includes('metrics')) {
-      // Silently ignore blocked requests - don't log them
+        msg.includes('metrics') ||
+        msg.includes('CORS') ||
+        msg.includes('NetworkError') ||
+        msg.includes('AbortError') ||
+        msg.includes('ChunkLoadError') ||
+        msg.includes('Loading chunk') ||
+        msg.includes('Loading CSS chunk') ||
+        msg.includes('ResizeObserver loop limit exceeded') ||
+        msg.includes('Non-Error promise rejection')) {
+      // Silently ignore blocked requests and non-critical errors
       event.preventDefault();
       return;
     }
     
     console.error('Global unhandledrejection caught:', event.reason);
     
-    // Clear any stuck generating states
-    const clearEvent = new CustomEvent('clear-generating-state');
-    window.dispatchEvent(clearEvent);
+    // Only clear generating states and show error for actual generation-related errors
+    // Check if this looks like a generation error
+    const isGenerationError = msg.includes('generation') || 
+                             msg.includes('Generation') ||
+                             msg.includes('dispatchGenerate') ||
+                             msg.includes('unified-generate') ||
+                             msg.includes('INSUFFICIENT_CREDITS');
     
-    // Show user-friendly error
-    window.dispatchEvent(new CustomEvent('generation-error', { 
-      detail: { 
-        message: 'Something went wrong. Please try again.', 
-        timestamp: Date.now() 
-      } 
-    }));
+    if (isGenerationError) {
+      // Clear any stuck generating states
+      const clearEvent = new CustomEvent('clear-generating-state');
+      window.dispatchEvent(clearEvent);
+      
+      // Show user-friendly error only for generation-related errors
+      window.dispatchEvent(new CustomEvent('generation-error', { 
+        detail: { 
+          message: 'Something went wrong. Please try again.', 
+          timestamp: Date.now() 
+        } 
+      }));
+    }
     
     // Prevent the default browser error
     event.preventDefault();

@@ -1950,7 +1950,7 @@ const HomeNew: React.FC = () => {
       const userIdParam = currentUser?.id ? `&userId=${currentUser.id}` : ''
       
       // Add a timestamp parameter to prevent browser caching
-    const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}${userIdParam}`)
+    const res = await authenticatedFetch(`/.netlify/functions/getPublicFeed?limit=${pageSize}&offset=${offset}${userIdParam}`)
       console.log('📡 Feed response status:', res.status)
       
       if (res.ok) {

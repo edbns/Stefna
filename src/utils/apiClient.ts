@@ -11,13 +11,8 @@ function showSessionExpiredAlert() {
     alert('Session Expired\n\nFor your security, please sign in again.')
   }
   
-  // Logout and redirect to login
-  authService.logout()
-  
-  // Redirect to login page
-  if (typeof window !== 'undefined') {
-    window.location.href = '/auth'
-  }
+  // Use force logout for immediate effect
+  authService.forceLogout()
 }
 
 export async function signedFetch(url: string, opts: RequestInit = {}): Promise<Response> {

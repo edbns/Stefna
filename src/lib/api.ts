@@ -1,5 +1,6 @@
 // src/lib/api.ts
 import { getAuthHeaders } from './auth'
+import { authenticatedFetch } from '../utils/apiClient'
 
 export async function createAsset(input: import('./types').CreateAssetInput) {
   const res = await fetch('/.netlify/functions/create-asset', {
@@ -29,7 +30,7 @@ export async function publishAsset(input: import('./types').PublishAssetInput) {
 }
 
 export async function getPublicFeed(limit = 20, offset = 0) {
-  const res = await fetch(`/.netlify/functions/getPublicFeed?limit=${limit}&offset=${offset}`);
+  const res = await authenticatedFetch(`/.netlify/functions/getPublicFeed?limit=${limit}&offset=${offset}`);
   return res.json();
 }
 

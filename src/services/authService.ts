@@ -314,13 +314,13 @@ class AuthService {
 
   // Start automatic token expiration checking
   private startTokenExpirationCheck(): void {
-    // Check every 60 seconds
+    // Check every 30 seconds for faster detection
     this.tokenExpirationCheckInterval = setInterval(() => {
       if (this.authState.isAuthenticated && this.isTokenExpired()) {
         console.log('🔐 Token expired, attempting to refresh...')
         this.handleTokenExpiration()
       }
-    }, 60000) // Check every minute
+    }, 30000) // Check every 30 seconds
     
     // Also do an immediate check
     if (this.authState.isAuthenticated && this.isTokenExpired()) {
@@ -355,6 +355,12 @@ class AuthService {
       console.error('Error handling token expiration:', error)
       this.handleSessionExpired()
     }
+  }
+
+  // Force logout - for immediate logout when 401 is detected
+  forceLogout(): void {
+    console.log('🔐 Force logout triggered')
+    this.handleSessionExpired()
   }
 
   // Handle session expired - show alert and logout
