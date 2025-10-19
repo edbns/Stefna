@@ -131,10 +131,14 @@ export const handler: Handler = async (event) => {
         [userId]
       );
       
-      // Create user credits
+      // Create user credits with proper starter grant
+      // Get starter grant from app_config (same as OTP users)
+      const starterGrantResult = await q('SELECT value FROM app_config WHERE key = $1', ['starter_grant']);
+      const starterGrant = parseInt(starterGrantResult[0]?.value || '30');
+      
       await q(
-        'INSERT INTO user_credits (user_id, credits, balance, created_at, updated_at) VALUES ($1, 14, 0, NOW(), NOW())',
-        [userId]
+        'INSERT INTO user_credits (user_id, credits, balance, created_at, updated_at) VALUES ($1, $2, 0, NOW(), NOW())',
+        [userId, starterGrant]
       );
     }
 
