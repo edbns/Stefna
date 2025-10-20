@@ -70,6 +70,9 @@ class AuthService {
             hasUser: !!this.authState.user,
             tokenType: typeof this.authState.token
           });
+          
+          // Start token expiration checking when loading auth state
+          this.startTokenExpirationCheck()
         } catch (error) {
           console.error('Error parsing user data:', error)
           this.clearAuthState()
@@ -314,8 +317,16 @@ class AuthService {
 
   // Start automatic token expiration checking
   private startTokenExpirationCheck(): void {
+    console.log('🔐 Starting token expiration check interval...')
+    
     // Check every 30 seconds for faster detection
     this.tokenExpirationCheckInterval = setInterval(() => {
+      console.log('🔐 Token expiration check running...', {
+        isAuthenticated: this.authState.isAuthenticated,
+        hasToken: !!this.authState.token,
+        isExpired: this.isTokenExpired()
+      })
+      
       if (this.authState.isAuthenticated && this.isTokenExpired()) {
         console.log('🔐 Token expired, attempting to refresh...')
         this.handleTokenExpiration()
