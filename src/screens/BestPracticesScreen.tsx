@@ -89,6 +89,11 @@ export default function BestPracticesScreen() {
       mode: "Unreal Reflection™",
       title: "Medusa's Mirror",
       description: "Goth beauty, mythic energy, stone stare, soft lighting."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Chromatic Smoke",
+      description: "Dynamic smoke fashion with rotating color injection - black and colored smoke sculpted into high-fashion couture."
     }
   ]
 
@@ -173,7 +178,8 @@ export default function BestPracticesScreen() {
       'Blueberry Bliss': '/images/unreal_reflection_blueberry_bliss.jpg',
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
-      'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp'
+      'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp',
+      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.webp'
     }
     
     const imagePath = imageMap[presetTitle]

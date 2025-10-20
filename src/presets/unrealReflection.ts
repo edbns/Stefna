@@ -1,5 +1,7 @@
 // src/presets/unrealReflection.ts
 
+import { generateChromaticSmokePrompt } from '../utils/chromaticSmokeRandomization';
+
 /*
 
 🧠 Unreal Reflection™ – Nano Banana Optimized (v2.0)
@@ -18,6 +20,7 @@ Enhanced prompts optimized for Nano Banana's verbosity preferences:
 - Y2K Paparazzi: Ultra-sexy fashion-forward icons, night scene, paparazzi flash
 - Medusa's Mirror: Greek muse glam, flowing fabrics, marble ruins
 - Chromatic Bloom: Dark magazine cover style with animal symbols
+- Chromatic Smoke: Dynamic smoke fashion with rotating color injection
 
 All presets use optimized strength (0.55) and guidance (7.5) for Nano Banana.
 
@@ -172,6 +175,29 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     guidance_scale: 7.5,
     num_inference_steps: 30,
     features: ['chromatic_bloom', 'dark_couture', 'animal_symbols', 'editorial_style', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🌫️ Chromatic Smoke
+  {
+    id: 'unreal_reflection_chromatic_smoke',
+    label: 'Chromatic Smoke',
+    prompt: generateChromaticSmokePrompt('Transform this woman into a seductive, high-fashion portrait sculpted from rising black and {SMOKE_COLOR} smoke. She stands confidently, with a strong pose — one hand on hip or lifted, body slightly turned to emphasize her silhouette and power.\n\nHer "outfit" is made entirely from rich, dense smoke, rising from the ground: voluminous around the legs, then sculpted tight around the waist, wrapping the chest in elegant, directional formations. Think asymmetrical couture — strapless, off-shoulder, or halter shapes formed by smoke curves, not fabric.\n\nThis smoke must not float randomly — it should cling, wrap, and shape her body like a real fashion piece. Thicker and heaviest at the floor, with extra spirals at the base and hips — as if she emerged from the smoke itself. Tendrils can climb her back or swirl around the shoulders to suggest upward energy.\n\nHer skin is real and visible in the openings: smooth, untouched, no surreal effects. Her face has natural makeup only — flawless skin texture, no visible lipstick or gloss. Eyes calm and strong. Hair is clean and styled simply: bun, slicked back, or tucked.\n\nThe background is pure matte black. Lighting comes in at a diagonal angle, softly highlighting her face and accentuating the contours of the smoke. Optional: subtle fog on the floor or faint reflections under her feet — but no glows, no glitter, and absolutely no colored light.\n\nThe smoke must cover her completely from bottom to top, sculpting her form with fashion precision — yet suggesting something primal, commanding, and iconic. She\'s not fading into smoke — she owns the smoke.'),
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, colorful light, glowing effects, glitter, surreal skin effects, visible lipstick, messy hair, bright backgrounds, studio lighting, chrome shine, fantasy filters, plastic effects',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['chromatic_smoke', 'smoke_fashion', 'dynamic_colors', 'high_fashion', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 6,
     output_format: 'jpeg',
