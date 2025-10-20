@@ -157,6 +157,7 @@ class AuthService {
     const urlParams = new URLSearchParams(window.location.search);
     const authStatus = urlParams.get('auth');
     const token = urlParams.get('token');
+    const refreshToken = urlParams.get('refreshToken');
     const errorMessage = urlParams.get('message');
 
     if (authStatus === 'success' && token) {
@@ -172,7 +173,7 @@ class AuthService {
           platform: payload.platform || 'web'
         };
 
-        this.setAuthState(token, user);
+        this.setAuthState(token, user, refreshToken || undefined);
         
         // Clean up URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);

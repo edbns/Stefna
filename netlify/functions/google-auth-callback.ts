@@ -142,27 +142,43 @@ export const handler: Handler = async (event) => {
       );
     }
 
-    // Generate JWT token
+    // Generate JWT tokens (access + refresh)
     const jwtSecret = process.env.JWT_SECRET || process.env.AUTH_JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT secret not configured');
     }
 
-    const token = jwt.sign(
+    // Generate access token (24 hours)
+    const accessToken = jwt.sign(
       { 
         userId, 
         email, 
         authMethod: 'google',
-        permissions: ['canManageFeed'], // Add permission to manage feed settings
+        permissions: ['canManageFeed'],
         platform: 'web',
+        type: 'access',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+      },
+      jwtSecret
+    );
+
+    // Generate refresh token (30 days)
+    const refreshToken = jwt.sign(
+      { 
+        userId, 
+        email, 
+        authMethod: 'google',
+        platform: 'web',
+        type: 'refresh',
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
       },
       jwtSecret
     );
 
-    // Redirect to frontend with success
-    const redirectUrl = `${process.env.URL || 'https://stefna.xyz'}?auth=success&token=${token}`;
+    // Redirect to frontend with success (include both tokens)
+    const redirectUrl = `${process.env.URL || 'https://stefna.xyz'}?auth=success&token=${accessToken}&refreshToken=${refreshToken}`;
     
     return {
       statusCode: 302,
