@@ -179,7 +179,7 @@ export default function BestPracticesScreen() {
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp',
-      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.webp'
+      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.jpg'
     }
     
     const imagePath = imageMap[presetTitle]
