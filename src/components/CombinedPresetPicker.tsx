@@ -25,9 +25,9 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Y2K Paparazzi first, The Untouchable second, Blueberry Bliss, Medusa's Mirror, and Chromatic Smoke at the end
-  const priorityOrder = ['Y2K Paparazzi', 'The Untouchable'];
-  const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror', 'Chromatic Smoke'];
+  // Custom order: Y2K Paparazzi first, The Untouchable second, Chromatic Smoke third, Blueberry Bliss and Medusa's Mirror at the end
+  const priorityOrder = ['Y2K Paparazzi', 'The Untouchable', 'Chromatic Smoke'];
+  const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   const allPresets = [
     // Priority presets first
