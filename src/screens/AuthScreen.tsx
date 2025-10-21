@@ -443,7 +443,7 @@ const AuthScreen: React.FC = () => {
         </div>
 
         {/* Right Side - Preset Slider */}
-        <div className="w-1/2">
+        <div className="w-1/2 h-screen overflow-hidden">
           <AuthPresetSlider />
         </div>
       </div>
