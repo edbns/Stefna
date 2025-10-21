@@ -315,7 +315,7 @@ const AuthScreen: React.FC = () => {
                     {' '}and{' '}
                     <a href="/privacy" className="text-white hover:text-white/80 underline">Privacy Policy</a>
                   </p>
-                  <p className="text-white/40 text-xs mt-2">
+                  <p className="text-green-400 text-xs mt-2 font-medium">
                     Free to use. Every day. No catch.
                   </p>
                 </div>
@@ -558,7 +558,7 @@ const AuthScreen: React.FC = () => {
                   {' '}and{' '}
                   <a href="/privacy" className="text-white hover:text-white/80 underline">Privacy Policy</a>
                 </p>
-                <p className="text-white/40 text-xs mt-2">
+                <p className="text-green-400 text-xs mt-2 font-medium">
                   Free to use. Every day. No catch.
                 </p>
               </div>
