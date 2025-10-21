@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Preset {
   mode: string
@@ -9,7 +8,6 @@ interface Preset {
 
 const AuthPresetSlider: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
 
   const presets: Preset[] = [
     {
@@ -81,29 +79,12 @@ const AuthPresetSlider: React.FC = () => {
 
   // Auto-advance slider every 4 seconds
   useEffect(() => {
-    if (!isAutoPlaying) return
-
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % presets.length)
     }, 4000)
 
     return () => clearInterval(interval)
-  }, [isAutoPlaying, presets.length])
-
-  const handlePrevious = () => {
-    setIsAutoPlaying(false)
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + presets.length) % presets.length)
-  }
-
-  const handleNext = () => {
-    setIsAutoPlaying(false)
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % presets.length)
-  }
-
-  const handleDotClick = (index: number) => {
-    setIsAutoPlaying(false)
-    setCurrentIndex(index)
-  }
+  }, [presets.length])
 
   const getImagePath = (preset: Preset): string => {
     const modePrefix = preset.mode === "Parallel Self™" ? "parallel_self" : "unreal_reflection"
@@ -120,98 +101,22 @@ const AuthPresetSlider: React.FC = () => {
   const currentPreset = presets[currentIndex]
 
   return (
-    <div className="h-full bg-gradient-to-br from-gray-900 via-black to-gray-800 flex flex-col">
-      {/* Header */}
-      <div className="p-8 pb-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Discover Our Presets</h2>
-          <p className="text-white/60 text-sm">Professional AI-generated content</p>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 px-8 pb-8">
-        <div className="relative h-full">
-          {/* Image Container */}
-          <div className="relative h-64 mb-6 rounded-2xl overflow-hidden bg-gray-800">
-            <img
-              src={getImagePath(currentPreset)}
-              alt={currentPreset.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback to webp if jpg doesn't exist
-                const target = e.target as HTMLImageElement
-                const originalSrc = target.src
-                target.src = originalSrc.replace('.jpg', '.webp')
-              }}
-            />
-            
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            
-            {/* Mode Badge */}
-            <div className="absolute top-4 left-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                currentPreset.mode === "Parallel Self™" 
-                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" 
-                  : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-              }`}>
-                {currentPreset.mode}
-              </span>
-            </div>
-          </div>
-
-          {/* Preset Info */}
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-white mb-2">{currentPreset.title}</h3>
-            <p className="text-white/70 text-sm leading-relaxed px-4">
-              {currentPreset.description}
-            </p>
-          </div>
-
-          {/* Navigation Controls */}
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <button
-              onClick={handlePrevious}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft size={20} className="text-white" />
-            </button>
-            
-            {/* Dots Indicator */}
-            <div className="flex space-x-2">
-              {presets.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleDotClick(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentIndex 
-                      ? 'bg-white w-6' 
-                      : 'bg-white/30 hover:bg-white/50'
-                  }`}
-                />
-              ))}
-            </div>
-            
-            <button
-              onClick={handleNext}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <ChevronRight size={20} className="text-white" />
-            </button>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
-              style={{ 
-                width: `${((currentIndex + 1) / presets.length) * 100}%` 
-              }}
-            />
-          </div>
-        </div>
-      </div>
+    <div className="h-full bg-black flex items-center justify-center relative">
+      {/* Full Screen Image */}
+      <img
+        src={getImagePath(currentPreset)}
+        alt={currentPreset.title}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          // Fallback to webp if jpg doesn't exist
+          const target = e.target as HTMLImageElement
+          const originalSrc = target.src
+          target.src = originalSrc.replace('.jpg', '.webp')
+        }}
+      />
+      
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
     </div>
   )
 }
