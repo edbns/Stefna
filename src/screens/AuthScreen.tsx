@@ -4,6 +4,7 @@ import { Mail, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
 import authService from '../services/authService'
 import WaitlistForm from '../components/WaitlistForm'
 import GoogleLoginButton from '../components/GoogleLoginButton'
+import AuthPresetSlider from '../components/AuthPresetSlider'
 
 const AuthScreen: React.FC = () => {
   const navigate = useNavigate()
@@ -201,7 +202,241 @@ const AuthScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-3 sm:p-6">
+    <div className="min-h-screen bg-black flex">
+      {/* Desktop Split Layout */}
+      <div className="hidden lg:flex w-full">
+        {/* Left Side - Auth Form */}
+        <div className="w-1/2 flex items-center justify-center p-8">
+          <div className="max-w-md w-full">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <img src="/logo.webp" alt="Stefna" className="w-16 h-16 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-white mb-2">
+                {step === 'email' ? 'Sign in to Stefna' : 'Enter Login Code'}
+              </h1>
+              <p className="text-white/60 text-base px-2">
+                {step === 'email' 
+                  ? 'Enter your email to receive a login code'
+                  : `We sent a 6-digit code to ${email}`
+                }
+              </p>
+              {step === 'otp' && (
+                <p className="text-white/40 text-sm mt-2 px-2">
+                  No code? Check in your <span className="text-red-400 font-medium">spam</span> folder
+                </p>
+              )}
+            </div>
+
+            {/* Referral Bonus Indicator */}
+            {referrerEmail && (
+              <div className="mb-6 bg-[#333333] border border-[#333333] rounded-xl p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle size={16} className="text-gray-400 flex-shrink-0" />
+                  <span className="text-sm font-medium text-white">
+                    You're invited by {referrerEmail}! Get 10 bonus credits when you sign up
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Form */}
+            <div className="bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl p-8">
+              {step === 'email' ? (
+                <form onSubmit={handleRequestOTP} className="space-y-6">
+                  {/* Email Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={isLoading || !email}
+                    className={`w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
+                      email && !isLoading
+                        ? 'bg-white text-black hover:bg-white/90'
+                        : 'bg-white/10 text-white/40 cursor-not-allowed'
+                    }`}
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Get Login Code</span>
+                        <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+
+                  {/* Divider */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-white/20"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-transparent text-white/40">or</span>
+                    </div>
+                  </div>
+
+                  {/* Google Login Button */}
+                  <GoogleLoginButton
+                    onSuccess={(token) => {
+                      console.log('Google login successful');
+                      navigate('/');
+                    }}
+                    onError={(error) => {
+                      setError(`Google login failed: ${error}`);
+                    }}
+                    disabled={isLoading}
+                    className="w-full"
+                  />
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOTP} className="space-y-6">
+                  {/* OTP Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Login Code
+                    </label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => {
+                        const newOtp = e.target.value.replace(/\D/g, '').slice(0, 6)
+                        setOtp(newOtp)
+                        
+                        // Clear any previous error/success messages when typing
+                        if (newOtp.length > 0) {
+                          setError('')
+                          setSuccess('')
+                        }
+                        
+                        // Auto-verify when 6 digits are entered
+                        if (newOtp.length === 6 && !isLoading) {
+                          // Small delay to ensure state is updated
+                          setTimeout(() => {
+                            handleVerifyOTPAuto(newOtp)
+                          }, 100)
+                        }
+                      }}
+                      placeholder="Enter 6-digit code"
+                      className="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg tracking-widest"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+
+                  {/* Resend OTP Button */}
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={isResending || isLoading || resendTimer > 0}
+                      className="text-white/60 hover:text-white text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isResending ? 'Sending...' : resendTimer > 0 ? `Resend code (${formatCountdown(resendTimer)})` : 'Resend code'}
+                    </button>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      type="submit"
+                      disabled={isLoading || otp.length !== 6}
+                      className={`w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
+                        otp.length === 6 && !isLoading
+                          ? 'bg-white text-black hover:bg-white/90'
+                          : 'bg-white/10 text-white/40 cursor-not-allowed'
+                      }`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Sign In</span>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleBackToEmail}
+                      disabled={isLoading}
+                      className="w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center space-x-2 bg-white/5 text-white hover:bg-white/10"
+                    >
+                      <ArrowLeft size={16} />
+                      <span>Back to Email</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Messages */}
+              {error && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <XCircle size={16} className="text-red-400" />
+                    <span className="text-red-400 text-sm">{error}</span>
+                  </div>
+                  {quotaReached && (
+                    <button
+                      onClick={() => setShowWaitlistModal(true)}
+                      className="w-full py-2 px-4 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                    >
+                      Join Waitlist
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {success && (
+                <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg flex items-center justify-center space-x-2">
+                  <CheckCircle size={16} className="text-white" />
+                  <span className="text-white text-sm">{success}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="text-center mt-6">
+              <button
+                onClick={() => navigate('/')}
+                className="text-white/60 hover:text-white text-sm"
+              >
+                ← Back to Home
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Preset Slider */}
+        <div className="w-1/2">
+          <AuthPresetSlider />
+        </div>
+      </div>
+
+      {/* Mobile Layout - Original Design */}
+      <div className="lg:hidden min-h-screen bg-black flex items-center justify-center p-3 sm:p-6 w-full">
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-4 sm:mb-8">
@@ -420,6 +655,7 @@ const AuthScreen: React.FC = () => {
           >
             ← Back to Home
           </button>
+          </div>
         </div>
       </div>
 
