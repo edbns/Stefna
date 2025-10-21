@@ -88,20 +88,28 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const modePrefix = preset.mode === "Parallel Self™" ? "parallel_self" : "unreal_reflection"
-    const titleSlug = preset.title.toLowerCase()
+    
+    // Handle special cases for image naming
+    let titleSlug = preset.title.toLowerCase()
       .replace(/'/g, '')
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '_')
       .replace(/_+/g, '_')
       .trim()
     
+    // Special cases for specific presets
+    if (preset.title === "Y2K Paparazzi") {
+      titleSlug = "Y2K_Paparazzi"
+    }
+    
+    // Try .jpg first, then fallback to .webp
     return `/images/${modePrefix}_${titleSlug}.jpg`
   }
 
   const currentPreset = presets[currentIndex]
 
   return (
-    <div className="h-full bg-black flex items-center justify-center relative">
+    <div className="h-full w-full bg-black relative overflow-hidden">
       {/* Full Screen Image */}
       <img
         src={getImagePath(currentPreset)}
@@ -116,7 +124,14 @@ const AuthPresetSlider: React.FC = () => {
       />
       
       {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+      
+      {/* Preset Title */}
+      <div className="absolute bottom-8 left-8 right-8">
+        <h2 className="text-white text-2xl font-bold text-center drop-shadow-lg">
+          {currentPreset.title}
+        </h2>
+      </div>
     </div>
   )
 }
