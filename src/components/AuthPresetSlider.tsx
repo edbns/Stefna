@@ -109,9 +109,9 @@ const AuthPresetSlider: React.FC = () => {
   const currentPreset = presets[currentIndex]
 
   return (
-    <div className="h-full w-full bg-transparent relative">
+    <div className="h-screen w-full bg-transparent relative overflow-hidden">
       {/* Transparent Container with Fixed Dimensions */}
-      <div className="absolute inset-0 bg-black/0 overflow-hidden">
+      <div className="absolute inset-0 bg-black/0">
         <img
           src={getImagePath(currentPreset)}
           alt={currentPreset.title}
