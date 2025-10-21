@@ -109,12 +109,12 @@ const AuthPresetSlider: React.FC = () => {
   const currentPreset = presets[currentIndex]
 
   return (
-    <div className="h-full w-full bg-black relative overflow-hidden">
+    <div className="h-screen w-full bg-black relative overflow-hidden">
       {/* Full Screen Image */}
       <img
         src={getImagePath(currentPreset)}
         alt={currentPreset.title}
-        className="w-full h-full object-cover"
+        className="w-full h-screen object-cover object-center"
         onError={(e) => {
           // Fallback to webp if jpg doesn't exist
           const target = e.target as HTMLImageElement
