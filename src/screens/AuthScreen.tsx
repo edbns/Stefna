@@ -294,19 +294,29 @@ const AuthScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Google Login Button */}
-                  <GoogleLoginButton
-                    onSuccess={(token) => {
-                      console.log('Google login successful');
-                      navigate('/');
-                    }}
-                    onError={(error) => {
-                      setError(`Google login failed: ${error}`);
-                    }}
-                    disabled={isLoading}
-                    className="w-full"
-                  />
-                </form>
+                {/* Google Login Button */}
+                <GoogleLoginButton
+                  onSuccess={(token) => {
+                    console.log('Google login successful');
+                    navigate('/');
+                  }}
+                  onError={(error) => {
+                    setError(`Google login failed: ${error}`);
+                  }}
+                  disabled={isLoading}
+                  className="w-full"
+                />
+
+                {/* Terms and Privacy */}
+                <div className="text-center mt-4">
+                  <p className="text-white/60 text-xs">
+                    By continuing, you agree to our{' '}
+                    <a href="/terms" className="text-white hover:text-white/80 underline">Terms of Service</a>
+                    {' '}and{' '}
+                    <a href="/privacy" className="text-white hover:text-white/80 underline">Privacy Policy</a>
+                  </p>
+                </div>
+              </form>
               ) : (
                 <form onSubmit={handleVerifyOTP} className="space-y-6">
                   {/* OTP Input */}
@@ -536,6 +546,16 @@ const AuthScreen: React.FC = () => {
                 disabled={isLoading}
                 className="w-full"
               />
+
+              {/* Terms and Privacy */}
+              <div className="text-center mt-4">
+                <p className="text-white/60 text-xs">
+                  By continuing, you agree to our{' '}
+                  <a href="/terms" className="text-white hover:text-white/80 underline">Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="/privacy" className="text-white hover:text-white/80 underline">Privacy Policy</a>
+                </p>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP} className="space-y-4 sm:space-y-6">
