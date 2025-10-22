@@ -1235,8 +1235,8 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
             </div>
             </div>
 
-            {/* Unreal Reflection™ button - ALWAYS VISIBLE */}
-            <div className="relative" data-unrealreflection-dropdown>
+            {/* Combined Identity Presets Button - ALWAYS VISIBLE */}
+            <div className="relative" data-combined-presets-dropdown>
               <div className="relative group">
                 <button
                 onClick={async () => {
@@ -1247,143 +1247,90 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     return
                   }
                   
-                  if (composerState.mode === 'unrealreflection') {
+                  if (composerState.mode === 'combined-presets' || composerState.mode === 'unrealreflection' || composerState.mode === 'parallelself') {
+                    // Toggle dropdown when already in combined presets mode
                     closeAllDropdowns()
-                        setUnrealReflectionDropdownOpen(!unrealReflectionDropdownOpen)
+                    setCombinedPresetsDropdownOpen(!combinedPresetsDropdownOpen)
                   } else {
                     closeAllDropdowns()
-                    setComposerState((s: any) => ({ ...s, mode: 'unrealreflection' }))
+                    setComposerState((s: any) => ({ ...s, mode: 'combined-presets' }))
                     setSelectedMode('presets')
-                    setSelectedUnrealReflectionPreset(null)
-                    setUnrealReflectionDropdownOpen(true)
+                    setCombinedPresetsDropdownOpen(true)
                   }
                 }}
                 className={
-                  composerState.mode === 'unrealreflection'
+                  (composerState.mode === 'combined-presets' || composerState.mode === 'unrealreflection' || composerState.mode === 'parallelself')
                     ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white text-black'
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                title={!selectedFile ? 'Upload a photo first to use Unreal Reflection™' : (isAuthenticated ? 'Switch to Unreal Reflection™ mode' : 'Explore Unreal Reflection™ mode')}
+                title={!selectedFile ? 'Upload a photo first to use Identity Presets' : (isAuthenticated ? 'Choose from Unreal Reflection™ and Parallel Self™ presets' : 'Explore Identity Presets')}
               >
                 {selectedUnrealReflectionPreset ? 
-                  UNREAL_REFLECTION_PRESETS.find((p: any) => p.id === selectedUnrealReflectionPreset)?.label || 'Unreal Reflection™' 
-                  : 'Unreal Reflection™'
+                  UNREAL_REFLECTION_PRESETS.find((p: any) => p.id === selectedUnrealReflectionPreset)?.label || 'Identity Presets' 
+                  : selectedParallelSelfPreset ?
+                  PARALLEL_SELF_PRESETS.find((p: any) => p.id === selectedParallelSelfPreset)?.label || 'Identity Presets'
+                  : 'Identity Presets'
                 }
               </button>
               
               {/* Custom tooltip */}
               {!selectedFile && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[999999]" style={{ backgroundColor: '#000000' }}>
-                  Upload a photo first to use Unreal Reflection™
+                  Upload a photo first to use Identity Presets
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
               
-              {/* Unreal Reflection™ presets dropdown */}
-              {composerState.mode === 'unrealreflection' && unrealReflectionDropdownOpen && (
+              {/* Combined presets dropdown - 2-column grid with images */}
+              {(composerState.mode === 'combined-presets' || composerState.mode === 'unrealreflection' || composerState.mode === 'parallelself') && combinedPresetsDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-[999999]">
-                  <UnrealReflectionPicker
-                    value={selectedUnrealReflectionPreset || undefined}
-                    onVideoToggle={(enabled) => {
-                      setIsUnrealReflectionVideoEnabled(enabled);
-                      console.log('Video enabled for Unreal Reflection:', enabled);
-                    }}
-                    onChange={async (presetId) => {
-                      setSelectedUnrealReflectionPreset(presetId || null)
-                      setUnrealReflectionDropdownOpen(false)
+                  <CombinedPresetPicker
+                    value={selectedUnrealReflectionPreset || selectedParallelSelfPreset || undefined}
+                    onChange={async (presetId, type) => {
+                      setCombinedPresetsDropdownOpen(false)
                       
-                      // Auto-generate when Unreal Reflection preset is selected
-                      if (presetId && selectedFile && isAuthenticated) {
-                        console.log('Auto-generating Unreal Reflection with preset:', presetId)
-                        // dispatchGenerate will handle navigation and generation start event
-                        try {
-                          await dispatchGenerate('unrealreflection', {
-                            unrealReflectionPresetId: presetId,
-                            enableVideo: isUnrealReflectionVideoEnabled,
-                            forVideo: isUnrealReflectionVideoEnabled
-                          })
-                        } catch (error) {
-                          console.error('❌ Unreal Reflection auto-generation failed:', error)
-                          setTimeout(() => {
-                            clearAllOptionsAfterGeneration()
-                          }, 300)
+                      // Set the appropriate state based on preset type
+                      if (type === 'unreal') {
+                        setSelectedUnrealReflectionPreset(presetId || null)
+                        setSelectedParallelSelfPreset(null)
+                        setComposerState((s: any) => ({ ...s, mode: 'unrealreflection' }))
+                        
+                        // Auto-generate when Unreal Reflection preset is selected
+                        if (presetId && selectedFile && isAuthenticated) {
+                          console.log('Auto-generating Unreal Reflection with preset:', presetId)
+                          try {
+                            await dispatchGenerate('unrealreflection', {
+                              unrealReflectionPresetId: presetId,
+                              enableVideo: isUnrealReflectionVideoEnabled,
+                              forVideo: isUnrealReflectionVideoEnabled
+                            })
+                          } catch (error) {
+                            console.error('❌ Unreal Reflection auto-generation failed:', error)
+                            setTimeout(() => {
+                              clearAllOptionsAfterGeneration()
+                            }, 300)
+                          }
                         }
-                      }
-                    }}
-                    disabled={!isAuthenticated}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Parallel Self™ button - ALWAYS VISIBLE */}
-            <div className="relative" data-parallelself-dropdown>
-              <div className="relative group">
-                <button
-                onClick={() => {
-                  if (!checkAuthAndRedirect()) return
-                  
-                  // Require photo upload first
-                  if (!selectedFile) {
-                    return
-                  }
-                  
-                  if (composerState.mode === 'parallelself') {
-                    // Toggle dropdown when already in parallelself mode
-                    setParallelSelfDropdownOpen(!parallelSelfDropdownOpen)
-                  } else {
-                    closeAllDropdowns()
-                    setComposerState((s: any) => ({ ...s, mode: 'parallelself' }))
-                    setParallelSelfDropdownOpen(true)
-                  }
-                }}
-                className={
-                  composerState.mode === 'parallelself'
-                    ? 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white text-black'
-                    : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white text-black hover:bg-white/90'
-                }
-                style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                title={!selectedFile ? 'Upload a photo first to use Parallel Self™' : (isAuthenticated ? 'Switch to Parallel Self™ mode' : 'Explore Parallel Self™ mode')}
-              >
-                {selectedParallelSelfPreset ? 
-                  PARALLEL_SELF_PRESETS.find((p: any) => p.id === selectedParallelSelfPreset)?.label || 'Parallel Self™' 
-                  : 'Parallel Self™'
-                }
-              </button>
-              
-              {/* Custom tooltip */}
-              {!selectedFile && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[999999]" style={{ backgroundColor: '#000000' }}>
-                  Upload a photo first to use Parallel Self™
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
-                </div>
-              )}
-            </div>
-              
-              {/* Parallel Self™ presets dropdown */}
-              {composerState.mode === 'parallelself' && parallelSelfDropdownOpen && (
-                <div className="absolute bottom-full left-0 mb-2 z-[999999]">
-                  <ParallelSelfPicker
-                    value={selectedParallelSelfPreset || undefined}
-                    onChange={async (presetId) => {
-                      setSelectedParallelSelfPreset(presetId || null)
-                      setParallelSelfDropdownOpen(false)
-                      
-                      // Auto-generate when Parallel Self preset is selected
-                      if (presetId && selectedFile && isAuthenticated) {
-                        console.log('Auto-generating Parallel Self with preset:', presetId)
-                        // dispatchGenerate will handle navigation and generation start event
-                        try {
-                          await dispatchGenerate('parallelself', {
-                            parallelSelfPresetId: presetId
-                          })
-                        } catch (error) {
-                          console.error('❌ Parallel Self auto-generation failed:', error)
-                          setTimeout(() => {
-                            clearAllOptionsAfterGeneration()
-                          }, 300)
+                      } else if (type === 'parallel') {
+                        setSelectedParallelSelfPreset(presetId || null)
+                        setSelectedUnrealReflectionPreset(null)
+                        setComposerState((s: any) => ({ ...s, mode: 'parallelself' }))
+                        
+                        // Auto-generate when Parallel Self preset is selected
+                        if (presetId && selectedFile && isAuthenticated) {
+                          console.log('Auto-generating Parallel Self with preset:', presetId)
+                          try {
+                            await dispatchGenerate('parallelself', {
+                              parallelSelfPresetId: presetId
+                            })
+                          } catch (error) {
+                            console.error('❌ Parallel Self auto-generation failed:', error)
+                            setTimeout(() => {
+                              clearAllOptionsAfterGeneration()
+                            }, 300)
+                          }
                         }
                       }
                     }}
