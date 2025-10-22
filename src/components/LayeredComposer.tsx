@@ -1264,29 +1264,30 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
                     : 'px-3 py-1.5 rounded-2xl text-xs transition-colors bg-white text-black hover:bg-white/90'
                 }
                 style={{ cursor: !selectedFile ? 'not-allowed' : 'pointer' }}
-                title={!selectedFile ? 'Upload a photo first to use Identity Presets' : (isAuthenticated ? 'Choose from Unreal Reflection™ and Parallel Self™ presets' : 'Explore Identity Presets')}
+                title={!selectedFile ? 'Upload a photo first to use Presets' : (isAuthenticated ? 'Choose from Unreal Reflection™ and Parallel Self™ presets' : 'Explore Presets')}
               >
                 {selectedUnrealReflectionPreset ? 
-                  UNREAL_REFLECTION_PRESETS.find((p: any) => p.id === selectedUnrealReflectionPreset)?.label || 'Identity Presets' 
+                  UNREAL_REFLECTION_PRESETS.find((p: any) => p.id === selectedUnrealReflectionPreset)?.label || 'Presets' 
                   : selectedParallelSelfPreset ?
-                  PARALLEL_SELF_PRESETS.find((p: any) => p.id === selectedParallelSelfPreset)?.label || 'Identity Presets'
-                  : 'Identity Presets'
+                  PARALLEL_SELF_PRESETS.find((p: any) => p.id === selectedParallelSelfPreset)?.label || 'Presets'
+                  : 'Presets'
                 }
               </button>
               
               {/* Custom tooltip */}
               {!selectedFile && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[999999]" style={{ backgroundColor: '#000000' }}>
-                  Upload a photo first to use Identity Presets
+                  Upload a photo first to use Presets
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{ borderTopColor: '#000000' }}></div>
                 </div>
               )}
             </div>
               
-              {/* Combined presets dropdown - 2-column grid with images */}
+              {/* Combined presets dropdown - 4-column grid with images for desktop */}
               {(composerState.mode === 'combined-presets' || composerState.mode === 'unrealreflection' || composerState.mode === 'parallelself') && combinedPresetsDropdownOpen && (
                 <div className="absolute bottom-full left-0 mb-2 z-[999999]">
                   <CombinedPresetPicker
+                    isDesktop={true}
                     value={selectedUnrealReflectionPreset || selectedParallelSelfPreset || undefined}
                     onChange={async (presetId, type) => {
                       setCombinedPresetsDropdownOpen(false)

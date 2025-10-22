@@ -6,12 +6,14 @@ interface CombinedPresetPickerProps {
   value?: string;
   onChange?: (id: string, type: 'unreal' | 'parallel') => void;
   disabled?: boolean;
+  isDesktop?: boolean;
 }
 
 export function CombinedPresetPicker({
   value,
   onChange,
   disabled = false,
+  isDesktop = false,
 }: CombinedPresetPickerProps) {
   // Combine all presets from both modes with custom order
   const allPresetsRaw = [
@@ -60,8 +62,11 @@ export function CombinedPresetPicker({
   };
 
   return (
-    <div className="w-full">
-      <div className="rounded-xl shadow-2xl p-3 grid grid-cols-2 gap-2" style={{ backgroundColor: '#000000' }}>
+    <div className={isDesktop ? 'w-auto' : 'w-full'}>
+      <div 
+        className={`rounded-xl shadow-2xl ${isDesktop ? 'p-6 grid grid-cols-4 gap-4' : 'p-3 grid grid-cols-2 gap-2'}`} 
+        style={{ backgroundColor: '#000000', minWidth: isDesktop ? '800px' : 'auto' }}
+      >
         {allPresets.map((preset) => (
           <button
             key={preset.id}
@@ -87,14 +92,14 @@ export function CombinedPresetPicker({
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-              <div className="absolute bottom-0 left-0 right-0 p-1.5">
-                <h3 className="text-white text-xs font-medium text-center leading-tight">
+              <div className={`absolute bottom-0 left-0 right-0 ${isDesktop ? 'p-3' : 'p-1.5'}`}>
+                <h3 className={`text-white ${isDesktop ? 'text-sm' : 'text-xs'} font-medium text-center leading-tight`}>
                   {preset.label}
                 </h3>
               </div>
               {value === preset.id && (
-                <div className="absolute top-2 right-2">
-                  <div className="w-3 h-3 rounded-full bg-white border-2 border-black/30"></div>
+                <div className={`absolute ${isDesktop ? 'top-3 right-3' : 'top-2 right-2'}`}>
+                  <div className={`${isDesktop ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-white border-2 border-black/30`}></div>
                 </div>
               )}
             </div>
