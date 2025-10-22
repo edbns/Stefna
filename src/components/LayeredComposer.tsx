@@ -1283,9 +1283,9 @@ const LayeredComposer: React.FC<LayeredComposerProps> = ({
               )}
             </div>
               
-              {/* Combined presets dropdown - 4-column grid with images for desktop */}
+              {/* Combined presets dropdown - 6-column grid with images for desktop, full width */}
               {(composerState.mode === 'combined-presets' || composerState.mode === 'unrealreflection' || composerState.mode === 'parallelself') && combinedPresetsDropdownOpen && (
-                <div className="absolute bottom-full left-0 mb-2 z-[999999]">
+                <div className="fixed bottom-32 left-1/2 transform -translate-x-1/2 w-[98%] max-w-[2000px] z-[999999]">
                   <CombinedPresetPicker
                     isDesktop={true}
                     value={selectedUnrealReflectionPreset || selectedParallelSelfPreset || undefined}

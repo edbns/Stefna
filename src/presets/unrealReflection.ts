@@ -1,6 +1,9 @@
 // src/presets/unrealReflection.ts
 
 import { generateChromaticSmokePrompt } from '../utils/chromaticSmokeRandomization';
+import { generateCrystalFallPrompt } from '../utils/crystalFallRandomization';
+import { generateButterflyMonarchPrompt } from '../utils/butterflyMonarchRandomization';
+import { generateMoltenGlossPrompt } from '../utils/moltenGlossRandomization';
 
 /*
 
@@ -50,6 +53,52 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🖤 Floral Noir
+  {
+    id: 'unreal_reflection_floral_noir',
+    label: 'Floral Noir',
+    prompt: 'Transform this image into a high drama black & white fashion portrait of this woman (or group) with floral artistry.\n\nShe wears sleek tight dress fashion, textured in form. Overlaid are soft floral elements — petals, blossoms, vines — that integrate with her body and garments (falling petals, floral lace overlays).\n\nThe lighting is high contrast: hard highlights, deep shadows. The flowers are monochrome, but exist as texture or accent — not full bouquets.\n\nHer pose and expression should be strong, seductive, emotionally weighty. Identity remains clearly realistic, high fashion.\n\nThe final image feels like a poetic fashion still, combining the timelessness of black & white with the softness and symbolic depth of florals.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, colorful flowers, bright colors, low contrast, flat lighting, oversaturated, cluttered composition',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['floral_noir', 'black_white', 'floral_artistry', 'high_contrast', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🔥 Molten Gloss
+  {
+    id: 'unreal_reflection_molten_gloss',
+    label: 'Molten Gloss',
+    prompt: generateMoltenGlossPrompt('Transform this woman into a cinematic fashion sculpture made from obsidian and molten gold. Her body is wrapped in a high-gloss black dress that flows like thick lava — smooth, sculpted, and reflective. The outfit clings to her silhouette like liquid glass, flaring slightly at the bottom with glowing amber seams as if still hot.\n\nShe stands confidently in a strong, grounded pose — one leg forward, hip tilted, back slightly arched, one arm resting gently on thigh or waist, the other falling naturally. Her head is turned with a slow, regal angle, like she\'s being sculpted in real time.\n\nVariations of the dress may include high slits, open-back designs, or one-shoulder structures — always sleek, minimal, and radiant. Additional molten-gold accessories can appear: a single sculptural earring, cuff bracelet, or thin belt that appears fused into the look.\n\nHer skin is real, clean, and illuminated with warm golden lighting. Makeup is glossy but natural — lips bare, skin glowing. Her hair is slicked back or wet-styled, shaped like molten strands.\n\nShe stands confidently on a glossy black floor that reflects the light. The background is deep charcoal or black, lit from below or behind with subtle orange-gold rim lighting to enhance the molten effect.\n\nA realistic {ANIMAL} stands beside her as a powerful companion.\n\nThe glow should look like it\'s coming from within the dress — not added. No fantasy sparks or smoke. Pure fashion energy. She doesn\'t pose — she radiates.'),
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, fantasy sparks, smoke effects, oversaturated colors, bright backgrounds, cluttered design, multiple animals',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['molten_gloss', 'animal_companion', 'dynamic_animals', 'high_fashion', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🖤 Black Bloom
   {
     id: 'unreal_reflection_the_syndicate',
@@ -198,6 +247,52 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     guidance_scale: 7.5,
     num_inference_steps: 30,
     features: ['chromatic_smoke', 'smoke_fashion', 'dynamic_colors', 'high_fashion', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 💎 Crystal Fall
+  {
+    id: 'unreal_reflection_crystal_fall',
+    label: 'Crystal Fall',
+    prompt: generateCrystalFallPrompt('Transform this woman into a high-fashion goddess emerging from a rain of glowing crystal shards. She stands confidently, surrounded by mid-air fragments of broken glass or precious gemstones — captured mid-motion as if time froze during an explosion of elegance.\n\nHer outfit is formed from angular, translucent crystal shards: clustered tightly around the chest, waist, and hips to form a sculptural dress. These shards reflect light like cut diamonds — some smooth, some jagged — all positioned precisely to mimic a fashion-forward silhouette. The overall shape suggests an asymmetrical mini dress or a long structured gown, depending on how the crystal falls.\n\nHer pose is powerful and elevated — one leg slightly forward, hands relaxed or raised gracefully. Shards swirl around her arms and legs, but her skin remains visible through key openings — suggesting strength beneath the armor.\n\nHer face is calm, piercing, and elegant. Makeup is clean and sharp: luminous skin, defined cheekbones, a soft matte lip. Hair is pulled back or sleek — nothing distracts from the impact.\n\nThe lighting is dramatic: strong white beam from above, casting harsh shadows and brilliant highlights on the crystals. Tiny reflections scatter like glitter, but the effect remains grounded in realism — no magical glows or sci-fi effects.\n\nBackground: choose either a minimalist black void or a dark stormy scene with cracks on the floor or distant lightning. Optional: reflective puddle beneath her, echoing the sharpness of the crystals above.\n\nThe crystals must feel heavy and real, as if caught in an eternal downward motion — some frozen mid-fall, some shattering on the ground. No floating like magic — this is weighty, dangerous beauty turned to fashion.\n\nColor palette: {CRYSTAL_COLOR}.'),
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, magical glows, sci-fi effects, floating crystals, bright backgrounds, oversaturated colors, fantasy filters, plastic effects',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['crystal_fall', 'crystal_fashion', 'dynamic_colors', 'high_fashion', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🦋 Butterfly Monarch
+  {
+    id: 'unreal_reflection_butterfly_monarch',
+    label: 'Butterfly Monarch',
+    prompt: generateButterflyMonarchPrompt('Transform this woman into a seductive, high-fashion portrait sculpted from hundreds of fluttering {PRIMARY_COLOR} butterflies. She stands confidently in a strong, elegant pose — one hand on her hip or gently lifted, her body turned to emphasize her silhouette with controlled grace.\n\nHer "outfit" forms a mini dress made entirely from dense clusters of {SECONDARY_COLOR} butterflies. The butterflies create a structured fashion piece: thickest at the lower body like a blooming skirt, tapering snugly around the waist and forming elegant halter necks, off-shoulder wraps, or strapless tops — all shaped naturally by the layered wings.\n\nEach butterfly is crisp, photorealistic, and immaculately placed. Their wings may bend slightly to hint at movement, but the overall form is frozen in time — a still sculpture of nature reimagined as couture.\n\nHer skin remains exposed in key areas — shoulders, collarbone, arms, upper chest, and legs — smooth and untouched by effects. Makeup is soft and sensual: luminous skin, subtle highlight, bare or glossy lips. Hair is sleek and pulled back: ponytail, low bun, or tucked behind the ear.\n\nThe background is matte black or a {BACKGROUND_GRADIENT}. Butterflies reflect a faint glow from ambient lighting, with shadows enhancing the structure of the dress — especially at the hips, waist, and neckline.\n\nOptional: A few butterflies can float slightly off the body near the shoulders or trailing the skirt, but no chaotic swarms — everything remains precise, elegant, and fashion-focused.'),
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, chaotic swarms, messy composition, oversaturated colors, fantasy filters, plastic effects, bright backgrounds, cluttered design',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['butterfly_monarch', 'butterfly_fashion', 'dynamic_colors', 'high_fashion', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 6,
     output_format: 'jpeg',

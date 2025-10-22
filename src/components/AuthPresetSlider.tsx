@@ -74,6 +74,26 @@ const AuthPresetSlider: React.FC = () => {
       mode: "Unreal Reflection™",
       title: "Chromatic Smoke",
       description: "Dynamic smoke fashion with rotating color injection - black and colored smoke sculpted into high-fashion couture."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Crystal Fall",
+      description: "High-fashion goddess emerging from glowing crystal shards with rotating color palettes."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Butterfly Monarch",
+      description: "Seductive high-fashion portrait sculpted from hundreds of fluttering butterflies with rotating color palettes."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Molten Gloss",
+      description: "Cinematic fashion sculpture made from obsidian and molten gold with rotating animal companions."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Floral Noir",
+      description: "High drama black & white fashion portrait with soft floral artistry and high contrast lighting."
     }
   ]
 
@@ -100,7 +120,11 @@ const AuthPresetSlider: React.FC = () => {
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp',
-      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.jpg'
+      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.jpg',
+      'Crystal Fall': '/images/unreal_reflection_Crystal_Fal_.jpg',
+      'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
+      'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
+      'Floral Noir': '/images/unreal_reflection_floral_noir.jpg'
     }
     
     return imageMap[preset.title] || '/images/parallel_self_black_aura.webp'

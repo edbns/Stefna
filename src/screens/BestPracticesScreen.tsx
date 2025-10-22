@@ -30,70 +30,91 @@ export default function BestPracticesScreen() {
   const [loading, setLoading] = useState(true)
 
   const presets = [
+    // Latest presets first
     {
-      mode: "Parallel Self™",
-      title: "Black Aura",
-      description: "Calm dominance in black and white. Still poses, sharp fashion, and a silent black wolf grounded in shadow."
+      mode: "Presets",
+      title: "Floral Noir",
+      description: "High drama black & white fashion portrait with soft floral artistry and high contrast lighting."
     },
     {
-      mode: "Parallel Self™",
-      title: "The Untouchable",
-      description: "Grayscale icon, sharp style, cold gaze."
+      mode: "Presets",
+      title: "Molten Gloss",
+      description: "Cinematic fashion sculpture made from obsidian and molten gold with rotating animal companions."
     },
     {
-      mode: "Parallel Self™",
-      title: "Neon Proof",
-      description: "Streetwear with bold neon accents, shot at night in low-angle cinematic style."
+      mode: "Presets",
+      title: "Butterfly Monarch",
+      description: "Seductive high-fashion portrait sculpted from hundreds of fluttering butterflies with rotating color palettes."
     },
     {
-      mode: "Parallel Self™",
-      title: "The Mechanic",
-      description: "Grease-stained workwear in cinematic garage settings."
+      mode: "Presets",
+      title: "Crystal Fall",
+      description: "High-fashion goddess emerging from glowing crystal shards with rotating color palettes."
     },
     {
-      mode: "Parallel Self™",
-      title: "Colorcore",
-      description: "Randomized 2x2 grid with color themes and varied poses."
+      mode: "Presets",
+      title: "Chromatic Smoke",
+      description: "Dynamic smoke fashion with rotating color injection - black and colored smoke sculpted into high-fashion couture."
     },
     {
-      mode: "Parallel Self™",
-      title: "Getaway Lookbook",
-      description: "Fashion fugitives styled post-getaway — edgy, dramatic, and photoreal."
-    },
-    {
-      mode: "Unreal Reflection™",
+      mode: "Presets",
       title: "Chromatic Bloom",
       description: "A burst of cinematic color, blooming light, layered like film."
     },
     {
-      mode: "Unreal Reflection™",
-      title: "Black Bloom",
-      description: "Botanical portrait with black flowers in a mystical midnight garden."
-    },
-    {
-      mode: "Unreal Reflection™",
-      title: "Yakuza Heir",
-      description: "Tattooed heritage, sharp fashion, stillness with power."
-    },
-    {
-      mode: "Unreal Reflection™",
-      title: "Blueberry Bliss",
-      description: "Futuristic latex fashion in glossy deep blue and lilac palette."
-    },
-    {
-      mode: "Unreal Reflection™",
-      title: "Y2K Paparazzi",
-      description: "Y2K fashion icons, night scene with paparazzi flash lighting."
-    },
-    {
-      mode: "Unreal Reflection™",
+      mode: "Presets",
       title: "Medusa's Mirror",
       description: "Goth beauty, mythic energy, stone stare, soft lighting."
     },
     {
-      mode: "Unreal Reflection™",
-      title: "Chromatic Smoke",
-      description: "Dynamic smoke fashion with rotating color injection - black and colored smoke sculpted into high-fashion couture."
+      mode: "Presets",
+      title: "Y2K Paparazzi",
+      description: "Y2K fashion icons, night scene with paparazzi flash lighting."
+    },
+    {
+      mode: "Presets",
+      title: "Blueberry Bliss",
+      description: "Futuristic latex fashion in glossy deep blue and lilac palette."
+    },
+    {
+      mode: "Presets",
+      title: "Yakuza Heir",
+      description: "Tattooed heritage, sharp fashion, stillness with power."
+    },
+    {
+      mode: "Presets",
+      title: "Black Bloom",
+      description: "Botanical portrait with black flowers in a mystical midnight garden."
+    },
+    {
+      mode: "Presets",
+      title: "Getaway Lookbook",
+      description: "Fashion fugitives styled post-getaway — edgy, dramatic, and photoreal."
+    },
+    {
+      mode: "Presets",
+      title: "Colorcore",
+      description: "Randomized 2x2 grid with color themes and varied poses."
+    },
+    {
+      mode: "Presets",
+      title: "The Mechanic",
+      description: "Grease-stained workwear in cinematic garage settings."
+    },
+    {
+      mode: "Presets",
+      title: "Neon Proof",
+      description: "Streetwear with bold neon accents, shot at night in low-angle cinematic style."
+    },
+    {
+      mode: "Presets",
+      title: "The Untouchable",
+      description: "Grayscale icon, sharp style, cold gaze."
+    },
+    {
+      mode: "Presets",
+      title: "Black Aura",
+      description: "Calm dominance in black and white. Still poses, sharp fashion, and a silent black wolf grounded in shadow."
     }
   ]
 
@@ -179,7 +200,11 @@ export default function BestPracticesScreen() {
       'Y2K Paparazzi': '/images/unreal_reflection_Y2K_Paparazzi.webp',
       'Medusa\'s Mirror': '/images/unreal_reflection_medusa_mirror.webp',
       'Chromatic Bloom': '/images/unreal_reflection_chromatic_bloom.webp',
-      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.jpg'
+      'Chromatic Smoke': '/images/unreal_reflection_chromatic_smoke.jpg',
+      'Crystal Fall': '/images/unreal_reflection_Crystal_Fal_.jpg',
+      'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
+      'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
+      'Floral Noir': '/images/unreal_reflection_floral_noir.jpg'
     }
     
     const imagePath = imageMap[presetTitle]
@@ -212,53 +237,11 @@ export default function BestPracticesScreen() {
         </div>
 
 
-        {/* Parallel Self Section */}
+        {/* Presets Section */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">Parallel Self™</h2>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">Presets</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {presets.filter(preset => preset.mode === "Parallel Self™").map((preset, idx) => (
-              <div key={idx} className="bg-black rounded-xl p-6 shadow-lg text-center">
-                <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
-                  {preset.title}
-                </h3>
-
-                {/* Real Media Display - EXACT same as MasonryMediaGrid */}
-                <div className="relative w-full mb-4 overflow-hidden">
-                  {(() => {
-                    const media = findMediaForPreset(preset.title)
-                    const imageUrl = media?.url
-                    if (imageUrl) {
-                      const optimizedUrl = optimizeFeedImage(imageUrl)
-                      return (
-                        <img
-                          src={optimizedUrl} 
-                          alt={`Generated ${preset.title}`}
-                          className="w-full h-auto object-cover"
-                          loading="lazy"
-                        />
-                      )
-                    }
-                    return (
-                      <div className="w-full h-32 bg-[#333333] flex items-center justify-center">
-                        <p className="text-xs text-white/60">Media not available</p>
-                      </div>
-                    )
-                  })()}
-                </div>
-
-                <p className="text-sm text-white leading-relaxed">
-                  {preset.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Unreal Reflection Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">Unreal Reflection™</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {presets.filter(preset => preset.mode === "Unreal Reflection™").map((preset, idx) => (
+            {presets.map((preset, idx) => (
               <div key={idx} className="bg-black rounded-xl p-6 shadow-lg text-center">
                 <h3 className="text-lg font-semibold leading-snug mb-3 text-white">
                   {preset.title}
