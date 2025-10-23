@@ -53,6 +53,52 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🌬️ Wind Layer (NEW)
+  {
+    id: 'unreal_reflection_wind_layer',
+    label: 'Wind Layer',
+    prompt: 'Transform this woman, trio, or group of women into high-fashion muses wrapped in invisible wind. Their dresses are sculpted entirely from motion — sheer, flowing fabrics lifted and twisted by strong wind gusts, frozen in time.\n\nFabrics cling and lift mid-air: trailing sleeves, twisting skirts, chest wraps pulling off one shoulder — always caught in perfect motion. Outfits remain modest but sensual, revealing form through translucent movement. Skin is visible at the shoulders, legs, collarbone, and upper back — glowing, wind-kissed.\n\nMakeup: radiant glow, flushed cheeks, a subtle smudge around the eyes like windblown beauty. Hair: wild and free, suspended mid-motion — strands pulled upward, sideways, tangled by invisible air.\n\nThe background is an open landscape — minimalist coast, rooftop edge, or sky gradient. Lighting is golden hour or moody grey-blue, emphasizing the volume of wind-sculpted cloth.\n\nPose direction: dramatic, caught in action — head turned with hair flowing, fabric stretching behind them, legs mid-step, hands lifting to hold the flying dress.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, static poses, stiff fabric, indoor studio, flat lighting, oversaturated, cluttered composition',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['wind_layer', 'motion_fashion', 'flowing_fabric', 'golden_hour', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🪞 Mirror Shatter (NEW)
+  {
+    id: 'unreal_reflection_mirror_shatter',
+    label: 'Mirror Shatter',
+    prompt: 'Transform this woman, trio, or group of women into sharp-edged icons of futuristic fashion wearing sculpted dresses made from broken mirror shards.\n\nEach outfit is composed of reflective glass pieces: jagged but carefully placed to form asymmetrical couture silhouettes — strapless bustiers, slitted skirts, backless wraps. Some shards float slightly off the body like armor fragments in motion.\n\nTheir skin is visible between the reflections — bare arms, shoulders, back, and legs. Skin is soft and glowing, contrasting the glass\'s sharpness.\n\nMakeup: glass-sheen highlighter, smoky metallic eyes. Hair: sleek ponytail, braided crown, or gelled-back wet look.\n\nThe background is black or smoky chrome, catching fragmented reflections. Lighting comes from high angles, bouncing off the mirrors, casting brilliant spark lines and geometric shadows.\n\nPoses are fierce but elegant: turned shoulders, legs crossed mid-step, chin high — like models ready for battle in a crystal dimension.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, matte fabric, dim lighting, oversaturated, cluttered composition, soft edges',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['mirror_shatter', 'reflective_fashion', 'glass_armor', 'futuristic_couture', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 💫 Chemistry Check (NEW - Couples Preset)
   {
     id: 'unreal_reflection_chemistry_check',

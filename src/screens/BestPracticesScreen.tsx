@@ -33,6 +33,16 @@ export default function BestPracticesScreen() {
     // Latest presets first
     {
       mode: "Presets",
+      title: "Wind Layer",
+      description: "High-fashion muses wrapped in invisible wind with sheer, flowing fabrics frozen in mid-motion."
+    },
+    {
+      mode: "Presets",
+      title: "Mirror Shatter",
+      description: "Sharp-edged futuristic fashion wearing sculpted dresses made from broken mirror shards with fierce elegance."
+    },
+    {
+      mode: "Presets",
       title: "Chemistry Check",
       description: "Unforgettable fashion duo captured in a dramatic, cinematic moment with magnetic chemistry and high-fashion styling."
     },
@@ -210,7 +220,9 @@ export default function BestPracticesScreen() {
       'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
       'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
       'Floral Noir': '/images/unreal_reflection_floral_noir.jpg',
-      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg'
+      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg',
+      'Wind Layer': '/images/unreal_reflection_wind_layer.jpg?v=' + Date.now(),
+      'Mirror Shatter': '/images/unreal_reflection_mirror_shatter.jpg'
     }
     
     const imagePath = imageMap[presetTitle]

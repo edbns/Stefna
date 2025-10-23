@@ -11,6 +11,16 @@ const AuthPresetSlider: React.FC = () => {
 
   const presets: Preset[] = [
     {
+      mode: "Unreal Reflection™",
+      title: "Wind Layer",
+      description: "High-fashion muses wrapped in invisible wind with sheer, flowing fabrics frozen in mid-motion."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Mirror Shatter",
+      description: "Sharp-edged futuristic fashion wearing sculpted dresses made from broken mirror shards with fierce elegance."
+    },
+    {
       mode: "Parallel Self™",
       title: "Black Aura",
       description: "Calm dominance in black and white. Still poses, sharp fashion, and a silent black wolf grounded in shadow."
@@ -130,7 +140,9 @@ const AuthPresetSlider: React.FC = () => {
       'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
       'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
       'Floral Noir': '/images/unreal_reflection_floral_noir.jpg',
-      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg'
+      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg',
+      'Wind Layer': '/images/unreal_reflection_wind_layer.jpg?v=' + Date.now(),
+      'Mirror Shatter': '/images/unreal_reflection_mirror_shatter.jpg'
     }
     
     return imageMap[preset.title] || '/images/parallel_self_black_aura.webp'

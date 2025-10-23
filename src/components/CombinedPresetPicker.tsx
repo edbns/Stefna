@@ -27,13 +27,18 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Newest presets first (Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
-  const priorityOrder = ['Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  // Custom order: Newest presets first (Wind Layer, Mirror Shatter, Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
+  const priorityOrder = ['Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
+  // Sort presets by priority order
+  const priorityPresets = priorityOrder
+    .map(label => allPresetsRaw.find(p => p.label === label))
+    .filter((p): p is typeof allPresetsRaw[0] => p !== undefined);
+  
   const allPresets = [
-    // Priority presets first (newest at the top)
-    ...allPresetsRaw.filter(p => priorityOrder.includes(p.label)),
+    // Priority presets first (in exact order)
+    ...priorityPresets,
     // Middle presets (everything except priority and deprioritized)
     ...allPresetsRaw.filter(p => !priorityOrder.includes(p.label) && !deprioritizedOrder.includes(p.label)),
     // Deprioritized presets last
@@ -61,6 +66,8 @@ export function CombinedPresetPicker({
       'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
       'Floral Noir': '/images/unreal_reflection_floral_noir.jpg',
       'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg',
+      'Wind Layer': '/images/unreal_reflection_wind_layer.jpg?v=' + Date.now(),
+      'Mirror Shatter': '/images/unreal_reflection_mirror_shatter.jpg',
     };
     
     return imageMap[presetLabel] || '/images/placeholder.webp';
@@ -69,7 +76,7 @@ export function CombinedPresetPicker({
   return (
     <div className={isDesktop ? 'w-full' : 'w-full'}>
       <div 
-        className={`shadow-2xl ${isDesktop ? 'p-12 grid grid-cols-6 gap-8' : 'p-3 grid grid-cols-2 gap-2'}`} 
+        className={`shadow-2xl ${isDesktop ? 'p-12 grid grid-cols-7 gap-8' : 'p-3 grid grid-cols-2 gap-2'}`} 
         style={{ backgroundColor: '#000000' }}
       >
         {allPresets.map((preset) => (
