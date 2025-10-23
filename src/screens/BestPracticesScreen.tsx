@@ -33,6 +33,11 @@ export default function BestPracticesScreen() {
     // Latest presets first
     {
       mode: "Presets",
+      title: "Chemistry Check",
+      description: "Unforgettable fashion duo captured in a dramatic, cinematic moment with magnetic chemistry and high-fashion styling."
+    },
+    {
+      mode: "Presets",
       title: "Floral Noir",
       description: "High drama black & white fashion portrait with soft floral artistry and high contrast lighting."
     },
@@ -204,7 +209,8 @@ export default function BestPracticesScreen() {
       'Crystal Fall': '/images/unreal_reflection_Crystal_Fal_.jpg',
       'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
       'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
-      'Floral Noir': '/images/unreal_reflection_floral_noir.jpg'
+      'Floral Noir': '/images/unreal_reflection_floral_noir.jpg',
+      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg'
     }
     
     const imagePath = imageMap[presetTitle]

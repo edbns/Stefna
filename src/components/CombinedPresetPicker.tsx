@@ -27,8 +27,8 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Newest presets first (Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
-  const priorityOrder = ['Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  // Custom order: Newest presets first (Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
+  const priorityOrder = ['Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   const allPresets = [
@@ -60,6 +60,7 @@ export function CombinedPresetPicker({
       'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
       'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
       'Floral Noir': '/images/unreal_reflection_floral_noir.jpg',
+      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg',
     };
     
     return imageMap[presetLabel] || '/images/placeholder.webp';

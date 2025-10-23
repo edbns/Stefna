@@ -94,6 +94,11 @@ const AuthPresetSlider: React.FC = () => {
       mode: "Unreal Reflection™",
       title: "Floral Noir",
       description: "High drama black & white fashion portrait with soft floral artistry and high contrast lighting."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Chemistry Check",
+      description: "Unforgettable fashion duo captured in a dramatic, cinematic moment with magnetic chemistry and high-fashion styling."
     }
   ]
 
@@ -124,7 +129,8 @@ const AuthPresetSlider: React.FC = () => {
       'Crystal Fall': '/images/unreal_reflection_Crystal_Fal_.jpg',
       'Butterfly Monarch': '/images/unreal_reflection_Butterfly_Monarch.jpg',
       'Molten Gloss': '/images/unreal_reflection_Molten_Gloss.jpg',
-      'Floral Noir': '/images/unreal_reflection_floral_noir.jpg'
+      'Floral Noir': '/images/unreal_reflection_floral_noir.jpg',
+      'Chemistry Check': '/images/unreal_reflection_Chemistry_Check.jpg'
     }
     
     return imageMap[preset.title] || '/images/parallel_self_black_aura.webp'

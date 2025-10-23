@@ -53,6 +53,29 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 💫 Chemistry Check (NEW - Couples Preset)
+  {
+    id: 'unreal_reflection_chemistry_check',
+    label: 'Chemistry Check',
+    prompt: 'Transform this couple into an unforgettable fashion duo captured in a dramatic, cinematic moment.\n\nThey stand in a dimly lit space — close, but not touching — each styled in their own high-fashion outfit with contrasting silhouettes. Their chemistry is magnetic. Her hand may hover near his chest, or he leans slightly closer, but the moment feels frozen in charged intimacy.\n\nTheir outfits are bold, sculpted, and revealing with intention — think structured cut-outs, high slits, bare backs, or open jackets. All garments are elegant, sensual, and powerful — no nudity, just confident skin. She wears heels, he stands tall with a grounded presence. One leg bent, a jacket falling, tousled hair — everything tells a story.\n\nTheir faces are natural, eyes intense or half-lidded. Lighting wraps softly around them from one side, casting deep shadows and illuminating key details: collarbones, jawlines, bare shoulders. Background is minimal — a matte black void, foggy floor, or sleek industrial wall. Optional: soft breeze catching her hair or his jacket hem.\n\nThis isn\'t just fashion. It\'s tension, power, connection — a couple caught in their most iconic moment before the lights go down.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, nudity, oversaturated, bright backgrounds, cluttered composition, flat lighting, poor chemistry, awkward poses',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['chemistry_check', 'couples_fashion', 'dramatic_lighting', 'cinematic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🖤 Floral Noir
   {
     id: 'unreal_reflection_floral_noir',
