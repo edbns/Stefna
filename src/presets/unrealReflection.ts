@@ -53,11 +53,34 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🕯️ Wax Bloom (NEW)
+  {
+    id: 'unreal_reflection_wax_bloom',
+    label: 'Wax Bloom',
+    prompt: 'Transform this woman or group of women in the photo into radiant fashion muses dressed in molten candle couture. Their outfit is formed from glossy, semi-melted wax, glowing from within with amber and ivory tones. The fashion appears fluid, dripping at the edges: bodices shaped like melting blooms, shoulder wraps that cascade like wax from a flame. Some areas glow gently, as if still hot. Thin wax trails appear down arms or legs, but never sticky or grotesque — sensual, sculptural, luxurious. Hair is swept up or loosely waved, subtly touched by wax accents. Skin is luminous and smooth. Makeup is dewy with glossy lips, soft candlelight blush. Lighting is warm and cinematic — candlelit glow from one side, casting dynamic shadows. Background is dark with subtle flames, blurred candles, or wax-streaked panels. Slow wax drips visible in motion, a trail of cooled wax beneath the body, or cracked wax textures like blooming scars.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, oversaturated, cluttered composition, messy, unrefined',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['wax_bloom', 'candle_couture', 'molten_fashion', 'warm_glow', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🌬️ Wind Layer (NEW)
   {
     id: 'unreal_reflection_wind_layer',
     label: 'Wind Layer',
-    prompt: 'Transform this woman, trio, or group of women into high-fashion muses wrapped in invisible wind. Their dresses are sculpted entirely from motion — sheer, flowing fabrics lifted and twisted by strong wind gusts, frozen in time.\n\nFabrics cling and lift mid-air: trailing sleeves, twisting skirts, chest wraps pulling off one shoulder — always caught in perfect motion. Outfits remain modest but sensual, revealing form through translucent movement. Skin is visible at the shoulders, legs, collarbone, and upper back — glowing, wind-kissed.\n\nMakeup: radiant glow, flushed cheeks, a subtle smudge around the eyes like windblown beauty. Hair: wild and free, suspended mid-motion — strands pulled upward, sideways, tangled by invisible air.\n\nThe background is an open landscape — minimalist coast, rooftop edge, or sky gradient. Lighting is golden hour or moody grey-blue, emphasizing the volume of wind-sculpted cloth.\n\nPose direction: dramatic, caught in action — head turned with hair flowing, fabric stretching behind them, legs mid-step, hands lifting to hold the flying dress.',
+    prompt: 'Transform this exact woman (or group of women) into high-fashion muses wrapped in invisible wind. Their dresses are sculpted entirely from motion — sheer, flowing fabrics lifted and twisted by strong wind gusts, frozen in time.\n\nFabrics cling and lift mid-air: trailing sleeves, twisting skirts, chest wraps pulling off one shoulder — always caught in perfect motion. Outfits remain modest but sensual, revealing form through translucent movement. Skin is visible at the shoulders, legs, collarbone, and upper back — glowing, wind-kissed.\n\nMakeup: radiant glow, flushed cheeks, a subtle smudge around the eyes like windblown beauty. Hair: wild and free, suspended mid-motion — strands pulled upward, sideways, tangled by invisible air.\n\nThe background is an open landscape — minimalist coast, rooftop edge, or sky gradient. Lighting is golden hour or moody grey-blue, emphasizing the volume of wind-sculpted cloth.\n\nPose direction: dramatic, caught in action — head turned with hair flowing, fabric stretching behind them, legs mid-step, hands lifting to hold the flying dress.',
     negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, static poses, stiff fabric, indoor studio, flat lighting, oversaturated, cluttered composition',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -80,7 +103,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_mirror_shatter',
     label: 'Mirror Shatter',
-    prompt: 'Transform this woman, trio, or group of women into sharp-edged icons of futuristic fashion wearing sculpted dresses made from broken mirror shards.\n\nEach outfit is composed of reflective glass pieces: jagged but carefully placed to form asymmetrical couture silhouettes — strapless bustiers, slitted skirts, backless wraps. Some shards float slightly off the body like armor fragments in motion.\n\nTheir skin is visible between the reflections — bare arms, shoulders, back, and legs. Skin is soft and glowing, contrasting the glass\'s sharpness.\n\nMakeup: glass-sheen highlighter, smoky metallic eyes. Hair: sleek ponytail, braided crown, or gelled-back wet look.\n\nThe background is black or smoky chrome, catching fragmented reflections. Lighting comes from high angles, bouncing off the mirrors, casting brilliant spark lines and geometric shadows.\n\nPoses are fierce but elegant: turned shoulders, legs crossed mid-step, chin high — like models ready for battle in a crystal dimension.',
+    prompt: 'Transform this exact woman (or group of women) into sharp-edged icons of futuristic fashion wearing sculpted dresses made from broken mirror shards.\n\nEach outfit is composed of reflective glass pieces: jagged but carefully placed to form asymmetrical couture silhouettes — strapless bustiers, slitted skirts, backless wraps. Some shards float slightly off the body like armor fragments in motion.\n\nTheir skin is visible between the reflections — bare arms, shoulders, back, and legs. Skin is soft and glowing, contrasting the glass\'s sharpness.\n\nMakeup: glass-sheen highlighter, smoky metallic eyes. Hair: sleek ponytail, braided crown, or gelled-back wet look.\n\nThe background is black or smoky chrome, catching fragmented reflections. Lighting comes from high angles, bouncing off the mirrors, casting brilliant spark lines and geometric shadows.\n\nPoses are fierce but elegant: turned shoulders, legs crossed mid-step, chin high — like models ready for battle in a crystal dimension.',
     negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, matte fabric, dim lighting, oversaturated, cluttered composition, soft edges',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',

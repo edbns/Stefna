@@ -33,6 +33,11 @@ export default function BestPracticesScreen() {
     // Latest presets first
     {
       mode: "Presets",
+      title: "Wax Bloom",
+      description: "Radiant fashion muses dressed in molten candle couture with glossy wax, glowing amber tones, and cinematic candlelit atmosphere."
+    },
+    {
+      mode: "Presets",
       title: "Wind Layer",
       description: "High-fashion muses wrapped in invisible wind with sheer, flowing fabrics frozen in mid-motion."
     },
@@ -203,6 +208,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
+      'Wax Bloom': '/images/unreal_reflection_wax_bloom.jpg',
       'Black Aura': '/images/parallel_self_black_aura.webp?v=' + Date.now(),
       'The Untouchable': '/images/parallel_self_untouchable.webp?v=' + Date.now(),
       'Neon Proof': '/images/parallel_self_neon_proof.webp?v=' + Date.now(),

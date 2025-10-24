@@ -12,6 +12,11 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Wax Bloom",
+      description: "Radiant fashion muses dressed in molten candle couture with glossy wax, glowing amber tones, and cinematic candlelit atmosphere."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Wind Layer",
       description: "High-fashion muses wrapped in invisible wind with sheer, flowing fabrics frozen in mid-motion."
     },
@@ -123,6 +128,7 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Wax Bloom': '/images/unreal_reflection_wax_bloom.jpg',
       'Black Aura': '/images/parallel_self_black_aura.webp',
       'The Untouchable': '/images/parallel_self_untouchable.webp',
       'Neon Proof': '/images/parallel_self_neon_proof.webp',
