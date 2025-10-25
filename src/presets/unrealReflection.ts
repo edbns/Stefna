@@ -54,11 +54,11 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
-  // 📄 Paper Pop (NEW - with randomization)
+  // 📄 Paper Pop (NEW - with theme-based randomization)
   {
     id: 'unreal_reflection_paper_pop',
     label: 'Paper Pop',
-    prompt: generatePaperPopPrompt('Transform this woman into a fearless beauty portrait breaking through bright {{wallpaper_color}} paper. Only her head and neck are visible, with her face {{head_pose}}, {{expression}}. Makeup: {{blush}}, {{lip}}, {{liner}}, {{freckles}}. Hair: {{hair_style}} with {{hair_detail}}. Background: {{wallpaper_color}} matte backdrop with {{rip_style}}. Lighting: {{lighting_style}}. {{emoji}} Mood: {{mood_line}}'),
+    prompt: generatePaperPopPrompt('Transform this woman into a fearless beauty portrait breaking through bright {{theme.color_name}} paper. Only her head and neck are visible, with her face {{theme.head_pose}}, {{theme.expression}}. Makeup: {{theme.makeup.blush}}, {{theme.makeup.lip}}, {{theme.makeup.liner}}, {{theme.makeup.extra}}. Hair: {{theme.hair.style}} in {{theme.hair.color}} with {{theme.hair.detail}}. Background: {{theme.color_name}} matte backdrop with {{theme.rip_style}}. Lighting: {{theme.lighting}}. Mood: {{theme.mood_line}}'),
     negative_prompt: 'cartoon, face paint, cosplay, distortion, oversaturated, cluttered composition, full body, messy background, dark lighting',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',

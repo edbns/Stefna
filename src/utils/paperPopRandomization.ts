@@ -1,200 +1,253 @@
 // src/utils/paperPopRandomization.ts
 
-export interface PaperPopVariation {
-  wallpaperColor: string;
+// Structured theme-based randomization for Paper Pop preset
+// Each theme is a cohesive bundle to prevent mismatched aesthetics
+
+export interface PaperPopTheme {
+  id: string;
+  colorName: string;
   headPose: string;
   expression: string;
-  blush: string;
-  lip: string;
-  liner: string;
-  freckles: string;
-  hairStyle: string;
-  hairDetail: string;
+  makeup: {
+    blush: string;
+    lip: string;
+    liner: string;
+    extra: string;
+  };
+  hair: {
+    style: string;
+    color: string;
+    detail: string;
+  };
   ripStyle: string;
-  lightingStyle: string;
-  emoji: string;
+  lighting: string;
   moodLine: string;
 }
 
-// Variable options
-const WALLPAPER_COLORS = [
-  'tangerine orange',
-  'lemon yellow',
-  'lavender purple',
-  'cotton pink',
-  'watermelon red',
-  'mint green',
-  'sky blue'
+// Theme profiles - each is a complete, cohesive aesthetic bundle
+const PAPER_POP_THEMES: PaperPopTheme[] = [
+  {
+    id: 'tangerine_pop',
+    colorName: 'tangerine orange',
+    headPose: 'tilted sideways',
+    expression: 'tongue out, eyes wide with joy',
+    makeup: {
+      blush: 'dewy orange blush',
+      lip: 'peach-tinted gloss',
+      liner: 'soft neon orange liner',
+      extra: 'freckles across cheeks'
+    },
+    hair: {
+      style: 'wild curls',
+      color: 'warm chestnut',
+      detail: 'colorful barrettes'
+    },
+    ripStyle: 'energetic rips and playful fold-outs',
+    lighting: 'high-key sunlight glow',
+    moodLine: 'She\'s not breaking the rules — she is the rule.'
+  },
+  {
+    id: 'lavender_glow',
+    colorName: 'lavender purple',
+    headPose: 'chin lifted slightly',
+    expression: 'soft wink and half smile',
+    makeup: {
+      blush: 'violet cream blush',
+      lip: 'mauve gloss',
+      liner: 'soft lilac shimmer liner',
+      extra: 'tiny silver freckles'
+    },
+    hair: {
+      style: 'space buns',
+      color: 'ash brown',
+      detail: 'star clips'
+    },
+    ripStyle: 'soft curled folds',
+    lighting: 'diffused lavender studio light',
+    moodLine: 'She glows in her own gravity.'
+  },
+  {
+    id: 'lemon_zing',
+    colorName: 'lemon yellow',
+    headPose: 'slightly turned',
+    expression: 'cheeky grin with raised brow',
+    makeup: {
+      blush: 'sunbeam yellow blush',
+      lip: 'clear gloss',
+      liner: 'pastel yellow liner',
+      extra: 'sun freckles'
+    },
+    hair: {
+      style: 'sleek bob',
+      color: 'honey blonde',
+      detail: 'tiny bow clips'
+    },
+    ripStyle: 'rounded tear lines',
+    lighting: 'warm studio flash',
+    moodLine: 'She\'s citrus-coded chaos.'
+  },
+  {
+    id: 'cotton_pink',
+    colorName: 'cotton candy pink',
+    headPose: 'facing forward',
+    expression: 'pouty lips and glossy stare',
+    makeup: {
+      blush: 'baby pink gloss blush',
+      lip: 'bubblegum gloss',
+      liner: 'pearl white liner',
+      extra: 'none'
+    },
+    hair: {
+      style: 'high pigtails',
+      color: 'soft blonde',
+      detail: 'pearl clips'
+    },
+    ripStyle: 'curled torn edges',
+    lighting: 'milky light bloom',
+    moodLine: 'Too sweet to block, too sharp to ignore.'
+  },
+  {
+    id: 'mint_rush',
+    colorName: 'mint green',
+    headPose: 'head tilted back',
+    expression: 'eyes closed mid-laugh',
+    makeup: {
+      blush: 'pale peach tint',
+      lip: 'mint-sheen gloss',
+      liner: 'soft green liner',
+      extra: 'tiny sparkle freckles'
+    },
+    hair: {
+      style: 'messy bun',
+      color: 'dark brown',
+      detail: 'chrome pins'
+    },
+    ripStyle: 'clean folded tears',
+    lighting: 'cool daylight flash',
+    moodLine: 'She\'s freshness with attitude.'
+  },
+  {
+    id: 'cherry_burn',
+    colorName: 'cherry red',
+    headPose: 'chin slightly down, tilted toward camera',
+    expression: 'tongue out, lips parted with confident stare',
+    makeup: {
+      blush: 'deep crimson blush high on cheeks',
+      lip: 'matte red lipstick',
+      liner: 'sharp winged liner in dark red',
+      extra: 'freckles in the shape of tiny hearts'
+    },
+    hair: {
+      style: 'messy layered bob',
+      color: 'jet black',
+      detail: 'metallic red bobby pins'
+    },
+    ripStyle: 'angular tear lines, sharp points',
+    lighting: 'hot beauty flash with red bounce',
+    moodLine: 'She doesn\'t just enter — she ruptures the frame.'
+  },
+  {
+    id: 'milk_cloud',
+    colorName: 'matte white',
+    headPose: 'head tilted up, eyes half-lidded',
+    expression: 'closed mouth smile, soft glow stare',
+    makeup: {
+      blush: 'cloudy peach blush',
+      lip: 'clear gloss with white shimmer',
+      liner: 'white pastel liner',
+      extra: 'glossy freckles with holographic sparkles'
+    },
+    hair: {
+      style: 'soft halo bun',
+      color: 'platinum blonde',
+      detail: 'tiny pearl barrettes'
+    },
+    ripStyle: 'soft folds like flower petals',
+    lighting: 'milky softbox with high exposure glow',
+    moodLine: 'She came wrapped in light — now you can\'t look away.'
+  },
+  {
+    id: 'gloss_blackout',
+    colorName: 'mirror black',
+    headPose: 'facing forward, low chin, intense gaze',
+    expression: 'pout with tongue barely showing, deadpan eyes',
+    makeup: {
+      blush: 'smoky gray contour',
+      lip: 'black gloss lips',
+      liner: 'shiny jet black cat eye',
+      extra: 'freckles in matte black dots'
+    },
+    hair: {
+      style: 'wet-look long layers',
+      color: 'blue-black',
+      detail: 'tiny silver rings in strands'
+    },
+    ripStyle: 'ripped like vinyl with shiny folds',
+    lighting: 'spotlight from above with black reflections',
+    moodLine: 'She\'s the blackout filter no one can block.'
+  }
 ];
 
-const HEAD_POSES = [
-  'tilted sideways',
-  'slightly turned',
-  'chin lifted',
-  'tilted down',
-  'facing forward',
-  'head turned halfway'
-];
-
-const EXPRESSIONS = [
-  'tongue out',
-  'wide eyes with joy',
-  'playful wink',
-  'soft smile',
-  'eyes half-lidded',
-  'mouth open in surprise',
-  'pouty lips'
-];
-
-const BLUSH_OPTIONS = [
-  'dewy orange blush',
-  'cotton candy pink blush',
-  'violet cream blush',
-  'sun-kissed coral blush',
-  'glowy peach blush'
-];
-
-const LIP_OPTIONS = [
-  'peach-tinted lips',
-  'clear gloss',
-  'mauve gloss',
-  'juicy red gloss',
-  'watermelon gloss'
-];
-
-const LINER_OPTIONS = [
-  'neon orange liner',
-  'pastel blue liner',
-  'soft purple shimmer liner',
-  'mint inner-corner liner',
-  'yellow winged liner'
-];
-
-const FRECKLES_OPTIONS = [
-  'freckles across cheeks',
-  'heart-shaped freckles',
-  'star glitter freckles',
-  'subtle sun freckles',
-  'none'
-];
-
-const HAIR_STYLES = [
-  'wild curls',
-  'space buns',
-  'sleek bob',
-  'high pigtails',
-  'fluffy afro',
-  'short flipped bob',
-  'messy bun'
-];
-
-const HAIR_DETAILS = [
-  'colorful barrettes',
-  'candy-colored clips',
-  'chrome hair pins',
-  'tiny bow clips',
-  'star-shaped hairpins',
-  'none'
-];
-
-const RIP_STYLES = [
-  'energetic rips',
-  'soft curled folds',
-  'sharp diagonal tears',
-  'rounded break lines',
-  'jagged paper bursts'
-];
-
-const LIGHTING_STYLES = [
-  'high-key sunlight glow',
-  'softbox bounce light',
-  'studio flash with glow',
-  'pop-art ad lighting'
-];
-
-// Emoji and mood combinations
-const MOOD_COMBINATIONS = [
-  { emoji: '🍊', moodLine: 'fresh citrus energy, playful and bright' },
-  { emoji: '🌸', moodLine: 'soft dreamy pop, delicate but bold' },
-  { emoji: '💜', moodLine: 'cosmic candy vibes, sweet and electric' },
-  { emoji: '🍉', moodLine: 'juicy summer burst, fun and spontaneous' },
-  { emoji: '✨', moodLine: 'sparkling youth glow, confident and joyful' },
-  { emoji: '🎀', moodLine: 'cute rebellious charm, innocent with edge' },
-  { emoji: '🌈', moodLine: 'rainbow optimism, colorful and fearless' }
-];
-
-// Rotation state to ensure variety
+// Rotation state to ensure variety across themes
 let paperPopRotationState = {
-  usedCombinations: [] as number[],
+  usedThemes: [] as number[],
   lastReset: Date.now()
 };
 
-// Get next variation in rotation
-function getNextPaperPopInRotation(): number {
-  const totalCombinations = WALLPAPER_COLORS.length;
+// Get next theme in rotation
+function getNextThemeInRotation(): number {
+  const totalThemes = PAPER_POP_THEMES.length;
   
-  // Reset if all combinations used or after 1 hour
-  if (paperPopRotationState.usedCombinations.length >= totalCombinations || 
+  // Reset if all themes used or after 1 hour
+  if (paperPopRotationState.usedThemes.length >= totalThemes || 
       Date.now() - paperPopRotationState.lastReset > 3600000) {
-    paperPopRotationState.usedCombinations = [];
+    paperPopRotationState.usedThemes = [];
     paperPopRotationState.lastReset = Date.now();
   }
   
-  // Find unused combinations
+  // Find unused themes
   let availableIndices = [];
-  for (let i = 0; i < totalCombinations; i++) {
-    if (!paperPopRotationState.usedCombinations.includes(i)) {
+  for (let i = 0; i < totalThemes; i++) {
+    if (!paperPopRotationState.usedThemes.includes(i)) {
       availableIndices.push(i);
     }
   }
   
   // Pick random from available
   const selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-  paperPopRotationState.usedCombinations.push(selectedIndex);
+  paperPopRotationState.usedThemes.push(selectedIndex);
   
   return selectedIndex;
 }
 
-// Generate random Paper Pop variation
-export function generatePaperPopVariation(): PaperPopVariation {
-  const colorIndex = getNextPaperPopInRotation();
-  const moodCombo = MOOD_COMBINATIONS[Math.floor(Math.random() * MOOD_COMBINATIONS.length)];
-  
-  return {
-    wallpaperColor: WALLPAPER_COLORS[colorIndex],
-    headPose: HEAD_POSES[Math.floor(Math.random() * HEAD_POSES.length)],
-    expression: EXPRESSIONS[Math.floor(Math.random() * EXPRESSIONS.length)],
-    blush: BLUSH_OPTIONS[Math.floor(Math.random() * BLUSH_OPTIONS.length)],
-    lip: LIP_OPTIONS[Math.floor(Math.random() * LIP_OPTIONS.length)],
-    liner: LINER_OPTIONS[Math.floor(Math.random() * LINER_OPTIONS.length)],
-    freckles: FRECKLES_OPTIONS[Math.floor(Math.random() * FRECKLES_OPTIONS.length)],
-    hairStyle: HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)],
-    hairDetail: HAIR_DETAILS[Math.floor(Math.random() * HAIR_DETAILS.length)],
-    ripStyle: RIP_STYLES[Math.floor(Math.random() * RIP_STYLES.length)],
-    lightingStyle: LIGHTING_STYLES[Math.floor(Math.random() * LIGHTING_STYLES.length)],
-    emoji: moodCombo.emoji,
-    moodLine: moodCombo.moodLine
-  };
+// Optional: Micro-variations within a theme (can add more variation if needed)
+function applyMicroVariations(theme: PaperPopTheme): PaperPopTheme {
+  // Currently returns theme as-is, but could add small variations like:
+  // - slight expression tweaks
+  // - alternative rip styles within the same aesthetic
+  return { ...theme };
 }
 
-// Generate prompt with random variations
+// Generate prompt with selected theme
 export function generatePaperPopPrompt(basePrompt: string): string {
-  const variation = generatePaperPopVariation();
+  const themeIndex = getNextThemeInRotation();
+  const selectedTheme = applyMicroVariations(PAPER_POP_THEMES[themeIndex]);
   
+  // Replace all template variables with theme values
   let randomizedPrompt = basePrompt
-    .replace(/\{\{wallpaper_color\}\}/g, variation.wallpaperColor)
-    .replace(/\{\{head_pose\}\}/g, variation.headPose)
-    .replace(/\{\{expression\}\}/g, variation.expression)
-    .replace(/\{\{blush\}\}/g, variation.blush)
-    .replace(/\{\{lip\}\}/g, variation.lip)
-    .replace(/\{\{liner\}\}/g, variation.liner)
-    .replace(/\{\{freckles\}\}/g, variation.freckles)
-    .replace(/\{\{hair_style\}\}/g, variation.hairStyle)
-    .replace(/\{\{hair_detail\}\}/g, variation.hairDetail)
-    .replace(/\{\{rip_style\}\}/g, variation.ripStyle)
-    .replace(/\{\{lighting_style\}\}/g, variation.lightingStyle)
-    .replace(/\{\{emoji\}\}/g, variation.emoji)
-    .replace(/\{\{mood_line\}\}/g, variation.moodLine);
+    .replace(/\{\{theme\.color_name\}\}/g, selectedTheme.colorName)
+    .replace(/\{\{theme\.head_pose\}\}/g, selectedTheme.headPose)
+    .replace(/\{\{theme\.expression\}\}/g, selectedTheme.expression)
+    .replace(/\{\{theme\.makeup\.blush\}\}/g, selectedTheme.makeup.blush)
+    .replace(/\{\{theme\.makeup\.lip\}\}/g, selectedTheme.makeup.lip)
+    .replace(/\{\{theme\.makeup\.liner\}\}/g, selectedTheme.makeup.liner)
+    .replace(/\{\{theme\.makeup\.extra\}\}/g, selectedTheme.makeup.extra)
+    .replace(/\{\{theme\.hair\.style\}\}/g, selectedTheme.hair.style)
+    .replace(/\{\{theme\.hair\.color\}\}/g, selectedTheme.hair.color)
+    .replace(/\{\{theme\.hair\.detail\}\}/g, selectedTheme.hair.detail)
+    .replace(/\{\{theme\.rip_style\}\}/g, selectedTheme.ripStyle)
+    .replace(/\{\{theme\.lighting\}\}/g, selectedTheme.lighting)
+    .replace(/\{\{theme\.mood_line\}\}/g, selectedTheme.moodLine);
   
   return randomizedPrompt;
 }
