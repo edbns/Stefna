@@ -12,6 +12,11 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Red Lipstick",
+      description: "Powerful fashion muses captured in dramatic black-and-white where the only color is bold red lipstick with cinematic tension."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Wax Bloom",
       description: "Radiant fashion muses dressed in molten candle couture with glossy wax, glowing amber tones, and cinematic candlelit atmosphere."
     },
@@ -128,6 +133,7 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Red Lipstick': '/images/unreal_reflection_red_lipstick.jpg',
       'Wax Bloom': '/images/unreal_reflection_wax_bloom.jpg',
       'Black Aura': '/images/parallel_self_black_aura.webp',
       'The Untouchable': '/images/parallel_self_untouchable.webp',

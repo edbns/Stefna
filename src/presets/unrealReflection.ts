@@ -53,6 +53,29 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 💄 Red Lipstick (NEW)
+  {
+    id: 'unreal_reflection_red_lipstick',
+    label: 'Red Lipstick',
+    prompt: 'Transform this woman or group of women in the photo into powerful fashion muses captured in a dramatic black-and-white world — where the only color is her red lipstick.\n\nOutfits are sharp and seductive: black sculpted bodysuits, corset tops, sheer black mesh, tailored black pants or skirts with bold cuts. No coats. No fantasy. Just confident, elevated fashion that reveals the shape of the body without being vulgar.\n\nPoses are strong and grounded: sitting on a stool with legs apart, leaning back with one arm over the chair, walking with head turned — like they were caught mid-movement by a film camera. No weak stances. Every posture tells a story.\n\nMakeup is grayscale-perfect: contoured skin, defined brows, soft shadow — and then the matte red lips pierce through, bold and center-stage.\n\nHair is natural but styled — a soft wave, slicked side part, or windswept volume. No futuristic edits. Just real beauty.\n\nBackground is textured but clean — a concrete wall, black curtain, studio backdrop, or old mirror reflecting blurred shapes. Lighting is harsh from one side, creating deep shadows across body curves and cheekbones. This isn\'t over-lit. This is cinematic tension.\n\nOnly one thing glows in color: the red lipstick. Everything else is just black, white, and legend.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, distortion, oversaturated, cluttered composition, coats, jackets, fantasy elements, vulgar, weak poses',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['red_lipstick', 'black_white', 'color_accent', 'cinematic_fashion', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🕯️ Wax Bloom (NEW)
   {
     id: 'unreal_reflection_wax_bloom',

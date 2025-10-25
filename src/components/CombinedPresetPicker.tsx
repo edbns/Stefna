@@ -27,8 +27,8 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Newest presets first (Wax Bloom, Wind Layer, Mirror Shatter, Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
-  const priorityOrder = ['Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  // Custom order: Newest presets first (Red Lipstick, Wax Bloom, Wind Layer, Mirror Shatter, Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
+  const priorityOrder = ['Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   // Sort presets by priority order
@@ -48,6 +48,7 @@ export function CombinedPresetPicker({
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
+      'Red Lipstick': '/images/unreal_reflection_red_lipstick.jpg',
       'Wax Bloom': '/images/unreal_reflection_wax_bloom.jpg',
       'Black Aura': '/images/parallel_self_black_aura.webp',
       'The Untouchable': '/images/parallel_self_untouchable.webp',
