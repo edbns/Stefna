@@ -4,6 +4,7 @@ import { generateChromaticSmokePrompt } from '../utils/chromaticSmokeRandomizati
 import { generateCrystalFallPrompt } from '../utils/crystalFallRandomization';
 import { generateButterflyMonarchPrompt } from '../utils/butterflyMonarchRandomization';
 import { generateMoltenGlossPrompt } from '../utils/moltenGlossRandomization';
+import { generatePaperPopPrompt } from '../utils/paperPopRandomization';
 
 /*
 
@@ -53,6 +54,29 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 📄 Paper Pop (NEW - with randomization)
+  {
+    id: 'unreal_reflection_paper_pop',
+    label: 'Paper Pop',
+    prompt: generatePaperPopPrompt('Transform this woman into a fearless beauty portrait breaking through bright {{wallpaper_color}} paper. Only her head and neck are visible, with her face {{head_pose}}, {{expression}}. Makeup: {{blush}}, {{lip}}, {{liner}}, {{freckles}}. Hair: {{hair_style}} with {{hair_detail}}. Background: {{wallpaper_color}} matte backdrop with {{rip_style}}. Lighting: {{lighting_style}}. {{emoji}} Mood: {{mood_line}}'),
+    negative_prompt: 'cartoon, face paint, cosplay, distortion, oversaturated, cluttered composition, full body, messy background, dark lighting',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['paper_pop', 'colorful_backdrop', 'playful_portrait', 'randomized_style', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 💄 Red Lipstick (NEW)
   {
     id: 'unreal_reflection_red_lipstick',

@@ -12,6 +12,11 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Paper Pop",
+      description: "Fearless beauty portrait breaking through bright colorful paper with playful expressions, rotating colors, and vibrant pop-art energy."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Red Lipstick",
       description: "Powerful fashion muses captured in dramatic black-and-white where the only color is bold red lipstick with cinematic tension."
     },
@@ -133,6 +138,7 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Paper Pop': '/images/unreal_reflection_paper_pop.jpg',
       'Red Lipstick': '/images/unreal_reflection_red_lipstick.jpg',
       'Wax Bloom': '/images/unreal_reflection_wax_bloom.jpg',
       'Black Aura': '/images/parallel_self_black_aura.webp',
