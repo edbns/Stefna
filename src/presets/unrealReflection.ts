@@ -57,6 +57,29 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🪶 Feather Feral (NEW)
+  {
+    id: 'unreal_reflection_feather_feral',
+    label: 'Feather Feral',
+    prompt: 'Transform this exact woman into a seductive, high-fashion portrait sculpted from hundreds of layered, charcoal black feathers. She stands confidently in a powerful pose, her body facing forward, head tilted subtly, eyes locked onto the camera with a calm, haunting intensity — as if she\'s inviting the storm.\n\nHer outfit forms a sculptural black mini dress made entirely from overlapping feather clusters. The feathers are layered like scales, sharp at the edges, blooming outward from the waist to form a textured silhouette. The neckline may vary — strapless, halter, or one-shoulder — but always follows the shape of natural feather flow. The dress cinches at the waist, flares softly at the hips, and exposes smooth skin at the arms, collarbones, and legs. It\'s wild, but elegant — a fashion sculpture, not a costume.\n\nAround her, black crows spiral and slash through the air, some blurred by motion, others frozen mid-flight with wings wide. Floating feathers drift downward or curl in the wind, caught in the chaos. A few stray feathers lift from her shoulders and hips, blending her body into the storm.\n\nThe background is vast and cinematic — a dark sky torn open with wind and clouds, muted silver light leaking through, creating contrast against her skin. She stands in a field of dead grass, shadows and wind circling her like a prophecy.\n\nLighting is dramatic and otherworldly: rim-lit from behind and below, accentuating feather textures, cheekbones, and collarbones. Skin glows softly, untouched by shadow. Her silhouette is unmistakable: tall, elegant, mythic.\n\nHer hair is sleek and controlled — either pulled back into a low bun, twisted braid, or slicked behind the ears. Makeup is fierce but clean: smoky eyeliner, pale matte lips, feathered brows. No jewelry. No distraction. Just her, the feathers, and the storm.\n\nThe mood: not horror. Not fantasy. Ritual high fashion. She is not prey. She is the omen.',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, bright colors, oversaturated, cluttered composition, horror elements, gore, fantasy costume, tribal, messy hair, jewelry',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['feather_feral', 'crow_aesthetic', 'dark_fashion', 'cinematic_drama', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 📄 Paper Pop (NEW - with theme-based randomization)
   {
     id: 'unreal_reflection_paper_pop',

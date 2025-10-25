@@ -33,6 +33,11 @@ export default function BestPracticesScreen() {
     // Latest presets first
     {
       mode: "Presets",
+      title: "Feather Feral",
+      description: "Seductive high-fashion portrait sculpted from black feathers with crows in dramatic storm atmosphere and ritual fashion energy."
+    },
+    {
+      mode: "Presets",
       title: "Paper Pop",
       description: "Fearless beauty portrait breaking through bright colorful paper with playful expressions, rotating colors, and vibrant pop-art energy."
     },
@@ -218,6 +223,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
+      'Feather Feral': '/images/unreal_reflection_feather_feral.jpg',
       'Paper Pop': '/images/unreal_reflection_paper_pop.jpg',
       'Red Lipstick': '/images/unreal_reflection_red_lipstick.jpg',
       'Wax Bloom': '/images/unreal_reflection_wax_bloom.jpg',
