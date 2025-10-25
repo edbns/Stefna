@@ -3757,18 +3757,38 @@ export const handler: Handler = async (event, context) => {
     
     console.log(`💰 [Background] Checking credits FIRST before processing: ${creditsNeeded} credits for ${action}`);
     
-    const creditReservation = await fetch(`${process.env.URL}/.netlify/functions/credits-reserve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': userToken
-      },
-      body: JSON.stringify({
-        action: action,
-        cost: creditsNeeded,
-        request_id: runId
-      })
-    });
+    // Add timeout to credit check to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    let creditReservation;
+    try {
+      creditReservation = await fetch(`${process.env.URL}/.netlify/functions/credits-reserve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': userToken
+        },
+        body: JSON.stringify({
+          action: action,
+          cost: creditsNeeded,
+          request_id: runId
+        }),
+        signal: controller.signal
+      });
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      console.error('❌ [Background] Credit check network error:', fetchError);
+      
+      // Provide user-friendly error message
+      const errorMsg = fetchError.name === 'AbortError' 
+        ? 'Credit check timed out. Please try again.' 
+        : 'Network error checking credits. Please check your connection and try again.';
+      
+      throw new Error(errorMsg);
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const creditResult = await creditReservation.json();
     console.log(`💰 [Background] Credit reservation result:`, creditResult);
@@ -4023,23 +4043,43 @@ export const handler: Handler = async (event, context) => {
     if (error instanceof Error) {
       errorMessage = error.message;
       
+      // Check for timeout-related errors (including ETIMEDOUT and fetch failures)
+      const isTimeoutError = error.message.includes('timeout') || 
+                            error.message.includes('ETIMEDOUT') || 
+                            error.message.includes('timed out') ||
+                            (error.message.includes('fetch failed') && (error as any).cause?.code === 'ETIMEDOUT');
+      
       // Set appropriate status codes for specific errors
       if (error.message.includes('INSUFFICIENT_CREDITS') || error.message.includes('Insufficient credits')) {
         statusCode = 402; // Payment Required - standard for insufficient credits
         errorType = 'INSUFFICIENT_CREDITS';
-      } else if (error.message.includes('timeout')) {
+      } else if (isTimeoutError) {
         statusCode = 504; // Gateway Timeout
+        errorType = 'TIMEOUT';
+        errorMessage = error.message.includes('Credit check') 
+          ? error.message 
+          : 'Request timed out. Please try again.';
+      } else if (error.message.includes('Network error')) {
+        statusCode = 503; // Service Unavailable
+        errorType = 'NETWORK_ERROR';
       } else if (error.message.includes('Invalid') || error.message.includes('Missing')) {
         statusCode = 400; // Bad Request
       }
     }
+    
+    console.log(`🚨 [Background] Returning error response with status ${statusCode}:`, {
+      success: false,
+      status: errorType === 'TIMEOUT' ? 'timeout' : 'failed',
+      error: errorMessage,
+      errorType: errorType
+    });
     
     return {
       statusCode,
       headers: CORS_JSON_HEADERS,
       body: JSON.stringify({
         success: false,
-        status: error instanceof Error && error.message.includes('timeout') ? 'timeout' : 'failed',
+        status: errorType === 'TIMEOUT' ? 'timeout' : 'failed',
         error: errorMessage,
         errorType: errorType
       })
