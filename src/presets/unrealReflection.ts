@@ -51,6 +51,9 @@ export type UnrealReflectionPreset = {
   raw?: boolean
   image_prompt_strength?: number
   aspect_ratio?: string
+  // Randomization parameters (for presets like Paper Pop, Chromatic Smoke, etc.)
+  isRandomized?: boolean
+  basePrompt?: string
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
@@ -58,7 +61,7 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_paper_pop',
     label: 'Paper Pop',
-    prompt: generatePaperPopPrompt('Transform this woman into a fearless beauty portrait breaking through bright {{theme.color_name}} paper. Only her head and neck are visible, with her face {{theme.head_pose}}, {{theme.expression}}. Makeup: {{theme.makeup.blush}}, {{theme.makeup.lip}}, {{theme.makeup.liner}}, {{theme.makeup.extra}}. Hair: {{theme.hair.style}} in {{theme.hair.color}} with {{theme.hair.detail}}. Background: {{theme.color_name}} matte backdrop with {{theme.rip_style}}. Lighting: {{theme.lighting}}. Mood: {{theme.mood_line}}'),
+    prompt: 'Transform this woman into a fearless beauty portrait breaking through bright {{theme.color_name}} paper. Only her head and neck are visible, with her face {{theme.head_pose}}, {{theme.expression}}. Makeup: {{theme.makeup.blush}}, {{theme.makeup.lip}}, {{theme.makeup.liner}}, {{theme.makeup.extra}}. Hair: {{theme.hair.style}} in {{theme.hair.color}} with {{theme.hair.detail}}. Background: {{theme.color_name}} matte backdrop with {{theme.rip_style}}. Lighting: {{theme.lighting}}. Mood: {{theme.mood_line}}',
     negative_prompt: 'cartoon, face paint, cosplay, distortion, oversaturated, cluttered composition, full body, messy background, dark lighting',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
@@ -74,7 +77,9 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     output_format: 'jpeg',
     raw: true,
     image_prompt_strength: 0.55,
-    aspect_ratio: '9:16'
+    aspect_ratio: '9:16',
+    isRandomized: true,
+    basePrompt: 'Transform this woman into a fearless beauty portrait breaking through bright {{theme.color_name}} paper. Only her head and neck are visible, with her face {{theme.head_pose}}, {{theme.expression}}. Makeup: {{theme.makeup.blush}}, {{theme.makeup.lip}}, {{theme.makeup.liner}}, {{theme.makeup.extra}}. Hair: {{theme.hair.style}} in {{theme.hair.color}} with {{theme.hair.detail}}. Background: {{theme.color_name}} matte backdrop with {{theme.rip_style}}. Lighting: {{theme.lighting}}. Mood: {{theme.mood_line}}'
   },
 
   // 💄 Red Lipstick (NEW)

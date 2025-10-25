@@ -2498,7 +2498,36 @@ const HomeNew: React.FC = () => {
       
       // UNREAL REFLECTION MODE: ALWAYS use the original, curated prompt
       // NO MORE SYNTHETIC PROMPT GENERATION - preserve reflection intent
-      effectivePrompt = unrealReflectionPreset.prompt;
+      // Check if this is a randomized preset (like Paper Pop, Chromatic Smoke, etc.)
+      if (unrealReflectionPreset.isRandomized && unrealReflectionPreset.basePrompt) {
+        // Import the appropriate randomization utility dynamically based on preset
+        if (unrealReflectionPreset.id === 'unreal_reflection_paper_pop') {
+          const { generatePaperPopPrompt } = await import('../utils/paperPopRandomization');
+          effectivePrompt = generatePaperPopPrompt(unrealReflectionPreset.basePrompt);
+          console.log('🎨 [Paper Pop] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else if (unrealReflectionPreset.id === 'unreal_reflection_chromatic_smoke') {
+          const { generateChromaticSmokePrompt } = await import('../utils/chromaticSmokeRandomization');
+          effectivePrompt = generateChromaticSmokePrompt(unrealReflectionPreset.basePrompt);
+          console.log('🎨 [Chromatic Smoke] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else if (unrealReflectionPreset.id === 'unreal_reflection_crystal_fall') {
+          const { generateCrystalFallPrompt } = await import('../utils/crystalFallRandomization');
+          effectivePrompt = generateCrystalFallPrompt(unrealReflectionPreset.basePrompt);
+          console.log('🎨 [Crystal Fall] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else if (unrealReflectionPreset.id === 'unreal_reflection_butterfly_monarch') {
+          const { generateButterflyMonarchPrompt } = await import('../utils/butterflyMonarchRandomization');
+          effectivePrompt = generateButterflyMonarchPrompt(unrealReflectionPreset.basePrompt);
+          console.log('🎨 [Butterfly Monarch] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else if (unrealReflectionPreset.id === 'unreal_reflection_molten_gloss') {
+          const { generateMoltenGlossPrompt } = await import('../utils/moltenGlossRandomization');
+          effectivePrompt = generateMoltenGlossPrompt(unrealReflectionPreset.basePrompt);
+          console.log('🎨 [Molten Gloss] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else {
+          // Fallback to base prompt if no specific handler
+          effectivePrompt = unrealReflectionPreset.basePrompt;
+        }
+      } else {
+        effectivePrompt = unrealReflectionPreset.prompt;
+      }
       
             // Unreal Reflection uses strict IPA (threshold: 0.7) - no manual control needed
       const adjustedStrength = unrealReflectionPreset.strength;
