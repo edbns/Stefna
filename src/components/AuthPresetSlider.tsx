@@ -12,6 +12,21 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Shattered Stone",
+      description: "Sculptural high-fashion vision emerging from cracked marble, granite, and obsidian plates forming brutalist couture."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Threadbare Halo",
+      description: "Poetic high-fashion figure wrapped in flowing fraying threads and silk strands, caught between creation and collapse."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Frozen Bloom",
+      description: "Sculptural high-fashion portrait wearing semi-transparent ice petals blooming upward like frozen armor with cold elegance."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Feather Feral",
       description: "Seductive high-fashion portrait sculpted from black feathers with crows in dramatic storm atmosphere and ritual fashion energy."
     },
@@ -143,6 +158,9 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Shattered Stone': '/images/unreal_reflection_shattered_stone.jpg',
+      'Threadbare Halo': '/images/unreal_reflection_threadbare_halo.jpg',
+      'Frozen Bloom': '/images/unreal_reflection_frozen_bloom.jpg',
       'Feather Feral': '/images/unreal_reflection_feather_feral.jpg',
       'Paper Pop': '/images/unreal_reflection_paper_pop.jpg',
       'Red Lipstick': '/images/unreal_reflection_red_lipstick.jpg',

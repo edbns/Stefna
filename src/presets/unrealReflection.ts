@@ -57,6 +57,75 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🪨 Shattered Stone (NEW)
+  {
+    id: 'unreal_reflection_shattered_stone',
+    label: 'Shattered Stone',
+    prompt: 'Transform this exact woman into a sculptural high-fashion vision, emerging from cracked and fractured stone. She wears a structured mini dress crafted entirely from marble, granite, or obsidian plates, layered and cut to fit her form like brutalist couture. The stone plates vary in size: some angular and geometric, others smooth and organic — always resting cleanly on her body with visible seams, cracks, and broken edges. The dress is thickest at the hips and chest, tapering sharply at the waist and collarbones, forming strapless, halter, or asymmetric cuts.\n\nFragments of stone float mid-air near her shoulders or behind her — suspended in motion, like pieces just shattered off her body. Some cracks glow faintly, not with light, but with depth — a sense of something ancient finally splitting open.\n\nHer skin remains exposed in intentional places — neck, arms, legs — flawless and untouched, contrasting the texture of the dress. Her pose is tall and poised, with one arm bent or relaxed, legs firmly planted, and her eyes looking straight at the camera with calm defiance — like a woman who was once a statue, now stepping out to judge the world.\n\nHair is slicked back, braided, or wrapped in a crown — minimal and structured. Makeup is grayscale glam: sculpted contour, matte lips, sharp shadow lines — no gloss, no softness.\n\nThe background is a surreal broken landscape: scattered marble slabs, overcast skies, and columns cracked in half. Light filters through dust in the air, casting diagonal shadows across her body and fractured dress.\n\nLighting is moody and sculptural: low from one side, with hard edge light on the shoulders and cheekbones. Shadows emphasize the depth of each stone layer — like she\'s both architecture and rebellion.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, horror elements, fantasy costume, soft lighting, glossy makeup, messy hair',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['shattered_stone', 'brutalist_couture', 'sculptural_fashion', 'marble_aesthetic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🧵 Threadbare Halo (NEW)
+  {
+    id: 'unreal_reflection_threadbare_halo',
+    label: 'Threadbare Halo',
+    prompt: 'Transform this exact woman into a poetic, high-fashion figure wrapped in flowing layers of fraying threads and soft silk strands — as if her outfit is being unspooled mid-motion, caught between creation and collapse. Her dress is made from torn fabric ribbons, knotted yarn, and delicate fibers that drape across her body like sculptural sashes. Some parts cling tightly around the torso or hips, others unravel freely off her shoulders or sleeves — always artistic, always intentional.\n\nLoose threads drift in the air around her, some still attached to her outfit, others fully airborne — curling gently like smoke or ribbon. Their movement adds softness, but also tension: she\'s being unraveled, and she doesn\'t care.\n\nHer pose is open and grounded: shoulders back, arms at her sides or slightly lifted, and her gaze is downward or directly to camera — not passive, but reflective. Skin is visible in areas where fabric gaps: arms, collarbones, legs — smooth and untouched.\n\nHer hair is soft but styled: long and waved, tucked low into a bun, or partially braided — but always with a few loose strands. Makeup is faded elegance: light blush, blurred lips, slightly glossy skin, under-eye shadow or liner that hints at softness and emotion.\n\nThe background is a pale dusk or surreal indoor space, like a forgotten textile studio or misty cathedral wall — faded fabrics and threads may float behind her, forming a circular thread "halo" if seen from the right angle. Light leaks softly through a torn curtain or broken window, casting long shadows and warm glow across the threads.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, horror elements, fantasy costume, harsh lighting, heavy makeup',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['threadbare_halo', 'fraying_threads', 'poetic_fashion', 'unraveling_aesthetic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // ❄️ Frozen Bloom (NEW)
+  {
+    id: 'unreal_reflection_frozen_bloom',
+    label: 'Frozen Bloom',
+    prompt: 'Transform this exact woman into a sculptural high-fashion portrait wearing an outfit made entirely of semi-transparent ice petals — blooming upward like frozen armor. Her dress is formed from delicate but sharp ice-like floral layers, stacked in a couture silhouette that wraps the body: strapless or one-shoulder, cinched at the waist, blooming outward at the hips and skirt. The ice petals glisten subtly, some with cracks or frost edging, others smooth like carved crystal.\n\nHer face must not appear frozen or emotionless. Skin is softly lit, expressive, and alive — cheeks may glow faintly from the cold, lips show natural tone or a hint of chilled gloss, but the eyes remain human, engaged, and subtly powerful. She may gaze directly into the camera or slightly past it, with a quiet inner presence — not distant or artificial.\n\nHair is clean and sculpted: low bun, sleek braid, or tucked behind the ears. No heavy frost buildup — perhaps just a few delicate ice sparkles near the hairline or on the crown.\n\nShe stands in a cold, cinematic world — a snowy field, frozen lake, or icy plateau behind her. Soft frost drifts around her, and light mist rises from the ground. Her skin contrasts beautifully with the icy dress — a human flame wrapped in cold bloom.\n\nLighting is sharp and cold-toned: edge lighting from behind or a soft icy glow from above. Shadows fall in cool grays and frosted blues, highlighting the texture of the petals and the grace of her pose.\n\nPose is elegant and grounded — arms softly down or one hand lifted, standing with poise. The mood is controlled, cinematic, and untouchable.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright warm colors, oversaturated, cluttered composition, horror elements, fantasy costume, frozen face, emotionless expression, heavy frost on face',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['frozen_bloom', 'ice_petals', 'winter_couture', 'cold_elegance', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🪶 Feather Feral (NEW)
   {
     id: 'unreal_reflection_feather_feral',
