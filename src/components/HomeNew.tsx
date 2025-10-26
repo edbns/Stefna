@@ -2891,8 +2891,8 @@ const HomeNew: React.FC = () => {
         }
       }
 
-      // Final validation: ensure we have a valid sourceUrl
-      if (!sourceUrl || sourceUrl.trim() === '') {
+      // Final validation: ensure we have a valid sourceUrl (except for custom prompt mode which is text-to-image)
+      if (kind !== 'custom' && (!sourceUrl || sourceUrl.trim() === '')) {
         console.error('🚨 [HomeNew] No source URL available for generation');
         console.error('🔍 [HomeNew] Debug:', { previewUrl, selectedFile: selectedFile?.name, kind, serviceMode });
         notifyError({ 
@@ -2903,9 +2903,14 @@ const HomeNew: React.FC = () => {
         setNavGenerating(false);
         return;
       }
+      
+      // Custom prompt mode is text-to-image, so sourceUrl is optional
+      if (kind === 'custom') {
+        console.log('✨ [HomeNew] Custom prompt mode detected - text-to-image generation (sourceUrl optional)');
+      }
 
       // Use the unified service
-      console.log(`🎬 [DEBUG] About to call simpleGenService.generate with sourceUrl:`, sourceUrl.substring(0, 50));
+      console.log(`🎬 [DEBUG] About to call simpleGenService.generate with sourceUrl:`, sourceUrl ? sourceUrl.substring(0, 50) : 'none (text-to-image)');
       const simpleGenService = SimpleGenerationService.getInstance();
       const result = await simpleGenService.generate({
         mode: serviceMode,
