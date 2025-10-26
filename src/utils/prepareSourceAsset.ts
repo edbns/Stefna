@@ -197,12 +197,27 @@ export async function prepareSourceAsset(
     console.log('⚡ Starting background upload with immediate preview for:', file.name);
     
     const uploadFn = async () => {
-      // Signed params
-      const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ folder: 'stefna/sources' })
-      });
+      // Signed params with timeout protection
+      const signController = new AbortController();
+      const signTimeout = setTimeout(() => signController.abort(), 10000); // 10 second timeout
+      
+      let signRes;
+      try {
+        signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ folder: 'stefna/sources' }),
+          signal: signController.signal
+        });
+      } catch (error) {
+        clearTimeout(signTimeout);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error('🚨 Background upload: Cloudinary sign request failed:', errorMsg);
+        throw new Error(`Failed to get upload signature: ${errorMsg}`);
+      } finally {
+        clearTimeout(signTimeout);
+      }
+      
       const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
       const form = new FormData();
@@ -215,10 +230,32 @@ export async function prepareSourceAsset(
       if (folder) form.append('folder', folder);
       if (upload_preset) form.append('upload_preset', upload_preset);
 
-      const up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-        method: 'POST',
-        body: form,
-      });
+      // Upload to Cloudinary with timeout protection
+      const uploadController = new AbortController();
+      const uploadTimeout = setTimeout(() => uploadController.abort(), 120000); // 2 minute timeout
+      
+      let up;
+      try {
+        up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+          method: 'POST',
+          body: form,
+          signal: uploadController.signal
+        });
+      } catch (error) {
+        clearTimeout(uploadTimeout);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error('🚨 Background upload: Cloudinary upload request failed:', errorMsg);
+        
+        // Detect specific network errors
+        if (errorMsg.includes('aborted') || errorMsg.includes('timeout')) {
+          throw new Error('Upload timed out. Please check your connection and try again.');
+        } else if (errorMsg.includes('network') || errorMsg.includes('ERR_NETWORK')) {
+          throw new Error('Network error during upload. Please check your connection and try again.');
+        }
+        throw new Error(`Upload failed: ${errorMsg}`);
+      } finally {
+        clearTimeout(uploadTimeout);
+      }
 
       const json = await up.json().catch(() => ({} as any));
       if (!up.ok) {
@@ -250,33 +287,70 @@ export async function prepareSourceAsset(
 
   // Standard upload with retry (existing logic)
   const uploadToCloudinary = async () => {
-  // Signed params
-  const signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ folder: 'stefna/sources' })
-  });
-  const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
+    // Signed params with timeout protection
+    const signController = new AbortController();
+    const signTimeout = setTimeout(() => signController.abort(), 10000); // 10 second timeout
+    
+    let signRes;
+    try {
+      signRes = await signedFetch('/.netlify/functions/cloudinary-sign', { 
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ folder: 'stefna/sources' }),
+        signal: signController.signal
+      });
+    } catch (error) {
+      clearTimeout(signTimeout);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('🚨 Cloudinary sign request failed:', errorMsg);
+      throw new Error(`Failed to get upload signature: ${errorMsg}`);
+    } finally {
+      clearTimeout(signTimeout);
+    }
+    
+    const { timestamp, signature, apiKey, cloudName, folder, upload_preset } = await signRes.json();
 
-  const form = new FormData();
-  console.log('[uploading] file:', { name: file.name, size: file.size, type: file.type });
-  form.append('file', file);
-  form.append('timestamp', String(timestamp));
-  form.append('signature', signature);
-  form.append('api_key', apiKey);
-  // Prefer upload preset if provided
-  if (folder) form.append('folder', folder);
-  if (upload_preset) form.append('upload_preset', upload_preset);
+    const form = new FormData();
+    console.log('[uploading] file:', { name: file.name, size: file.size, type: file.type });
+    form.append('file', file);
+    form.append('timestamp', String(timestamp));
+    form.append('signature', signature);
+    form.append('api_key', apiKey);
+    // Prefer upload preset if provided
+    if (folder) form.append('folder', folder);
+    if (upload_preset) form.append('upload_preset', upload_preset);
 
-  const up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-    method: 'POST',
-    body: form,
-  });
+    // Upload to Cloudinary with timeout protection
+    const uploadController = new AbortController();
+    const uploadTimeout = setTimeout(() => uploadController.abort(), 120000); // 2 minute timeout
+    
+    let up;
+    try {
+      up = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+        method: 'POST',
+        body: form,
+        signal: uploadController.signal
+      });
+    } catch (error) {
+      clearTimeout(uploadTimeout);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('🚨 Cloudinary upload request failed:', errorMsg);
+      
+      // Detect specific network errors
+      if (errorMsg.includes('aborted') || errorMsg.includes('timeout')) {
+        throw new Error('Upload timed out. Please check your connection and try again.');
+      } else if (errorMsg.includes('network') || errorMsg.includes('ERR_NETWORK')) {
+        throw new Error('Network error during upload. Please check your connection and try again.');
+      }
+      throw new Error(`Upload failed: ${errorMsg}`);
+    } finally {
+      clearTimeout(uploadTimeout);
+    }
 
-  // Better 400 debug
-  const json = await up.json().catch(() => ({} as any));
-  if (!up.ok) {
-    console.error('Cloudinary upload failed:', json);
+    // Better 400 debug
+    const json = await up.json().catch(() => ({} as any));
+    if (!up.ok) {
+      console.error('Cloudinary upload failed:', json);
       throw new Error(`Cloudinary upload failed: ${json.error?.message || up.statusText || 'Unknown error'}`);
     }
 
