@@ -2842,17 +2842,38 @@ const HomeNew: React.FC = () => {
       let sourceWidth: number | undefined;
       let sourceHeight: number | undefined;
       
-      console.log(`🔍 [DEBUG] sourceUrl check:`, { sourceUrl: sourceUrl.substring(0, 50), isBlob: sourceUrl.startsWith('blob:'), hasSelectedFile: !!selectedFile });
+      console.log(`🔍 [DEBUG] sourceUrl check:`, { 
+        sourceUrl: sourceUrl ? sourceUrl.substring(0, 50) : 'empty', 
+        isBlob: sourceUrl ? sourceUrl.startsWith('blob:') : false, 
+        hasSelectedFile: !!selectedFile 
+      });
       
-      if (sourceUrl.startsWith('blob:')) {
+      if (sourceUrl && sourceUrl.startsWith('blob:')) {
         // Avoid fetch(blob:) due to CSP; prefer the actual File when available
         console.log(`📤 [DEBUG] Starting prepareSourceAsset for blob URL...`);
         const prepared = await prepareSourceAsset(selectedFile || sourceUrl, { showPreviewImmediately: false });
-        console.log(`✅ [DEBUG] prepareSourceAsset completed:`, { url: prepared.url?.substring(0, 50), width: prepared.width, height: prepared.height });
+        console.log(`✅ [DEBUG] prepareSourceAsset completed:`, { 
+          url: prepared?.url ? prepared.url.substring(0, 50) : 'empty', 
+          width: prepared?.width, 
+          height: prepared?.height 
+        });
+        
+        // Validate upload result
+        if (!prepared || !prepared.url) {
+          console.error('🚨 [HomeNew] Upload failed - no URL returned');
+          notifyError({ 
+            title: 'Upload Failed', 
+            message: 'Could not upload your image. Please try again.' 
+          });
+          endGeneration(genId);
+          setNavGenerating(false);
+          return;
+        }
+        
         sourceUrl = prepared.url;
         sourceWidth = prepared.width;
         sourceHeight = prepared.height;
-      } else if (sourceUrl.includes('cloudinary.com') && !sourceWidth && !sourceHeight) {
+      } else if (sourceUrl && sourceUrl.includes('cloudinary.com') && !sourceWidth && !sourceHeight) {
         // For existing Cloudinary URLs, try to extract dimensions from URL or get from API
         try {
           // Try to extract dimensions from URL first (some Cloudinary URLs include dimensions)
@@ -2868,6 +2889,19 @@ const HomeNew: React.FC = () => {
         } catch (error) {
           console.warn(`⚠️ [HomeNew] Failed to extract dimensions from URL:`, error);
         }
+      }
+
+      // Final validation: ensure we have a valid sourceUrl
+      if (!sourceUrl || sourceUrl.trim() === '') {
+        console.error('🚨 [HomeNew] No source URL available for generation');
+        console.error('🔍 [HomeNew] Debug:', { previewUrl, selectedFile: selectedFile?.name, kind, serviceMode });
+        notifyError({ 
+          title: 'No Image', 
+          message: 'Please select an image before generating' 
+        });
+        endGeneration(genId);
+        setNavGenerating(false);
+        return;
       }
 
       // Use the unified service
