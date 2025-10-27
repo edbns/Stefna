@@ -33,6 +33,11 @@ export default function BestPracticesScreen() {
     // Latest presets first
     {
       mode: "Presets",
+      title: "Falcon Ceremony",
+      description: "Cinematic high-fashion vision sculpted from layered falcon feathers with storm-filled skies, falcons circling, and predator couture aesthetics."
+    },
+    {
+      mode: "Presets",
       title: "Shattered Stone",
       description: "Sculptural high-fashion vision emerging from cracked marble, granite, and obsidian plates forming brutalist couture."
     },
@@ -238,6 +243,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
+      'Falcon Ceremony': '/images/unreal_reflection_falcon_ceremony.jpg',
       'Shattered Stone': '/images/unreal_reflection_shattered_stone.jpg',
       'Threadbare Halo': '/images/unreal_reflection_threadbare_halo.jpg',
       'Frozen Bloom': '/images/unreal_reflection_frozen_bloom.jpg',

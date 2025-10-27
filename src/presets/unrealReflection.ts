@@ -57,7 +57,30 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
-  // 🪨 Shattered Stone (NEW)
+  // 🦅 Falcon Ceremony (NEW)
+  {
+    id: 'unreal_reflection_falcon_ceremony',
+    label: 'Falcon Ceremony',
+    prompt: 'Transform this exact woman into a cinematic high-fashion vision sculpted from layered falcon feathers — built for movement, for sky, and for silence. She walks across cracked dark ground under storm-filled clouds, falcons circling above, their wings echoing in the sky. Around her feet, animal skulls lie untouched, as if they\'ve been waiting centuries for her to pass.\n\nHer outfit is crafted entirely from layered falcon feathers — in tones of ash-grey, smoke, ivory, slate brown, and bone-black. The feathers are sleek and sharp, sculpted to the body like armor but light as air. The silhouette is long and tapered, with asymmetric cuts that follow the flow of wind: shoulder blades framed by longer, darker feathers, hips marked by layered fans that shift while walking, a high slit allows movement, revealing powerful leg with every step.\n\nThe neckline varies (single-shoulder, clean halter, sculpted V), but always follows the direction of natural feather layering — aerodynamic, never bulky. Some feathers lift subtly with motion — as if the outfit is alive with the wind. It is wild couture, not costume. Unwearable in real life. Perfect in edit. She is barefoot, her steps quiet against the cracked earth. No heels. No trace. Only presence.\n\nHair is sleek, tied, or pulled back — no hair in the face. Windswept but styled. Makeup: clean matte skin, sharp eyeliner echoing falcon eye shape, pale lips, high cheekbone contrast. No jewelry. No face paint. No symbols. Her face is uncovered, proud, real — like she was cast from wind.\n\nSkies above are deep gray, full of motion — cloud layers racing each other. Falcons fly high, wide, sharp — some blurred, some frozen, none near her face. Ground is dry, cracked, matte black or cold brown. Animal skulls (ram, deer, goat) lie scattered naturally — never staged, never decorative.\n\nWide cinematic lens, tracking her mid-walk. One foot forward, fabric or feathers slightly lifting. Lighting from the side: soft rim light across feathers. Shadow behind her, light on her face. Background fades to storm mist.\n\nThis is predator couture. Wind-forged style. She\'s not wearing the feathers. She became the wind that pulled them from the falcons.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, horror elements, fantasy costume, soft lighting, glossy makeup, messy hair, spirituality symbols',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['falcon_ceremony', 'feather_couture', 'predator_fashion', 'cinematic_storm', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🪨 Shattered Stone
   {
     id: 'unreal_reflection_shattered_stone',
     label: 'Shattered Stone',

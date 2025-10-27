@@ -27,8 +27,8 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Newest presets first (Shattered Stone, Threadbare Halo, Frozen Bloom, Feather Feral, Paper Pop, Red Lipstick, Wax Bloom, Wind Layer, Mirror Shatter, Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
-  const priorityOrder = ['Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  // Custom order: Newest presets first (Falcon Ceremony, Shattered Stone, Threadbare Halo, Frozen Bloom, Feather Feral, Paper Pop, Red Lipstick, Wax Bloom, Wind Layer, Mirror Shatter, Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
+  const priorityOrder = ['Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   // Sort presets by priority order
@@ -48,6 +48,7 @@ export function CombinedPresetPicker({
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
+      'Falcon Ceremony': '/images/unreal_reflection_falcon_ceremony.jpg',
       'Shattered Stone': '/images/unreal_reflection_shattered_stone.jpg',
       'Threadbare Halo': '/images/unreal_reflection_threadbare_halo.jpg',
       'Frozen Bloom': '/images/unreal_reflection_frozen_bloom.jpg',

@@ -12,6 +12,11 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Falcon Ceremony",
+      description: "Cinematic high-fashion vision sculpted from layered falcon feathers with storm-filled skies, falcons circling, and predator couture aesthetics."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Shattered Stone",
       description: "Sculptural high-fashion vision emerging from cracked marble, granite, and obsidian plates forming brutalist couture."
     },
@@ -158,6 +163,7 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Falcon Ceremony': '/images/unreal_reflection_falcon_ceremony.jpg',
       'Shattered Stone': '/images/unreal_reflection_shattered_stone.jpg',
       'Threadbare Halo': '/images/unreal_reflection_threadbare_halo.jpg',
       'Frozen Bloom': '/images/unreal_reflection_frozen_bloom.jpg',
