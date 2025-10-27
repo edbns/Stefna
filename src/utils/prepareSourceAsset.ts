@@ -140,16 +140,25 @@ export async function prepareSourceAsset(
   activeFileOrUrl: File | string,
   options: BackgroundUploadOptions = {}
 ) {
-  // Ensure session cache is initialized
-  if (!sessionCache['isInitialized']) {
-    await sessionCache.init();
-  }
+  try {
+    console.log('🔍 [prepareSourceAsset] Starting upload process...', {
+      inputType: typeof activeFileOrUrl,
+      isFile: activeFileOrUrl instanceof File,
+      isString: typeof activeFileOrUrl === 'string',
+      options
+    });
+    
+    // Ensure session cache is initialized
+    if (!sessionCache['isInitialized']) {
+      await sessionCache.init();
+    }
 
-  // If it's already a public http(s) URL, skip upload.
-  if (typeof activeFileOrUrl === 'string' && /^https?:\/\//i.test(activeFileOrUrl)) {
-    const resource_type = /\.(mp4|mov|webm)$/i.test(activeFileOrUrl) ? 'video' : 'image';
-    return { url: activeFileOrUrl, resource_type };
-  }
+    // If it's already a public http(s) URL, skip upload.
+    if (typeof activeFileOrUrl === 'string' && /^https?:\/\//i.test(activeFileOrUrl)) {
+      const resource_type = /\.(mp4|mov|webm)$/i.test(activeFileOrUrl) ? 'video' : 'image';
+      console.log('✅ [prepareSourceAsset] Already a public URL, skipping upload:', activeFileOrUrl.substring(0, 50));
+      return { url: activeFileOrUrl, resource_type };
+    }
 
   // If it's a blob URL string, convert to File first
   let file: File;
@@ -185,12 +194,24 @@ export async function prepareSourceAsset(
     validateFileOrThrow(file);
   }
 
-  // Check cache first
-  const cachedResult = await sessionCache.getCachedUpload(file);
-  if (cachedResult) {
-    console.log('💾 Using cached upload result for:', file.name);
-    return cachedResult;
-  }
+    // Check cache first
+    const cachedResult = await sessionCache.getCachedUpload(file);
+    if (cachedResult) {
+      console.log('💾 [prepareSourceAsset] Cache hit for file:', file.name);
+      
+      // Validate cached result
+      if (!cachedResult.url) {
+        console.warn('⚠️ [prepareSourceAsset] Cached result has no URL, ignoring cache');
+      } else {
+        console.log('✅ [prepareSourceAsset] Using valid cached upload:', {
+          url: cachedResult.url.substring(0, 50) + '...',
+          resource_type: cachedResult.resource_type
+        });
+        return cachedResult;
+      }
+    } else {
+      console.log('💾 [prepareSourceAsset] Cache miss for file:', file.name);
+    }
 
   // If background sync is requested, use it
   if (options.showPreviewImmediately) {
@@ -277,10 +298,22 @@ export async function prepareSourceAsset(
     };
 
     // Start background upload with retry
+    console.log('⚡ [prepareSourceAsset] Starting background upload...');
     const { previewUrl, uploadPromise } = await backgroundUploadWithPreview(file, uploadFn, options);
     
     // Return preview immediately, but also wait for actual upload
     const result = await uploadPromise;
+    
+    // Validate result before returning
+    if (!result || !result.url) {
+      console.error('🚨 [prepareSourceAsset] Background upload completed but no valid URL in result:', result);
+      throw new Error('Background upload completed but returned no URL. Please try again.');
+    }
+    
+    console.log('✅ [prepareSourceAsset] Background upload successful:', {
+      url: result.url.substring(0, 50) + '...',
+      resource_type: result.resource_type
+    });
     
     return result;
   }
@@ -368,6 +401,36 @@ export async function prepareSourceAsset(
     return result;
   };
 
-  // Use retry wrapper for the upload
-  return await retryCloudinaryUpload(uploadToCloudinary);
+    // Use retry wrapper for the upload
+    const uploadResult = await retryCloudinaryUpload(uploadToCloudinary);
+    
+    // Final validation before returning
+    if (!uploadResult || !uploadResult.url) {
+      console.error('🚨 [prepareSourceAsset] Upload completed but no valid URL in result:', uploadResult);
+      throw new Error('Upload completed but returned no URL. Please try again.');
+    }
+    
+    console.log('✅ [prepareSourceAsset] Upload successful:', {
+      url: uploadResult.url.substring(0, 50) + '...',
+      resource_type: uploadResult.resource_type,
+      width: uploadResult.width,
+      height: uploadResult.height
+    });
+    
+    return uploadResult;
+  } catch (error) {
+    // Comprehensive error logging for debugging
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('🚨 [prepareSourceAsset] Upload failed with error:', {
+      error: errorMsg,
+      errorType: error instanceof Error ? error.name : typeof error,
+      inputType: typeof activeFileOrUrl,
+      isFile: activeFileOrUrl instanceof File,
+      fileName: activeFileOrUrl instanceof File ? activeFileOrUrl.name : 'N/A',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Re-throw the error so HomeNew.tsx can handle it
+    throw error;
+  }
 }
