@@ -12,6 +12,11 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Obsidian Curve",
+      description: "Grayscale fashion icon seated backwards on wooden chair with dominance and precision, large serpent coiled at her feet."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Untamed Silence",
       description: "Seductive fashion icon seated in still tension, back turned, captured in sharp black and white with dangerous animal companion."
     },
@@ -188,6 +193,7 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
       'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',
       'Red Seat': '/images/unreal_reflection_red_seat.jpg',

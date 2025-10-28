@@ -28,7 +28,7 @@ export function CombinedPresetPicker({
   ];
 
   // Custom order: Newest presets first
-  const priorityOrder = ['Untamed Silence', 'Ceramic Bodice', 'Red Seat', 'Desert Vixens', 'Disco Prisoner', 'Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  const priorityOrder = ['Obsidian Curve', 'Untamed Silence', 'Ceramic Bodice', 'Red Seat', 'Desert Vixens', 'Disco Prisoner', 'Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   // Sort presets by priority order
@@ -48,6 +48,7 @@ export function CombinedPresetPicker({
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
+      'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
       'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',
       'Red Seat': '/images/unreal_reflection_red_seat.jpg',
@@ -89,7 +90,7 @@ export function CombinedPresetPicker({
   return (
     <div className={isDesktop ? 'w-full' : 'w-full'}>
       <div 
-        className={`shadow-2xl ${isDesktop ? 'p-12 grid grid-cols-9 gap-8' : 'p-3 grid grid-cols-2 gap-2'}`} 
+        className={`shadow-2xl ${isDesktop ? 'p-6 grid grid-cols-9 gap-4' : 'p-3 grid grid-cols-2 gap-2'}`} 
         style={{ backgroundColor: '#000000' }}
       >
         {allPresets.map((preset) => (
@@ -97,7 +98,7 @@ export function CombinedPresetPicker({
             key={preset.id}
             onClick={() => onChange?.(preset.id, preset.type)}
             className={(() => {
-              const baseClass = 'relative overflow-hidden transition-all duration-200 group';
+              const baseClass = 'relative overflow-hidden transition-all duration-200';
               const activeClass = 'ring-4 ring-white scale-105';
               const inactiveClass = 'hover:scale-105 hover:ring-2 hover:ring-white/50';
               return `${baseClass} ${value === preset.id ? activeClass : inactiveClass}`;
@@ -118,7 +119,7 @@ export function CombinedPresetPicker({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
               <div className={`absolute bottom-0 left-0 right-0 ${isDesktop ? 'p-2' : 'p-1.5'}`}>
-                <h3 className={`text-white ${isDesktop ? 'text-[10px] font-medium' : 'text-xs font-medium'} text-center leading-tight`}>
+                <h3 className={`text-white ${isDesktop ? 'text-[9px] font-medium' : 'text-xs font-medium'} text-center leading-tight`}>
                   {preset.label}
                 </h3>
               </div>

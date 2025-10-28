@@ -57,7 +57,30 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
-  // 🤫 Untamed Silence (NEW)
+  // 🐍 Obsidian Curve (NEW)
+  {
+    id: 'unreal_reflection_obsidian_curve',
+    label: 'Obsidian Curve',
+    prompt: 'Transform this woman in the photo into a grayscale fashion icon seated with dominance and precision. She sits backwards on a four-legged wooden chair, legs slightly open, arms draped over the top rail. Her body leans forward just enough to catch the light across her collarbone. She wears a skin-hugging black bodysuit or silk corset, revealing her bare back and arms with sculptural clarity. Her face tilts upward — expression cold, brows low, eyes locked into the camera. At her feet, a large serpent coils around the base of the chair. Its scales shimmer faintly. It does not move. It watches.\n\nComposition:\n* Chair reversed, backrest facing front\n* Arms placed firmly on the chair\'s top edge\n* Legs visible, confident and grounded\n* Spine arched slightly forward\n* Head centered, chin slightly lowered, eyes piercing\n\nStyling:\n* Black bodysuit or sculpted silk corset — sharp neckline, bare shoulders and arms\n* No jewelry\n* Hair parted sharply and slicked back or tied into a tight knot\n* Makeup is clean and sharp — deep shadows, matte skin, strong lashes\n* Feet bare on textured floor\n\nAnimal:\n* Large, dominant, coiled and present\n* Visible scale detail, light reflecting across body\n* Head positioned just above chair leg or rising near subject\'s foot\n* Realistic — not fantasy, not aggressive, just powerful\n* Must remain in frame and integrated into pose\n\nScene & Lighting:\n* Minimal background: smooth dark wall or seamless gradient\n* Studio setting, no props\n* Lighting from the left — strong directional shadows across jaw, chest, arms\n* Grayscale only — no color tones\n* Shadows must fall naturally, sculpting the body and the serpent\n\nVibe:\nShe\'s not performing. She\'s commanding. This is the photo they take before the world changes.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, horror elements, fantasy costume, soft lighting, explicit nudity, aggressive animals, surreal elements',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['obsidian_curve', 'grayscale_fashion', 'serpent_companion', 'backwards_chair', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🤫 Untamed Silence
   {
     id: 'unreal_reflection_untamed_silence',
     label: 'Untamed Silence',

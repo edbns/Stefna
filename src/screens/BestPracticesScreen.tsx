@@ -33,6 +33,11 @@ export default function BestPracticesScreen() {
     // Latest presets first
     {
       mode: "Presets",
+      title: "Obsidian Curve",
+      description: "Grayscale fashion icon seated backwards on wooden chair with dominance and precision, large serpent coiled at her feet."
+    },
+    {
+      mode: "Presets",
       title: "Untamed Silence",
       description: "Seductive fashion icon seated in still tension, back turned, captured in sharp black and white with dangerous animal companion."
     },
@@ -268,6 +273,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
+      'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
       'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',
       'Red Seat': '/images/unreal_reflection_red_seat.jpg',
