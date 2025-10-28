@@ -27,8 +27,8 @@ export function CombinedPresetPicker({
     }))
   ];
 
-  // Custom order: Newest presets first (Falcon Ceremony, Shattered Stone, Threadbare Halo, Frozen Bloom, Feather Feral, Paper Pop, Red Lipstick, Wax Bloom, Wind Layer, Mirror Shatter, Chemistry Check, Floral Noir, Molten Gloss, Butterfly Monarch, Crystal Fall), then Chromatic Smoke
-  const priorityOrder = ['Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  // Custom order: Newest presets first
+  const priorityOrder = ['Untamed Silence', 'Ceramic Bodice', 'Red Seat', 'Desert Vixens', 'Disco Prisoner', 'Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   // Sort presets by priority order
@@ -48,6 +48,11 @@ export function CombinedPresetPicker({
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
+      'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
+      'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',
+      'Red Seat': '/images/unreal_reflection_red_seat.jpg',
+      'Desert Vixens': '/images/unreal_reflection_desert_vixens.jpg?v=' + Date.now(),
+      'Disco Prisoner': '/images/unreal_reflection_disco_prisoner.jpg',
       'Falcon Ceremony': '/images/unreal_reflection_falcon_ceremony.jpg',
       'Shattered Stone': '/images/unreal_reflection_shattered_stone.jpg',
       'Threadbare Halo': '/images/unreal_reflection_threadbare_halo.jpg',
@@ -84,7 +89,7 @@ export function CombinedPresetPicker({
   return (
     <div className={isDesktop ? 'w-full' : 'w-full'}>
       <div 
-        className={`shadow-2xl ${isDesktop ? 'p-12 grid grid-cols-7 gap-8' : 'p-3 grid grid-cols-2 gap-2'}`} 
+        className={`shadow-2xl ${isDesktop ? 'p-12 grid grid-cols-9 gap-8' : 'p-3 grid grid-cols-2 gap-2'}`} 
         style={{ backgroundColor: '#000000' }}
       >
         {allPresets.map((preset) => (

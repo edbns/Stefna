@@ -12,6 +12,31 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Untamed Silence",
+      description: "Seductive fashion icon seated in still tension, back turned, captured in sharp black and white with dangerous animal companion."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Ceramic Bodice",
+      description: "Cinematic fashion icon walking through aftermath runway with cracked white ceramic bodice and structured architectural skirt."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Red Seat",
+      description: "Cinematic icons caught mid-performance on stormy rooftop stage among velvet red theater chairs with rain and lightning."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Desert Vixens",
+      description: "High-fashion cowgirls in sultry western-inspired fashion caught in cinematic desert moment with cowboy hats and bold attitude."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Disco Prisoner",
+      description: "Scandalous fashion icon in mugshot format after wild party arrest with glitter, sequins, and nightclub glamour."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Falcon Ceremony",
       description: "Cinematic high-fashion vision sculpted from layered falcon feathers with storm-filled skies, falcons circling, and predator couture aesthetics."
     },
@@ -163,6 +188,11 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
+      'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',
+      'Red Seat': '/images/unreal_reflection_red_seat.jpg',
+      'Desert Vixens': '/images/unreal_reflection_desert_vixens.jpg?v=' + Date.now(),
+      'Disco Prisoner': '/images/unreal_reflection_disco_prisoner.jpg',
       'Falcon Ceremony': '/images/unreal_reflection_falcon_ceremony.jpg',
       'Shattered Stone': '/images/unreal_reflection_shattered_stone.jpg',
       'Threadbare Halo': '/images/unreal_reflection_threadbare_halo.jpg',

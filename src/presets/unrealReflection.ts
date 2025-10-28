@@ -57,7 +57,30 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
-  // 🦅 Falcon Ceremony (NEW)
+  // 🤫 Untamed Silence (NEW)
+  {
+    id: 'unreal_reflection_untamed_silence',
+    label: 'Untamed Silence',
+    prompt: 'Transform this woman in the photo into a seductive fashion icon seated in still tension, her back turned toward the camera, captured in sharp black and white.\n\nShe sits on a four-legged wooden chair, spine curved slightly, body composed, wearing only minimal structured clothing — barely enough to cover, but not explicit. Her head turns toward the camera with a cold, sideways stare that arrests the viewer. She is not alone.\n\n🪑 Scene Composition:\n\nShe is seated in the center of the frame, back to camera\n\nOne leg bent up on the chair, the other grounded\n\nBody glows in grayscale — highlights and shadows sculpt her form\n\nIn the corner or beside her: a dangerous animal (but not a black panther)\n• Suggestions:\n\nwhite arctic fox with piercing eyes\n\ntiger laying near her heels\n\ncoiled python on the chair leg\n\nsnow leopard calmly watching the lens\n\n🖤 Fashion & Styling:\n\nMinimal outfit:\n• Thin strap open-back top\n• Or lace-trimmed bodysuit, open from behind\n• Or structured lingerie with back clasps, black or white\n\nTextures: satin, mesh, or bare skin with soft shimmer\n\nJewelry optional: ankle bracelet, thin chain on spine, or ear cuff\n\nNo shoes. Barefoot.\n\n💄 Hair & Makeup:\n\nHair tied up into loose bun or short tousled cut\n\nMakeup bold even in B&W:\n• Cat-eye liner\n• Sculpted cheekbones\n• Matte lips visible in side glance\n\nExpression: she sees you — but she won\'t move for you\n\n🐅 Animal Presence:\n\nAnimal must be real, detailed, calm — never cartoon or surreal\n\nPositioned naturally:\n• Fox curled near the chair leg\n• Tiger laid at her side\n• Snake partially hidden beneath the chair\n• Leopard watching from behind her shoulder\n\nEyes must be visible. Calm. Wild.\n\n⚙️ Stefna Instructions:\n\nGrayscale only — no color\n\nFixed chair model: 4 legs, vintage or industrial, matte texture\n\nSubject must face away, turned halfway back\n\nCrop: vertical 4:5 or cinematic horizontal\n\nAnimal must appear in frame, in focus, without dominating the scene\n\nKeep background minimal: matte wall, subtle grain, no distractions',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, black panther, horror elements, fantasy costume, soft lighting, explicit nudity, surreal animals',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['untamed_silence', 'grayscale_fashion', 'animal_companion', 'back_turned', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🦅 Falcon Ceremony
   {
     id: 'unreal_reflection_falcon_ceremony',
     label: 'Falcon Ceremony',
@@ -72,6 +95,98 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     guidance_scale: 7.5,
     num_inference_steps: 30,
     features: ['falcon_ceremony', 'feather_couture', 'predator_fashion', 'cinematic_storm', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🏺 Ceramic Bodice (NEW)
+  {
+    id: 'unreal_reflection_ceramic_bodice',
+    label: 'Ceramic Bodice',
+    prompt: 'Transform this exact woman into a cinematic fashion icon walking through the aftermath of someone else\'s show — a runway of smoke, silence, and slow collapse. She moves with calm power through a space full of tension: cracked stone or marble floor, light smoke lifting behind her, no crowd, no distractions. Camera tracks from behind, below, or side angle — wide, slow, grounded in cinematic realism. Her face is strong. Her posture deliberate. The world blurs. She stays sharp.\n\nShe wears a sculpted bodice made from cracked white ceramic — glossy, jagged at the edges, molded to her torso like it was fired directly on her skin. Floating fragments lift slightly from her shoulders and ribs, held by invisible tension. Below, she wears a structured skirt built from layered matte ivory fabric, wrapped tightly at the waist and flaring out in broken architectural shapes — folded like shattered stone, never sheer. The lower half is sculptural, protective, and grounded — built to walk, not drift. The full look feels unearthed, not designed.\n\n💄 Styling:\n* Hair: slicked back, twisted, or wind-stretched — always intentional\n* Makeup: matte skin, sculpted cheekbones, smudged eye or sharp liner\n* No jewelry. No accessories. The fashion is the statement.\n\n🕯️ Scene Rules:\n* Smoke may rise or fall, but never cover her\n* Lighting is directional, natural, contrast-heavy\n* No floating objects, no magic, no particles\n* No animals, no FX, no surreal edits\n* Barefoot by default unless boots are declared\n\n🔥 Mood:\nShe didn\'t walk in to steal the scene. She walked in because the scene was already hers.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, magic effects, particles, animals, fantasy costume, soft lighting, glossy makeup, messy hair',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['ceramic_bodice', 'architectural_fashion', 'aftermath_runway', 'cracked_ceramic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🎭 Red Seat (NEW)
+  {
+    id: 'unreal_reflection_red_seat',
+    label: 'Red Seat',
+    prompt: 'Transform this woman, couple, or group of women in the photo into cinematic icons caught mid-performance on a stormy rooftop stage. Each subject is seated or standing among rows of velvet red theater chairs, placed in artistic formation. Rain drips from the edge of the rooftop, lightning flickers in the distance.\n\nFashion:\n* Wet velvet mini dresses in deep red, plum, or ash gray\n* Transparent black tights or glossy knee-high boots\n* Long gloves or sheer arm veils\n* Accessories: bold hoop earrings, stage mic held loosely, chunky rings\n\nHair:\n* Slicked back by rain or styled into dramatic wind-swept waves\n* Optional hair ribbon in matching velvet tone\n\nMakeup:\n* Dewy skin with glossy cheeks and lips\n* Waterproof eyeliner with faint smudge under the eye\n* Soft glitter on eyelids, visible in the flash\n\nExpression & Posing:\n* One performer leans forward in spotlight, eyes closed mid-note\n* Another stares into camera — lips parted, wet lashes blinking\n* Final one (if trio) throws head back as if in a moment of release\n* Natural variations in posture: one sitting, one standing, one collapsed on chair\n\nScene & Lighting:\n* Rooftop stage during a light storm\n* Velvet red chairs glistening from rain\n* Neon sign glowing faintly behind them (blurred)\n* Thunderclouds with cinematic overhead lighting (one key light from the right)\n* Floor puddles reflect moody lighting and blurred silhouettes\n* Thin rain streaks, not heavy downpour — just enough to glisten\n\nTechnical Guidance:\n* Maintain subject faces and clothing shape\n* Preserve solo/group structure and avoid adding extra characters\n* Consistent perspective and camera angle: mid/low\n* Keep red chairs and rooftop visible — no indoor scenes',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, indoor scenes, horror elements, fantasy costume, dry weather, heavy rain',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['red_seat', 'rooftop_performance', 'velvet_chairs', 'stormy_aesthetic', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🤠 Desert Vixens (NEW)
+  {
+    id: 'unreal_reflection_desert_vixens',
+    label: 'Desert Vixens',
+    prompt: 'Transform this woman, couple, or group of women into high-fashion cowgirls caught in a cinematic desert moment. Each subject wears sultry western-inspired fashion: cropped leather vests, open denim shirts tied at the waist, ultra-high slit skirts or distressed shorts with fringe. Some wear suede bustiers or barely-buttoned jackets, highlighting curves and bold cleavage with unapologetic power.\n\nCowboy hats are tipped low or flying off mid-motion. Accessories: leather gloves, silver conchos, wide belts, boots to the thigh, smoking lasso loops. Skin glows under the sun — kissed by dust and heat.\n\nHair: wind-blown waves, long braids, or loose with bandanas. Makeup is bold: smoky eyes, bronzed cheeks, glossy lips.\n\n📸 Poses:\n* Solo: hips tilted, thumbs in belt loops, hat shadowing eyes\n* Group: walking forward like a runway posse, arms draped over shoulders, some looking back over their shoulder, others facing forward with attitude\n* Squatting or leaning on a hay bale, legs wide, hat in hand\n* Standing in a line with parted legs, wind blowing duster coats or skirts\n\nBackground: cracked desert floor, distant mountains, broken fences, saloon signs, dusty road trails. Golden hour sun or high noon spotlight. Horse nearby optional.\n\nMood: Sexy, dangerous, unstoppable — like they just robbed the bank and posed for Vogue.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright neon colors, oversaturated, cluttered composition, urban setting, indoor scenes, horror elements, fantasy costume',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['desert_vixens', 'western_fashion', 'cowgirl_aesthetic', 'desert_scene', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🚨 Disco Prisoner (NEW)
+  {
+    id: 'unreal_reflection_disco_prisoner',
+    label: 'Disco Prisoner',
+    prompt: 'Transform this woman into scandalous fashion icon caught in the aftermath of a wild party arrest. She is photographed in mugshot format, but instead of shame — she radiate power, glamour, and nightclub glitter. The police wall becomes her runway.\n\n👗 Fashion Styling:\n* Sequined or glittered halter mini dress, torn slightly at one shoulder\n* Oversized fur coat slipping down the arms or off one side\n* Flashy accessories: • Thin metallic choker • Silver cuffs (like handcuffs but glam) • Tiny handbag held like a mugshot placard\n* Bare shoulders, one earring missing, chaos chic\n\n💋 Hair & Makeup:\n* Hair: • Big volume, backcombed like she just left the dance floor • Strands falling into the face or slick from sweat\n* Makeup: • Glitter under eyes or smudged shadow • Mascara running slightly down one side • Glossy lips parted, like she\'s saying something sarcastic\n\n🧱 Scene & Setting:\n* Police mugshot wall with height chart behind them (but stylized)\n* Harsh flash lighting, overexposed edges\n* White or light gray background with soft shadow behind head\n* Optional: • Police placard in hands with random 6 digits • Broken heel in hand or thrown to the side\n* Lighting must mimic real booking photos, but with fashion flare\n\n🎭 Poses & Expressions:\n* smirking or rolling eyes\n* Slight slouch, like she\'s over it\n* Looking away from camera or side-eyeing\n* Hair messy, chin up, absolute diva\n* Optional: hand on hip holding the placard, or biting lip\n\n⚠️ AI Instructions:\n* Respect the mugshot format: one front-facing or slight angle shot\n* Only 1 — no extra characters\n* Don\'t make it fantasy or costume — it\'s realistic Y2K arrest glamour\n* Hand/face detail must be sharp: avoid floaty textures\n* Hair should fall naturally, not anime-like',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colorful background, cluttered composition, multiple people, fantasy costume, anime hair, outdoor scenes, soft lighting',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['disco_prisoner', 'mugshot_aesthetic', 'party_arrest', 'glitter_glamour', 'identity_preserved'],
     prompt_upsampling: true,
     safety_tolerance: 6,
     output_format: 'jpeg',
@@ -428,8 +543,8 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
   {
     id: 'unreal_reflection_y2k_paparazzi',
     label: 'Y2K Paparazzi',
-    prompt: 'Transform this person, couple, or group of girls in the photo into ultra-sexy, fashion-forward Y2K icons squatting on a city sidewalk at night, dramatically lit by harsh paparazzi flash. Each subject is turned away, looking confidently over her shoulder while casually gathering her hair — glowing skin exposed under the flash, with curves and posture emphasized by the camera angle.\n👗 Female Styling\nShe wears one those style: \na Brown backless mini dress with thin straps, visible skin texture texture hugging waist and hipss\nBlack Micro-Dress – low scoop back texture hugging waist and hipss\nGloss Blackout: glossy latex black texture hugging waist and hipss\nCowl-Neck Backless Mini Dress in Olive Green\nMakeup is natural yet glamorous with sculpted brows, voluminous lashes, and brown lipgloss with brown lipliner\nShe has a small, stylish tattoo that is clearly visible — delicate and minimal, placed naturally on the arm, shoulder, or lower back, adding to her fashion-forward look.\n👠 Accessories\n* wearing tall, black, designer pointed-toe stiletto heeled over-the-knee boots,  a platform mid-calf boots or Shark Lock wide-fit leather knee-high boots\n* Designer-inspired handbags placed near her — small, luxurious, subtly detailed\n* small jewelry: gold hoops, anklets, or fine chain bracelets\n🎬 Scene\n* Sidewalk at night — minimal background\n* Captured like a candid post-party flash moment\n* Ground shows subtle textures, shadows, and reflections\n🎥 Camera Angle\n* Lower than eye-level\n* Emphasis on posture, outfit design, leg lines, handbag position\n💡 Lighting\n* Direct frontal flash (paparazzi style)\n* Creates dramatic contrast and glowing skin\n* Slight reflections on skin, dress, and ground\n⚙️ Technical Rules \n* Identity lock ON — face, body, features must match uploaded photo\n* No extra people — use only subject(s) from original photo\n* Each subject wears one complete outfit — don\'t mix styles\n* Photo-realistic with high detail and accuracy\n* No surrealism, no fantasy artifacts',
-    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion',
+    prompt: 'Transform this woman or group of women in the photo into Y2K-era fashion icons caught mid-exit from a black SUV outside a downtown club.\n\nThey are styled in flash-lit scandal-glam — like paparazzi shots from a deleted gossip blog in 2004.\n\n👠 Fashion Styling:\n\nMini dress in satin, latex, or sequin — bold Y2K cuts\n• Halter, low back, or off-shoulder\n• Popular colors: olive green, champagne gold, black, hot pink\n\nDior, Fendi, or Balenciaga handbag dangling from wrist\n\nStrappy designer heels (barefoot if needed for chaos effect)\n\nOptional: fur-lined shrug, oversized vintage sunglasses\n\n💋 Makeup & Hair:\n\nHair:\n• Loose blowout or slick ponytail with flyaways from heat\n• Optional clip holding back messy front strands\n\nMakeup:\n• Glossy lips, overlined\n• Smoky shadow, tightlined lashes\n• Highlighted cheekbones with club sweat glow\n\n📸 Pose & Expression:\n\nOne foot on the pavement, squatting slightly in open car door\n\nLooking over shoulder at the camera or caught mid-motion\n\nOne hand blocking flash with oversized sunglasses or a purse\n\nExpression: caught off guard, smug, too famous to care\n\nIf duo: one still inside the car, one already walking out — both flawless\n\n🚘 Scene & Lighting:\n\nBlack SUV or town car with open door\n\nPaparazzi-style camera flash with blown highlights\n\nReflections in car door, pavement glistening slightly\n\nBackground: downtown lights, blurry crowd, club signage\n\nLighting is harsh, vintage — flash overexposure on purpose\n\n⚠️ AI Instructions:\n\nDo not add new people\n\nRespect original pose but modify angle and depth to enhance realism\n\nKeep hands and legs well-formed — no duplication\n\nBag or heel details must stay elegant, not cartoonish\n\nThis is strictly retro glam — not futuristic, not modern',
+    negative_prompt: 'cartoon, face paint, cosplay, casual clothing, tribal headdress, carnival costume, distortion, futuristic elements, sci-fi, modern fashion',
     strength: 0.55,
     model: 'fal-ai/nano-banana/edit',
     mode: 'i2i',
