@@ -5,6 +5,7 @@ import { generateCrystalFallPrompt } from '../utils/crystalFallRandomization';
 import { generateButterflyMonarchPrompt } from '../utils/butterflyMonarchRandomization';
 import { generateMoltenGlossPrompt } from '../utils/moltenGlossRandomization';
 import { generatePaperPopPrompt } from '../utils/paperPopRandomization';
+import { generateReflectionPactPrompt } from '../utils/reflectionPactRandomization';
 
 /*
 
@@ -57,7 +58,55 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
-  // 🐍 Obsidian Curve (NEW)
+  // 🪞 Reflection Pact (NEW - Randomized)
+  {
+    id: 'unreal_reflection_reflection_pact',
+    label: 'Reflection Pact',
+    prompt: generateReflectionPactPrompt('Transform this woman in the photo into a cinematic black-and-white portrait standing alone in front of a tall cracked mirror.\n\nHer pose is grounded, simple — facing forward or slightly turned, her back partially shown. She wears a sharp, minimal outfit in matte black fabric: a backless dress, exposed shoulder, or structured top that reveals the spine. Her expression is neutral or intense — but never smiling.\n\nThe twist is in the mirror.\nIn the reflection behind her, a large wild animal {ANIMAL} is fully visible. It does not exist in the actual frame — only in the mirror. It looks directly at her back as if they share a silent bond. The animal must be cleanly centered in the reflection and photoreal:\n* For solo woman → one animal\n\nScene:\n* Indoor grayscale room, no modern furniture, stone or neutral background\n* Tall mirror behind or beside her, slightly cracked at the corner\n* Her back or side is shown, reflection clearly holds the animal\n* Lighting is directional: side or top-lit, shadow falls naturally\n* The reflection must be sharp, slightly brighter than real frame\n\nFashion:\n* Matte black open-back dress or top\n* Strong lines: halter, cross-strap, or deep-cut back\n* No jewelry, no heels, bare feet or floor-length gown\n* Hair: tied, sculpted, or short — clear view of neck/spine\n\nCritical Visual Logic:\n* The woman and the mirror must be in correct visual sync\n* No animal in the room, only in the reflection\n* Animal expression: calm, alert, watching her, not the viewer\n* No surreal effects — realistic, photoreal grayscale only'),
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, animal in real frame, surreal effects, fantasy costume, soft lighting, explicit nudity, aggressive animals, distorted reflections, color elements',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['reflection_pact', 'grayscale_fashion', 'mirror_twist', 'animal_bond', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16',
+    isRandomized: true,
+    basePrompt: 'Transform this woman in the photo into a cinematic black-and-white portrait standing alone in front of a tall cracked mirror.\n\nHer pose is grounded, simple — facing forward or slightly turned, her back partially shown. She wears a sharp, minimal outfit in matte black fabric: a backless dress, exposed shoulder, or structured top that reveals the spine. Her expression is neutral or intense — but never smiling.\n\nThe twist is in the mirror.\nIn the reflection behind her, a large wild animal {ANIMAL} is fully visible. It does not exist in the actual frame — only in the mirror. It looks directly at her back as if they share a silent bond. The animal must be cleanly centered in the reflection and photoreal:\n* For solo woman → one animal\n\nScene:\n* Indoor grayscale room, no modern furniture, stone or neutral background\n* Tall mirror behind or beside her, slightly cracked at the corner\n* Her back or side is shown, reflection clearly holds the animal\n* Lighting is directional: side or top-lit, shadow falls naturally\n* The reflection must be sharp, slightly brighter than real frame\n\nFashion:\n* Matte black open-back dress or top\n* Strong lines: halter, cross-strap, or deep-cut back\n* No jewelry, no heels, bare feet or floor-length gown\n* Hair: tied, sculpted, or short — clear view of neck/spine\n\nCritical Visual Logic:\n* The woman and the mirror must be in correct visual sync\n* No animal in the room, only in the reflection\n* Animal expression: calm, alert, watching her, not the viewer\n* No surreal effects — realistic, photoreal grayscale only'
+  },
+
+  // 🌙 Moonfall Ritual (NEW)
+  {
+    id: 'unreal_reflection_moonfall_ritual',
+    label: 'Moonfall Ritual',
+    prompt: 'Transform this exact woman into a grayscale cinematic fashion icon walking through a burnt stone pathway at night, under a full moon.\n\nShe wears a custom ash‑grey structured top made from twisted layered fabric resembling ancient ritual wraps — sculpted around her upper body like armor made of fog. Her lower half is covered in a fitted, floor‑length skirt made of matte silk, soft and heavy, trailing behind her like smoke. The skirt moves with the wind, not open, not revealing — powerful, contained.\n\nEven within the grayscale cinematic mood, her face must remain luminous and full of life — with realistic human skin tone, clear highlights on the cheekbones, natural lips, and defined eyes. The lighting must enhance her face, never wash it out.\n\nBehind her: two thin trails of glowing embers, one on each side of her path — soft orange light winding along the ground like her presence is marking the earth. Above her: a massive full moon, glowing cold. Near her shoulders or slightly overhead: groups of owls in flight, wings mid‑flap, blurred slightly by motion, their eyes glowing faintly in the dark.\n\nHer gaze is forward. Her walk is slow. Her face is half‑lit by firelight, half by moonlight.\n\nScene:\n* Cracked stone path or sacred ruins under her feet\n* Twin fire trails line the left and right edges of the walkway — glowing coals, no flames\n* Moon is directly behind her or high above\n* Groups of owls mid‑flight, wings spread in cinematic symmetry\n* No surreal colors — grayscale scene with soft warm glow from embers only\n\nFashion:\n* Ash grey structured wrap top, sculpted like layered fabric or folded wings\n* Full-length fitted matte silk skirt, no slits, no exposure, heavy and elegant\n* Arms uncovered or partially wrapped — strong shoulder silhouette\n* Hair pulled back clean, no accessories\n* Feet grounded or hidden under the skirt\n\nAnimal Element:\n* Groups of owls randomly flying around her\n* Wings wide, glowing eyes visible\n* Photoreal — must feel cinematic, not mystical\n* Even within the grayscale cinematic mood, the owls must appear natural and photorealistic — with clearly visible wings, feathers, and eyes. They must look like real animals in motion, not stylized or surreal. Their movement should feel cinematic and grounded in reality.\n\nLighting:\n* Moonlight above and behind, cold and silvery\n* Low glow from fire trails, casting amber on lower half of skirt\n* Embers catch light on the ground — subtle movement blur on coals',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, surreal owl designs, fantasy costume, soft lighting, explicit nudity, aggressive animals, colorful lights, mystical effects',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['moonfall_ritual', 'grayscale_fashion', 'owl_flight', 'moonlit_path', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🐍 Obsidian Curve
   {
     id: 'unreal_reflection_obsidian_curve',
     label: 'Obsidian Curve',

@@ -28,7 +28,7 @@ export function CombinedPresetPicker({
   ];
 
   // Custom order: Newest presets first
-  const priorityOrder = ['Obsidian Curve', 'Untamed Silence', 'Ceramic Bodice', 'Red Seat', 'Desert Vixens', 'Disco Prisoner', 'Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  const priorityOrder = ['Reflection Pact', 'Moonfall Ritual', 'Obsidian Curve', 'Untamed Silence', 'Ceramic Bodice', 'Red Seat', 'Desert Vixens', 'Disco Prisoner', 'Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
   // Sort presets by priority order
@@ -48,6 +48,8 @@ export function CombinedPresetPicker({
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
+      'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
+      'Moonfall Ritual': '/images/unreal_reflection_moonfall_ritual.jpg',
       'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
       'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',

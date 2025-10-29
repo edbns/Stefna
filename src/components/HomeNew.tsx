@@ -2521,6 +2521,10 @@ const HomeNew: React.FC = () => {
           const { generateMoltenGlossPrompt } = await import('../utils/moltenGlossRandomization');
           effectivePrompt = generateMoltenGlossPrompt(unrealReflectionPreset.basePrompt);
           console.log('🎨 [Molten Gloss] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else if (unrealReflectionPreset.id === 'unreal_reflection_reflection_pact') {
+          const { generateReflectionPactPrompt } = await import('../utils/reflectionPactRandomization');
+          effectivePrompt = generateReflectionPactPrompt(unrealReflectionPreset.basePrompt);
+          console.log('🪞 [Reflection Pact] Generated randomized prompt for:', unrealReflectionPreset.label);
         } else {
           // Fallback to base prompt if no specific handler
           effectivePrompt = unrealReflectionPreset.basePrompt;

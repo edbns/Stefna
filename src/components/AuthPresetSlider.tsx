@@ -12,6 +12,16 @@ const AuthPresetSlider: React.FC = () => {
   const presets: Preset[] = [
     {
       mode: "Unreal Reflection™",
+      title: "Reflection Pact",
+      description: "Cinematic black-and-white portrait with cracked mirror twist - wild animal appears only in reflection, never in real frame."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Moonfall Ritual",
+      description: "Grayscale fashion icon walking under full moon with owls in flight, glowing ember trails, and ash-grey ritual wraps."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Obsidian Curve",
       description: "Grayscale fashion icon seated backwards on wooden chair with dominance and precision, large serpent coiled at her feet."
     },
@@ -193,6 +203,8 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
+      'Moonfall Ritual': '/images/unreal_reflection_moonfall_ritual.jpg',
       'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',
       'Ceramic Bodice': '/images/unreal_reflection_ceramic_bodice.jpg',
