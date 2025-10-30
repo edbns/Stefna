@@ -10,10 +10,31 @@ const AuthPresetSlider: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const presets: Preset[] = [
+    // Latest presets first - reversed from array order (newest at bottom of array = show first)
+    {
+      mode: "Unreal Reflection™",
+      title: "Velvet Trap",
+      description: "Silent domination in crimson velvet gown with cracked champagne flute, gold chain, and marble corridor bathed in red light."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Venom Ceremony",
+      description: "High Priestess of the Venom Ceremony in candlelit golden hall with black latex, snake, dagger, and theatrical lighting."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Airport Fashion",
+      description: "South Korean celebrity caught by paparazzi at Incheon Airport with rotating fashion looks, scenes, and lighting."
+    },
     {
       mode: "Unreal Reflection™",
       title: "Reflection Pact",
       description: "Cinematic black-and-white portrait with cracked mirror twist - wild animal appears only in reflection, never in real frame."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Tethered Grace",
+      description: "Grayscale cinematic vision of sculpted restraint with silk tethers, spider webs, and origami-like structured fashion."
     },
     {
       mode: "Unreal Reflection™",
@@ -204,6 +225,10 @@ const AuthPresetSlider: React.FC = () => {
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
+      'Airport Fashion': '/images/unreal_reflection_airport_fashion.jpg',
+      'Venom Ceremony': '/images/unreal_reflection_venom_ceremony.jpg',
+      'Velvet Trap': '/images/unreal_reflection_velvet_trap.jpg',
+      'Tethered Grace': '/images/unreal_reflection_tethered_grace.jpg',
       'Moonfall Ritual': '/images/unreal_reflection_moonfall_ritual.jpg',
       'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',

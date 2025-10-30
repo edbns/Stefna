@@ -30,11 +30,31 @@ export default function BestPracticesScreen() {
   const [loading, setLoading] = useState(true)
 
   const presets = [
-    // Latest presets first
+    // Latest presets first - reversed from array order (newest at bottom of array = show first)
+    {
+      mode: "Presets",
+      title: "Velvet Trap",
+      description: "Silent domination in crimson velvet gown with cracked champagne flute, gold chain, and marble corridor bathed in red light."
+    },
+    {
+      mode: "Presets",
+      title: "Venom Ceremony",
+      description: "High Priestess of the Venom Ceremony in candlelit golden hall with black latex, snake, dagger, and theatrical lighting."
+    },
+    {
+      mode: "Presets",
+      title: "Airport Fashion",
+      description: "South Korean celebrity caught by paparazzi at Incheon Airport with rotating fashion looks, scenes, and lighting."
+    },
     {
       mode: "Presets",
       title: "Reflection Pact",
       description: "Cinematic black-and-white portrait with cracked mirror twist - wild animal appears only in reflection, never in real frame."
+    },
+    {
+      mode: "Presets",
+      title: "Tethered Grace",
+      description: "Grayscale cinematic vision of sculpted restraint with silk tethers, spider webs, and origami-like structured fashion."
     },
     {
       mode: "Presets",
@@ -50,6 +70,11 @@ export default function BestPracticesScreen() {
       mode: "Presets",
       title: "Untamed Silence",
       description: "Seductive fashion icon seated in still tension, back turned, captured in sharp black and white with dangerous animal companion."
+    },
+    {
+      mode: "Presets",
+      title: "Falcon Ceremony",
+      description: "Cinematic high-fashion vision sculpted from layered falcon feathers with storm-filled skies, falcons circling, and predator couture aesthetics."
     },
     {
       mode: "Presets",
@@ -70,11 +95,6 @@ export default function BestPracticesScreen() {
       mode: "Presets",
       title: "Disco Prisoner",
       description: "Scandalous fashion icon in mugshot format after wild party arrest with glitter, sequins, and nightclub glamour."
-    },
-    {
-      mode: "Presets",
-      title: "Falcon Ceremony",
-      description: "Cinematic high-fashion vision sculpted from layered falcon feathers with storm-filled skies, falcons circling, and predator couture aesthetics."
     },
     {
       mode: "Presets",
@@ -284,6 +304,10 @@ export default function BestPracticesScreen() {
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
+      'Airport Fashion': '/images/unreal_reflection_airport_fashion.jpg',
+      'Venom Ceremony': '/images/unreal_reflection_venom_ceremony.jpg',
+      'Velvet Trap': '/images/unreal_reflection_velvet_trap.jpg',
+      'Tethered Grace': '/images/unreal_reflection_tethered_grace.jpg',
       'Moonfall Ritual': '/images/unreal_reflection_moonfall_ritual.jpg',
       'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',

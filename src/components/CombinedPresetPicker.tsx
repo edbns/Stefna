@@ -15,40 +15,56 @@ export function CombinedPresetPicker({
   disabled = false,
   isDesktop = false,
 }: CombinedPresetPickerProps) {
-  // Combine all presets from both modes with custom order
-  const allPresetsRaw = [
-    ...UNREAL_REFLECTION_PRESETS.map(preset => ({
-      ...preset,
-      type: 'unreal' as const
-    })),
-    ...PARALLEL_SELF_PRESETS.map(preset => ({
-      ...preset,
-      type: 'parallel' as const
-    }))
+  // Prioritize latest 4 presets first (as per user requirement)
+  // Latest order: 1. Velvet Trap, 2. Venom Ceremony, 3. Airport Fashion, 4. Reflection Pact
+  const latestPresetIds = [
+    'unreal_reflection_velvet_trap',
+    'unreal_reflection_venom_ceremony', 
+    'unreal_reflection_airport_fashion',
+    'unreal_reflection_reflection_pact'
   ];
-
-  // Custom order: Newest presets first
-  const priorityOrder = ['Reflection Pact', 'Moonfall Ritual', 'Obsidian Curve', 'Untamed Silence', 'Ceramic Bodice', 'Red Seat', 'Desert Vixens', 'Disco Prisoner', 'Falcon Ceremony', 'Shattered Stone', 'Threadbare Halo', 'Frozen Bloom', 'Feather Feral', 'Paper Pop', 'Red Lipstick', 'Wax Bloom', 'Wind Layer', 'Mirror Shatter', 'Chemistry Check', 'Floral Noir', 'Molten Gloss', 'Butterfly Monarch', 'Crystal Fall', 'Chromatic Smoke', 'Y2K Paparazzi', 'The Untouchable'];
+  
+  // Separate presets into categories
   const deprioritizedOrder = ['Blueberry Bliss', 'Medusa\'s Mirror'];
   
-  // Sort presets by priority order
-  const priorityPresets = priorityOrder
-    .map(label => allPresetsRaw.find(p => p.label === label))
-    .filter((p): p is typeof allPresetsRaw[0] => p !== undefined);
+  // Extract latest presets (in the exact order specified)
+  const latestPresets = latestPresetIds
+    .map(id => UNREAL_REFLECTION_PRESETS.find(p => p.id === id))
+    .filter(Boolean)
+    .map(preset => ({ ...preset!, type: 'unreal' as const }));
   
+  // Get all other unreal presets (excluding latest 4 and deprioritized)
+  const otherUnrealPresets = UNREAL_REFLECTION_PRESETS
+    .filter(p => !latestPresetIds.includes(p.id) && !deprioritizedOrder.includes(p.label))
+    .map(preset => ({ ...preset, type: 'unreal' as const }));
+  
+  // Deprioritized unreal presets
+  const unrealDeprioritized = UNREAL_REFLECTION_PRESETS
+    .filter(p => deprioritizedOrder.includes(p.label))
+    .map(preset => ({ ...preset, type: 'unreal' as const }));
+  
+  // Parallel Self presets
+  const parallelPresets = PARALLEL_SELF_PRESETS.map(preset => ({
+    ...preset,
+    type: 'parallel' as const
+  }));
+  
+  // Final order: Latest 4 → Other Unreal → Parallel Self → Deprioritized at end
   const allPresets = [
-    // Priority presets first (in exact order)
-    ...priorityPresets,
-    // Middle presets (everything except priority and deprioritized)
-    ...allPresetsRaw.filter(p => !priorityOrder.includes(p.label) && !deprioritizedOrder.includes(p.label)),
-    // Deprioritized presets last
-    ...allPresetsRaw.filter(p => deprioritizedOrder.includes(p.label))
+    ...latestPresets,         // Latest 4: Velvet Trap, Venom Ceremony, Airport Fashion, Reflection Pact
+    ...otherUnrealPresets,    // All other unreal presets
+    ...parallelPresets,       // Parallel Self presets
+    ...unrealDeprioritized    // Deprioritized unreal presets at the end
   ];
 
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
+      'Airport Fashion': '/images/unreal_reflection_airport_fashion.jpg',
+      'Venom Ceremony': '/images/unreal_reflection_venom_ceremony.jpg',
+      'Velvet Trap': '/images/unreal_reflection_velvet_trap.jpg',
+      'Tethered Grace': '/images/unreal_reflection_tethered_grace.jpg',
       'Moonfall Ritual': '/images/unreal_reflection_moonfall_ritual.jpg',
       'Obsidian Curve': '/images/unreal_reflection_obsidian_curve.jpg',
       'Untamed Silence': '/images/unreal_reflection_untamed_silence.jpg',

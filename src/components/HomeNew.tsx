@@ -2525,6 +2525,10 @@ const HomeNew: React.FC = () => {
           const { generateReflectionPactPrompt } = await import('../utils/reflectionPactRandomization');
           effectivePrompt = generateReflectionPactPrompt(unrealReflectionPreset.basePrompt);
           console.log('🪞 [Reflection Pact] Generated randomized prompt for:', unrealReflectionPreset.label);
+        } else if (unrealReflectionPreset.id === 'unreal_reflection_airport_fashion') {
+          const { generateAirportFashionPrompt } = await import('../utils/airportFashionRandomization');
+          effectivePrompt = generateAirportFashionPrompt(unrealReflectionPreset.basePrompt);
+          console.log('✈️ [Airport Fashion] Generated randomized prompt for:', unrealReflectionPreset.label);
         } else {
           // Fallback to base prompt if no specific handler
           effectivePrompt = unrealReflectionPreset.basePrompt;

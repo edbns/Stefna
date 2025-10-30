@@ -6,6 +6,7 @@ import { generateButterflyMonarchPrompt } from '../utils/butterflyMonarchRandomi
 import { generateMoltenGlossPrompt } from '../utils/moltenGlossRandomization';
 import { generatePaperPopPrompt } from '../utils/paperPopRandomization';
 import { generateReflectionPactPrompt } from '../utils/reflectionPactRandomization';
+import { generateAirportFashionPrompt } from '../utils/airportFashionRandomization';
 
 /*
 
@@ -81,6 +82,100 @@ export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
     aspect_ratio: '9:16',
     isRandomized: true,
     basePrompt: 'Transform this woman in the photo into a cinematic black-and-white portrait standing alone in front of a tall cracked mirror.\n\nHer pose is grounded, simple — facing forward or slightly turned, her back partially shown. She wears a sharp, minimal outfit in matte black fabric: a backless dress, exposed shoulder, or structured top that reveals the spine. Her expression is neutral or intense — but never smiling.\n\nThe twist is in the mirror.\nIn the reflection behind her, a large wild animal {ANIMAL} is fully visible. It does not exist in the actual frame — only in the mirror. It looks directly at her back as if they share a silent bond. The animal must be cleanly centered in the reflection and photoreal:\n* For solo woman → one animal\n\nScene:\n* Indoor grayscale room, no modern furniture, stone or neutral background\n* Tall mirror behind or beside her, slightly cracked at the corner\n* Her back or side is shown, reflection clearly holds the animal\n* Lighting is directional: side or top-lit, shadow falls naturally\n* The reflection must be sharp, slightly brighter than real frame\n\nFashion:\n* Matte black open-back dress or top\n* Strong lines: halter, cross-strap, or deep-cut back\n* No jewelry, no heels, bare feet or floor-length gown\n* Hair: tied, sculpted, or short — clear view of neck/spine\n\nCritical Visual Logic:\n* The woman and the mirror must be in correct visual sync\n* No animal in the room, only in the reflection\n* Animal expression: calm, alert, watching her, not the viewer\n* No surreal effects — realistic, photoreal grayscale only'
+  },
+
+  // ✈️ Airport Fashion (NEW - Randomized)
+  {
+    id: 'unreal_reflection_airport_fashion',
+    label: 'Airport Fashion',
+    prompt: generateAirportFashionPrompt('Transform this exact woman in the uploaded photo into a South Korean celebrity caught by paparazzi outside Incheon Airport. She walks across the iconic crosswalk with the confidence of a trendsetter — calm expression, graceful posture, head slightly turned, hand near her face in a subtle celebrity pose. Fans linger behind barriers, but the focus is entirely on her.\n\nShe wears: {FASHION_INJECTION_HERE}\n\nScene: {SCENE_INJECTION_HERE}\n\nTime: {TIME_OF_DAY_INJECTION_HERE}\n\nThe image must be photorealistic, cinematic, and styled like a high-resolution paparazzi shot from fashion media. No surreal elements. No group edits. No fantasy. Just elegance, trend, and individuality — the perfect solo shot.'),
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, surreal elements, fantasy costume, group edits, multiple people, distorted faces, unrealistic proportions',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['airport_fashion', 'korean_celebrity', 'paparazzi_style', 'trendsetter', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16',
+    isRandomized: true,
+    basePrompt: 'Transform this exact woman in the uploaded photo into a South Korean celebrity caught by paparazzi outside Incheon Airport. She walks across the iconic crosswalk with the confidence of a trendsetter — calm expression, graceful posture, head slightly turned, hand near her face in a subtle celebrity pose. Fans linger behind barriers, but the focus is entirely on her.\n\nShe wears: {FASHION_INJECTION_HERE}\n\nScene: {SCENE_INJECTION_HERE}\n\nTime: {TIME_OF_DAY_INJECTION_HERE}\n\nThe image must be photorealistic, cinematic, and styled like a high-resolution paparazzi shot from fashion media. No surreal elements. No group edits. No fantasy. Just elegance, trend, and individuality — the perfect solo shot.'
+  },
+
+  // 🐍 Venom Ceremony (NEW)
+  {
+    id: 'unreal_reflection_venom_ceremony',
+    label: 'Venom Ceremony',
+    prompt: 'Transform this exact woman into the High Priestess of the Venom Ceremony.\n\nShe wears a sculpted black latex bodice with raised serpent patterns and sharp shoulder angles. The lower half of the outfit is a structured obsidian chiffon skirt, glossy and rigid at the edges. Black gloves extend to her elbows with golden claw tips. Her hair is slicked into a tight bun with a central gold spike.\n\nA single black snake is wrapped around her neck, alive, its tongue flicking toward the camera. A gold ceremonial dagger rests against her thigh, strapped with velvet. Across her collarbone, elegant venom drop tattoos shimmer faintly.\n\nShe stands in a candlelit golden hall, surrounded by pillars shaped like coiled serpents. The floor beneath her is cracked onyx, glowing faintly with molten gold. Smoke curls slowly upward like ritual incense.\n\nLighting is theatrical: a spotlight from above, gold underglow catching the latex shine, and soft firelight flickering in the background.\n\nShe stands alone, powerful and silent, as if the ritual has already begun. Her presence is mythic — untouchable. The camera captures her from below, emphasizing her dominance. The atmosphere is heavy with venomous beauty.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, violent imagery, inappropriate content, group edits, multiple people, distorted faces, unrealistic proportions',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['venom_ceremony', 'high_priestess', 'ritual_fashion', 'mythic_beauty', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🔴 Velvet Trap (NEW)
+  {
+    id: 'unreal_reflection_velvet_trap',
+    label: 'Velvet Trap',
+    prompt: 'Transform this exact woman into a vision of silent domination, captured in a cinematic fashion moment known only as the Velvet Trap.\n\nShe wears a deep crimson velvet gown with a structured corset bodice and exaggerated hips. The fabric is rich and heavy, draping around her like liquid blood. One thigh is revealed through a high slit, balanced by long opera gloves and a sharp choker necklace made of sculpted gold. Her neckline is open, exposed — commanding. Her makeup is sensual but cold: wine-colored lips, glossy skin, and sharp brows.\n\nAround her finger coils a delicate gold chain that disappears out of frame — a symbol of control. In her hand: a cracked champagne flute, casually held like a relic of a finished game.\n\nThe background is a marble corridor bathed in red light and soft smoke. Behind her, heavy velvet curtains are slightly open — as if someone just exited, or is about to.\n\nLighting is soft but deliberate: warm golden-red underglow from the floor and one side, casting thick shadows behind her. The smoke picks up the light, making the air feel slow and dangerous.\n\nHer pose is relaxed, sculptural, and precise — one leg forward, weight shifted, chin slightly raised. She doesn\'t pose for the camera; the camera obeys her.\n\nThe atmosphere is thick with elegance, tension, and quiet power. She is not the guest — she is the one who ends the party.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, inappropriate content, group edits, multiple people, distorted faces, unrealistic proportions, casual clothing',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['velvet_trap', 'cinematic_fashion', 'silent_domination', 'red_light', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // 🕸️ Tethered Grace (NEW)
+  {
+    id: 'unreal_reflection_tethered_grace',
+    label: 'Tethered Grace',
+    prompt: 'Transform this exact woman in the photo into a grayscale cinematic vision of sculpted restraint and surreal elegance.\n\nShe stands in a vast, minimal space — foggy or softly lit — her presence held together by strands of thick, silk-like cords that wrap around her upper arms and wrists, stretching out into the void as if pulled by invisible forces. Her posture is balanced, her limbs graceful but grounded — she is not in motion, but tension vibrates through the frame.\n\nShe wears a custom monochrome dress made of tightly folded fabric around the torso — origami-like, almost armor — contrasted by long flowing silk on the bottom, barely brushing the floor. The skirt is weighted, clean-lined, and moves with the soft wind, but never exposes the legs.\n\nFrom the back or sides: delicate tethering ropes or abstract fabric strands connect her body to geometric anchors in the space — not bondage, but an abstract fashion construction. A surreal tension exists: like the strings of a marionette, but elegant, not sinister.\n\nHer face is softly lit from one side — clean makeup, no surreal effects, just luminous grayscale skin, alive and flawless.\n\nScene:\n* Neutral, foggy or minimal architectural space — high ceiling or open void\n* Thin silk or rope tethers connect her wrists or upper arms to the environment\n* She is standing firmly — either arms lifted slightly, or held by tension\n* Mood is serene but filled with controlled energy — no chaos\n* Very visible large spider webs stretch across the space — faintly illuminated by the backlight, their delicate threads catching the light like silver tension lines\n\nFashion Styling:\n* Fitted upper body with structured monochrome folds (origami / wrapped fabric)\n* Lower body in soft, floor-length matte silk — not sheer, not open\n* Cords/fabrics emerge from sleeves or shoulderline, tethering her gently\n* Bare arms or partial wraps — no gloves, no jewelry\n* Hair pulled into a twisted low knot or tied up tightly — no loose strands\n\nLighting:\n* One strong cinematic light from the side or above\n* Soft volumetric shadows from the tether strands\n* Grayscale-only color palette — no surreal tones\n* Skin must remain luminous and photoreal — face cannot be desaturated or greywashed\n\nImportant Notes:\n* No surrealism. No floating dress parts. No ropes on legs. No skin exposure below the knees.\n* Scene must look like a high fashion photoshoot with impossible fashion mechanics.\n* Ropes must not look painful or sexual — only fashion-tethered, symmetrical, elegant.',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, painful ropes, bondage elements, surrealism, fantasy costume, floating parts, exposed legs, unrealistic proportions, sexual content',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['tethered_grace', 'grayscale_fashion', 'abstract_tethers', 'high_fashion', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
   },
 
   // 🌙 Moonfall Ritual (NEW)
