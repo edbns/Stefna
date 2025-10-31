@@ -71,9 +71,7 @@ export const handler: Handler = async (event) => {
     select *
     from feed_with_user_likes
     order by 
-      user_liked desc,  -- User's liked media first
-      likes_count desc,  -- Then by total likes count
-      random()  -- Then shuffle the rest randomly
+      created_at desc  -- Latest media first
     limit $1 offset $2
   `;
 

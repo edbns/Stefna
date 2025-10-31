@@ -8,6 +8,7 @@ interface Preset {
 
 const AuthPresetSlider: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   const presets: Preset[] = [
     // Latest presets first - reversed from array order (newest at bottom of array = show first)
@@ -213,15 +214,6 @@ const AuthPresetSlider: React.FC = () => {
     }
   ]
 
-  // Auto-advance slider every 4 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % presets.length)
-    }, 4000)
-
-    return () => clearInterval(interval)
-  }, [presets.length])
-
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
@@ -269,6 +261,33 @@ const AuthPresetSlider: React.FC = () => {
     return imageMap[preset.title] || '/images/parallel_self_black_aura.webp'
   }
 
+  // Preload next images to prevent delay
+  useEffect(() => {
+    // Preload current, next, and next+1 images
+    const preloadIndices = [
+      currentIndex,
+      (currentIndex + 1) % presets.length,
+      (currentIndex + 2) % presets.length
+    ]
+    
+    preloadIndices.forEach(index => {
+      const preset = presets[index]
+      const imagePath = getImagePath(preset)
+      const img = new Image()
+      img.src = imagePath
+    })
+  }, [currentIndex, presets])
+
+  // Auto-advance slider every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setImageLoaded(false) // Reset loaded state when changing slide
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % presets.length)
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [presets.length])
+
   const currentPreset = presets[currentIndex]
 
   return (
@@ -278,9 +297,13 @@ const AuthPresetSlider: React.FC = () => {
         <img
           src={getImagePath(currentPreset)}
           alt={currentPreset.title}
-          className="w-full h-full object-contain object-center"
+          className={`w-full h-full object-contain object-center transition-opacity duration-500 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={() => setImageLoaded(true)}
           onError={(e) => {
             console.error('Image failed to load:', getImagePath(currentPreset))
+            setImageLoaded(true) // Show even if error to prevent blank screen
           }}
         />
       </div>

@@ -3890,6 +3890,9 @@ const HomeNew: React.FC = () => {
               >
                 Login
               </button>
+              <p className="text-green-500 text-xs text-center mt-4">
+                Free to use. Every day. No catch.
+              </p>
             </div>
           )}
           

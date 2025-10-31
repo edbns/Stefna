@@ -547,6 +547,9 @@ const MobileGalleryScreen: React.FC = () => {
                       }}
                     ></div>
                   </div>
+                  <p className="text-green-500 text-xs text-center mt-4">
+                    AI can make mistakes, Please double check it.
+                  </p>
                 </div>
               </div>
             )}

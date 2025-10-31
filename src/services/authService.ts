@@ -27,6 +27,7 @@ class AuthService {
   }
   private authChangeListeners: ((authState: AuthState) => void)[] = []
   private tokenExpirationCheckInterval: NodeJS.Timeout | null = null
+  private isHandlingExpiration: boolean = false
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -91,7 +92,29 @@ class AuthService {
 
   // Check if user is authenticated
   isAuthenticated(): boolean {
-    return this.authState.isAuthenticated
+    // If auth state says not authenticated, return false
+    if (!this.authState.isAuthenticated) {
+      return false
+    }
+    
+    // Check if token exists and is not expired
+    if (!this.authState.token) {
+      return false
+    }
+    
+    // If token is expired, user is not authenticated
+    // Note: We don't trigger logout here synchronously to avoid blocking
+    // The periodic check and fetch interceptors will handle logout
+    if (this.isTokenExpired()) {
+      console.log('🔐 User not authenticated: token expired')
+      // Trigger expiration handling asynchronously (non-blocking)
+      this.handleTokenExpiration().catch(err => {
+        console.error('Error handling token expiration in isAuthenticated:', err)
+      })
+      return false
+    }
+    
+    return true
   }
 
   // Get current user
@@ -304,13 +327,28 @@ class AuthService {
     if (!this.authState.token) return true
     
     const expiration = this.getTokenExpiration(this.authState.token)
-    if (!expiration) return false // Can't determine, assume valid
+    
+    // If we can't determine expiration, try to validate token format
+    // If token format is invalid, treat as expired
+    if (!expiration) {
+      // Check if token has valid JWT structure
+      const parts = this.authState.token.split('.')
+      if (parts.length !== 3) {
+        console.log('🔐 Token has invalid format, treating as expired')
+        return true
+      }
+      
+      // If we can't decode expiration but token format is valid,
+      // we'll let the backend handle validation, but log a warning
+      console.warn('⚠️ Unable to determine token expiration, token format is valid')
+      return false
+    }
     
     const now = Date.now()
     const isExpired = now >= expiration
     
     if (isExpired) {
-      console.log('🔐 Token has expired')
+      console.log('🔐 Token has expired at', new Date(expiration).toISOString())
     }
     
     return isExpired
@@ -318,6 +356,9 @@ class AuthService {
 
   // Start automatic token expiration checking
   private startTokenExpirationCheck(): void {
+    // Stop any existing interval first
+    this.stopTokenExpirationCheck()
+    
     console.log('🔐 Starting token expiration check interval...')
     
     // Check every 30 seconds for faster detection
@@ -328,16 +369,23 @@ class AuthService {
         isExpired: this.isTokenExpired()
       })
       
-      if (this.authState.isAuthenticated && this.isTokenExpired()) {
-        console.log('🔐 Token expired, attempting to refresh...')
-        this.handleTokenExpiration()
+      // Check if token is expired and user appears authenticated
+      if (this.authState.isAuthenticated && this.authState.token) {
+        const expiration = this.getTokenExpiration(this.authState.token)
+        if (expiration && Date.now() >= expiration) {
+          console.log('🔐 Token expired, attempting to refresh...')
+          this.handleTokenExpiration()
+        }
       }
     }, 30000) // Check every 30 seconds
     
     // Also do an immediate check
-    if (this.authState.isAuthenticated && this.isTokenExpired()) {
-      console.log('🔐 Token expired on startup, attempting to refresh...')
-      this.handleTokenExpiration()
+    if (this.authState.isAuthenticated && this.authState.token) {
+      const expiration = this.getTokenExpiration(this.authState.token)
+      if (expiration && Date.now() >= expiration) {
+        console.log('🔐 Token expired on startup, attempting to refresh...')
+        this.handleTokenExpiration()
+      }
     }
   }
 
@@ -351,20 +399,30 @@ class AuthService {
 
   // Handle token expiration - try to refresh, otherwise logout
   private async handleTokenExpiration(): Promise<void> {
+    // Prevent multiple simultaneous expiration handlers
+    if (this.isHandlingExpiration) {
+      return
+    }
+    
+    this.isHandlingExpiration = true
+    
     try {
       // Try to refresh the token
       const refreshed = await this.refreshAccessToken()
       
       if (refreshed) {
         console.log('✅ Token refreshed successfully')
+        this.isHandlingExpiration = false
         return
       }
       
       // If refresh failed, logout the user
       console.log('❌ Token refresh failed, logging out user')
+      this.isHandlingExpiration = false
       this.handleSessionExpired()
     } catch (error) {
       console.error('Error handling token expiration:', error)
+      this.isHandlingExpiration = false
       this.handleSessionExpired()
     }
   }

@@ -175,8 +175,11 @@ const MasonryMediaGrid: React.FC<MasonryMediaGridProps> = ({
                   {/* Media */}
                   {(item as any).type === 'loading' ? (
                     // Loading frame - 1:1 square with spinner
-                    <div className="w-full aspect-square bg-[#333333] flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <div className="w-full aspect-square bg-[#333333] flex flex-col items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mb-2"></div>
+                      <p className="text-green-500 text-xs text-center px-2">
+                        AI can make mistakes, Please double check it.
+                      </p>
                     </div>
                   ) : item.status === 'processing' ? (
                     <SpinnerCard
