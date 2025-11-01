@@ -14,6 +14,16 @@ const AuthPresetSlider: React.FC = () => {
     // Latest presets first - reversed from array order (newest at bottom of array = show first)
     {
       mode: "Unreal Reflection™",
+      title: "Molten Halo",
+      description: "Divine fashion icon walking through scorched ceremonial ruin with burning fire halo, cracked marble path, ember trail, and lava-textured black gown."
+    },
+    {
+      mode: "Unreal Reflection™",
+      title: "Iron Bloom",
+      description: "Divine fashion icon blooming from steel in war-torn field with shattered armor, metal corset, iron vines, and fog-covered battlefield."
+    },
+    {
+      mode: "Unreal Reflection™",
       title: "Velvet Trap",
       description: "Silent domination in crimson velvet gown with cracked champagne flute, gold chain, and marble corridor bathed in red light."
     },
@@ -216,6 +226,8 @@ const AuthPresetSlider: React.FC = () => {
 
   const getImagePath = (preset: Preset): string => {
     const imageMap: Record<string, string> = {
+      'Molten Halo': '/images/unreal_reflection_molten_halo.jpg',
+      'Iron Bloom': '/images/unreal_reflection_iron_bloom.jpg',
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
       'Airport Fashion': '/images/unreal_reflection_airport_fashion.jpg',
       'Venom Ceremony': '/images/unreal_reflection_venom_ceremony.jpg',

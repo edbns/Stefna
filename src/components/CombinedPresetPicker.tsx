@@ -15,9 +15,11 @@ export function CombinedPresetPicker({
   disabled = false,
   isDesktop = false,
 }: CombinedPresetPickerProps) {
-  // Prioritize latest 4 presets first (as per user requirement)
-  // Latest order: 1. Velvet Trap, 2. Venom Ceremony, 3. Airport Fashion, 4. Reflection Pact
+  // Prioritize latest 6 presets first (as per user requirement)
+  // Latest order: 1. Molten Halo, 2. Iron Bloom, 3. Velvet Trap, 4. Venom Ceremony, 5. Airport Fashion, 6. Reflection Pact
   const latestPresetIds = [
+    'unreal_reflection_molten_halo',
+    'unreal_reflection_iron_bloom',
     'unreal_reflection_velvet_trap',
     'unreal_reflection_venom_ceremony', 
     'unreal_reflection_airport_fashion',
@@ -49,9 +51,9 @@ export function CombinedPresetPicker({
     type: 'parallel' as const
   }));
   
-  // Final order: Latest 4 → Other Unreal → Parallel Self → Deprioritized at end
+  // Final order: Latest 6 → Other Unreal → Parallel Self → Deprioritized at end
   const allPresets = [
-    ...latestPresets,         // Latest 4: Velvet Trap, Venom Ceremony, Airport Fashion, Reflection Pact
+    ...latestPresets,         // Latest 6: Molten Halo, Iron Bloom, Velvet Trap, Venom Ceremony, Airport Fashion, Reflection Pact
     ...otherUnrealPresets,    // All other unreal presets
     ...parallelPresets,       // Parallel Self presets
     ...unrealDeprioritized    // Deprioritized unreal presets at the end
@@ -60,6 +62,8 @@ export function CombinedPresetPicker({
   // Image mapping for presets based on best practices
   const getPresetImage = (presetLabel: string): string => {
     const imageMap: Record<string, string> = {
+      'Molten Halo': '/images/unreal_reflection_molten_halo.jpg',
+      'Iron Bloom': '/images/unreal_reflection_iron_bloom.jpg',
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
       'Airport Fashion': '/images/unreal_reflection_airport_fashion.jpg',
       'Venom Ceremony': '/images/unreal_reflection_venom_ceremony.jpg',

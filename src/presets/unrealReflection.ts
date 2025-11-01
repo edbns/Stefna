@@ -59,6 +59,52 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🔥 Molten Halo (NEW)
+  {
+    id: 'unreal_reflection_molten_halo',
+    label: 'Molten Halo',
+    prompt: 'Transform this woman in the photo into a divine fashion icon walking through a scorched ceremonial ruin.\n\nShe is framed by a thin halo of fire — not glowing, but truly burning — suspended behind her head like a divine judgment ring. The flame flickers slowly, shedding embers that trail behind her as she walks. Her posture is upright, regal, unstoppable.\n\nBeneath her, a blackened marble path cracks with faint orange light, as if her footsteps awaken the coals beneath the earth. Her dress is matte black, sculpted with lava-line textures, tight through the torso and flowing behind her in a long, ember-dusted train. Embers scatter with each motion.\n\nThe ruins around her: half-melted stone statues, crumbling pillars scorched by time and flame. The air is heavy with heat shimmer. Her face is calm but untouchable, like a goddess who punishes without words.\n\n🎞 Scene:\n* Wide fire halo behind the head, slowly burning, not neon\n* Cracked black marble floor with glowing ember fissures\n* Melted statues, scorched pillars in background\n* Trail of embers following her steps\n* No other characters. Solo only.\n\n👗 Fashion Styling:\n* Matte-black corset gown with lava-vein textures\n* Long heavy train, ember-dusted\n* Sculptural silhouette, dramatic and form-fitted\n* Hair: sleek or updo, smoke-touched edges\n* Makeup: ember-red lips, fire-glow eyeshadow\n* No jewelry. Power comes from flame alone.\n\n💡 Lighting:\n* Backlit by soft orange flames and ambient glow from embers\n* Light flickers on floor and lower dress\n* Shadows are sharp, cinematic, and directional\n* Her face remains fully visible and untouched by grayscale',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, inappropriate content, group edits, multiple people, distorted faces, unrealistic proportions, casual clothing, modern elements, neon glow',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['molten_halo', 'fire_halo', 'ceremonial_ruin', 'ember_trail', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
+  // ⚔️ Iron Bloom (NEW)
+  {
+    id: 'unreal_reflection_iron_bloom',
+    label: 'Iron Bloom',
+    prompt: 'Transform this woman in the photo into a divine fashion icon blooming from steel — a symbol of resilience shaped in fire and forged into grace.\n\nShe stands tall in the center of a war-torn field, surrounded by shattered soldier armor — broken chest plates, abandoned swords, fallen helmets half-buried in the cracked earth. These are not her enemies — they are the legacy she carries.\n\nHer sculpted metal corset is worn directly on her skin, forged to fit her form like second flesh — no fabric barrier, only steel and strength. It curves over her torso in overlapping petals, matte and burnished, like an armored rose refusing to wilt. Her skirt flows downward in heavy silk, laced with metal veining, trailing softly behind her.\n\nA war horse stands nearby, noble and silent, its armor scorched and hanging in fragments, echoing her resilience. Behind her, rusted iron vines rise from the rubble, their tips blooming into sharp metallic flowers. Red threads dance from her sleeves and waist — ritual markers of battles survived, bound with meaning, fluttering free in the wind.\n\nFog rolls in around her ankles and through the armor graveyard — softening the battlefield with silence. Her expression is unshaken. Like a myth reborn in armor.\n\n🎞 Scene:\n* Fog-covered battlefield, scattered soldier armor and weapons\n* Wind in skirt, hair, and red threads\n* War horse nearby, partially armored\n* Iron vines and sharp metal blooms behind her\n* Red silk threads trailing from her arms or waist\n* No shirt under armor — steel directly on skin\n* No other characters. Solo only.\n\n👗 Fashion Styling:\n* Steel corset with petal-like armor plates, worn directly on bare skin\n* Heavy matte silk skirt with metallic texture detailing\n* Red silk thread accents tied like ritual talismans\n* Hair: braided or pinned with metal pins\n* Makeup: burnished skin, metallic cheekbones, no glitter\n* No jewelry — strength is the only ornament\n\n💡 Lighting:\n* Overcast battlefield haze\n* Subtle glint on steel, soft diffusion through fog\n* Shadows sharp on armor but soft on fabric\n* Her face remains fully visible and warm-toned',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, inappropriate content, group edits, multiple people, distorted faces, unrealistic proportions, casual clothing, modern elements',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['iron_bloom', 'armor_fashion', 'battlefield_resilience', 'metallic_elegance', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🪞 Reflection Pact (NEW - Randomized)
   {
     id: 'unreal_reflection_reflection_pact',
