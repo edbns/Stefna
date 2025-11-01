@@ -40,10 +40,15 @@ export async function signedFetch(url: string, opts: RequestInit = {}): Promise<
     
     if (refreshSuccess) {
       // Retry the request with new token
+      // IMPORTANT: Preserve the abort signal from original opts
       const newToken = getToken()
       if (newToken) {
         baseHeaders['Authorization'] = `Bearer ${newToken}`
-        return fetch(url, { ...opts, headers: { ...baseHeaders, ...(opts.headers || {}) } })
+        return fetch(url, { 
+          ...opts, 
+          headers: { ...baseHeaders, ...(opts.headers || {}) },
+          signal: opts.signal // Preserve the abort signal for retry
+        })
       }
     } else {
       // Refresh failed, show session expired alert

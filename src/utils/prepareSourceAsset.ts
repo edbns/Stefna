@@ -219,8 +219,12 @@ export async function prepareSourceAsset(
     
     const uploadFn = async () => {
       // Signed params with timeout protection
+      // Increased timeout to 15 seconds for slower connections
       const signController = new AbortController();
-      const signTimeout = setTimeout(() => signController.abort(), 10000); // 10 second timeout
+      const signTimeout = setTimeout(() => {
+        console.warn('⏱️ Background upload: Cloudinary sign request timeout after 15s, aborting...');
+        signController.abort();
+      }, 15000); // 15 second timeout (increased from 10s)
       
       let signRes;
       try {
@@ -233,6 +237,13 @@ export async function prepareSourceAsset(
       } catch (error) {
         clearTimeout(signTimeout);
         const errorMsg = error instanceof Error ? error.message : String(error);
+        
+        // Provide more helpful error messages
+        if (errorMsg.includes('aborted') || errorMsg.includes('AbortError')) {
+          console.error('🚨 Background upload: Cloudinary sign request timed out (15s limit exceeded)');
+          throw new Error('Upload signature request timed out. Please check your connection and try again.');
+        }
+        
         console.error('🚨 Background upload: Cloudinary sign request failed:', errorMsg);
         throw new Error(`Failed to get upload signature: ${errorMsg}`);
       } finally {
@@ -321,8 +332,12 @@ export async function prepareSourceAsset(
   // Standard upload with retry (existing logic)
   const uploadToCloudinary = async () => {
     // Signed params with timeout protection
+    // Increased timeout to 15 seconds for slower connections
     const signController = new AbortController();
-    const signTimeout = setTimeout(() => signController.abort(), 10000); // 10 second timeout
+    const signTimeout = setTimeout(() => {
+      console.warn('⏱️ Cloudinary sign request timeout after 15s, aborting...');
+      signController.abort();
+    }, 15000); // 15 second timeout (increased from 10s)
     
     let signRes;
     try {
@@ -335,6 +350,13 @@ export async function prepareSourceAsset(
     } catch (error) {
       clearTimeout(signTimeout);
       const errorMsg = error instanceof Error ? error.message : String(error);
+      
+      // Provide more helpful error messages
+      if (errorMsg.includes('aborted') || errorMsg.includes('AbortError')) {
+        console.error('🚨 Cloudinary sign request timed out (15s limit exceeded)');
+        throw new Error('Upload signature request timed out. Please check your connection and try again.');
+      }
+      
       console.error('🚨 Cloudinary sign request failed:', errorMsg);
       throw new Error(`Failed to get upload signature: ${errorMsg}`);
     } finally {
