@@ -33,6 +33,11 @@ export default function BestPracticesScreen() {
     // Latest presets first - reversed from array order (newest at bottom of array = show first)
     {
       mode: "Presets",
+      title: "Tides Ceremony",
+      description: "Divine fashion icon walking through flooded ceremonial ruin with translucent turquoise dress, shallow dark water reflections, ocean-worn ruins, and moonlight through mist."
+    },
+    {
+      mode: "Presets",
       title: "Molten Halo",
       description: "Divine fashion icon walking through scorched ceremonial ruin with burning fire halo, cracked marble path, ember trail, and lava-textured black gown."
     },
@@ -313,6 +318,7 @@ export default function BestPracticesScreen() {
   // Get static image path for preset
   const findMediaForPreset = (presetTitle: string) => {
     const imageMap: Record<string, string> = {
+      'Tides Ceremony': '/images/unreal_reflection_tides_ceremony.jpg',
       'Molten Halo': '/images/unreal_reflection_molten_halo.jpg',
       'Iron Bloom': '/images/unreal_reflection_iron_bloom.jpg',
       'Reflection Pact': '/images/unreal_reflection_reflection_pact.jpg',
