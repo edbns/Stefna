@@ -59,6 +59,29 @@ export type UnrealReflectionPreset = {
 }
 
 export const UNREAL_REFLECTION_PRESETS: UnrealReflectionPreset[] = [
+  // 🌊 Tides Ceremony (NEW)
+  {
+    id: 'unreal_reflection_tides_ceremony',
+    label: 'Tides Ceremony',
+    prompt: 'Transform this woman in the photo into a divine fashion icon walking through a flooded ceremonial ruin.\n\nBeneath her, a shallow sheet of dark water reflects the ruined architecture around her. Each step sends gentle ripples across the marble, tracing sacred circles in her wake. Her dress is translucent turquoise, sculpted like frozen liquid — clinging tightly through the bodice and dissolving into layered sheer silk that trails like tide foam. As she walks, droplets scatter from her train like blessing and curse.\n\nThe ruins around her: ocean-worn stone statues, coral-encrusted columns, arches broken by time and salt. Beyond the broken archways, the open ocean stretches wide and endless. Towering waves crash in the distance, their rhythm echoing through the ruin like a forgotten chant. Moonlight slices across the water, illuminating her silhouette with each crest. Sea spray drifts through the gaps in the stone, cool and constant — a reminder that the tide will always return. The air is cool, heavy with ocean hush. Her face is calm but untouchable, like a goddess who doesn\'t speak — only watches.\n\n🎞 Scene:\n* Shallow flooded cracked floor, gentle ripples under her steps\n* Broken ceremonial ruins, overgrown with wet moss and barnacles\n* Dripping sound, glowing reflections from the water surface\n* No other characters. Solo only.\n* From above, rainwater still drips softly through cracks in the ancient stone ceiling. Each drop falls with intention — striking the cracked floor or her shoulder with slow, deliberate rhythm. The leaks glisten like liquid time, reminding us that this ruin still breathes, still breaks.\n* Sometimes, a heavier splash echoes as water slips off a broken ledge or statue fragment. It\'s not raining — the storm already passed. This is what remains.\n\n👗 Fashion Styling:\n* Translucent sea-glass gown — fitted bodice sculpted like frozen water, wet-look sheen\n* Long flowing train, sheer silk layers dragging through the water\n* Sculptural silhouette, elegant and alien, like she emerged from deep ocean royalty\n* Hair: sleek and damp, pushed back or in low braid like a ritual offering\n* Makeup: soft pearl glow, icy blue shimmer on eyes, lips like sea salt\n* No jewelry — the water is her crown\n\n💡 Lighting:\n* Backlit by moonlight through mist and archways\n* Ripples and reflections dance on the cracked floor and her dress\n* Wet surfaces shimmer, but the tone is grounded and sacred\n* Her face remains fully visible, glowing softly but without any supernatural shine',
+    negative_prompt: 'cartoon, face paint, cosplay, bright colors, oversaturated, cluttered composition, inappropriate content, group edits, multiple people, distorted faces, unrealistic proportions, casual clothing, modern elements',
+    strength: 0.55,
+    model: 'fal-ai/nano-banana/edit',
+    mode: 'i2i',
+    input: 'image',
+    requiresSource: true,
+    source: 'unreal_reflection',
+    guidance_scale: 7.5,
+    num_inference_steps: 30,
+    features: ['tides_ceremony', 'flooded_ruin', 'ocean_elegance', 'ceremonial_fashion', 'identity_preserved'],
+    prompt_upsampling: true,
+    safety_tolerance: 6,
+    output_format: 'jpeg',
+    raw: true,
+    image_prompt_strength: 0.55,
+    aspect_ratio: '9:16'
+  },
+
   // 🔥 Molten Halo (NEW)
   {
     id: 'unreal_reflection_molten_halo',
