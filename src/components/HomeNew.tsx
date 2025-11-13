@@ -2777,15 +2777,6 @@ const HomeNew: React.FC = () => {
       console.log('✅ Generation metadata:', generationMeta);
     }
     
-    // Add "Make it obvious" test option for debugging
-    const makeItObvious = prompt?.toLowerCase().includes('make it obvious') || prompt?.toLowerCase().includes('test');
-    if (makeItObvious) {
-      effectivePrompt = 'black-and-white line art, no color, heavy outlines, flat shading, cartoon style';
-      if (import.meta.env.DEV) {
-        console.log('🔎 Using "Make it obvious" test prompt (length:', effectivePrompt.length, 'chars)');
-      }
-    }
-    
     if (!effectivePrompt) {
       console.warn('No prompt available; aborting.');
       endGeneration(genId);
