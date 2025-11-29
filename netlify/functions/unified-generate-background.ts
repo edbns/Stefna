@@ -2606,12 +2606,12 @@ async function generateWithFal(mode: GenerationMode, params: any): Promise<Unifi
           console.log(`✨ [Edit Mode Negative Prompt] Enhanced negative prompt length: ${finalEditNegativePrompt.length} chars`);
         }
         
-        // Add width and height to preserve original aspect ratio
-        if (params.sourceWidth && params.sourceHeight) {
-          editInput.width = params.sourceWidth;
-          editInput.height = params.sourceHeight;
-          console.log(`📐 [Fal.ai] Preserving original aspect ratio for edit: ${params.sourceWidth}x${params.sourceHeight}`);
-        }
+        // Force 9:16 aspect ratio (720x1280) for edit mode
+        const aspectRatio = getAspectRatioForMode('edit');
+        const dimensions = getDimensionsForAspectRatio(aspectRatio);
+        editInput.width = dimensions.width;
+        editInput.height = dimensions.height;
+        console.log(`📐 [Fal.ai] Using ${aspectRatio} aspect ratio for edit: ${dimensions.width}x${dimensions.height}`);
         
         console.log(`✏️ [Edit Mode] Generating edit with single image`);
         
