@@ -20,4 +20,6 @@ echo "✅ Build can proceed without any Prisma dependencies"
 echo "🚀 [Netlify Build] Building application..."
 npm run build
 
+bash scripts/prune-dist-for-deploy.sh
+
 echo "✅ [Netlify Build] Build completed successfully!"

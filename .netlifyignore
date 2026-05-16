@@ -1,0 +1,17 @@
+# Exclude from published deploy (paths relative to publish dir: dist/)
+.DS_Store
+**/.DS_Store
+logonew.png
+logo-dark.png
+logo-dark.webp
+logo.png
+logo.webp
+favicon.png
+favicon.webp
+og-image.jpg
+og-image.webp
+images/Feed.png
+images/Abstract.png
+images/Remix.png
+images/Ai brush.png
+images/Social sharing.png
