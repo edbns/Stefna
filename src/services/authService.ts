@@ -451,7 +451,7 @@ class AuthService {
     
     // Redirect to auth page
     if (typeof window !== 'undefined') {
-      window.location.href = '/auth'
+      window.location.href = '/login'
     }
   }
 

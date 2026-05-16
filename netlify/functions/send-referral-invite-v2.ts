@@ -148,7 +148,7 @@ export const handler: Handler = async (event) => {
       </p>
       
       <div style="text-align:center; margin:20px 0;">
-        <a href="https://stefna.xyz/auth?referrer=${referrerEmail}" style="background-color:#fff; color:#000; padding:15px 30px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:600;">Claim your credits here</a>
+        <a href="https://stefna.xyz/login?referrer=${referrerEmail}" style="background-color:#fff; color:#000; padding:15px 30px; border-radius:6px; text-decoration:none; display:inline-block; font-weight:600;">Claim your credits here</a>
       </div>
       
       <p style="font-size:13px; line-height:1.6; margin:0 auto; max-width:90%;">
@@ -175,7 +175,7 @@ Use your 10 extra credits however you like — on top of your daily allowance.
 
 Join now and start creating:
 
-Click Here: https://stefna.xyz/auth?referrer=${referrerEmail}
+Click Here: https://stefna.xyz/login?referrer=${referrerEmail}
 
 No account? Get one. It only takes seconds.
 

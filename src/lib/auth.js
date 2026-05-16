@@ -84,7 +84,7 @@ export async function signedFetch(url, opts = {}) {
       if (!refreshed) {
         console.error('❌ [signedFetch] Proactive refresh failed, logging out...');
         authService.logout();
-        window.location.href = '/auth';
+        window.location.href = '/login';
         throw new Error('Session expired. Please log in again.');
       }
       
@@ -92,7 +92,7 @@ export async function signedFetch(url, opts = {}) {
     } catch (error) {
       console.error('❌ [signedFetch] Proactive refresh error:', error);
       authService.logout();
-      window.location.href = '/auth';
+      window.location.href = '/login';
       throw new Error('Session expired. Please log in again.');
     }
   }
@@ -123,20 +123,20 @@ export async function signedFetch(url, opts = {}) {
         if (response.status === 401) {
           console.error('❌ [signedFetch] Still 401 after refresh, logging out...');
           authService.logout();
-          window.location.href = '/auth';
+          window.location.href = '/login';
           throw new Error('Session expired. Please log in again.');
         }
       } else {
         // Refresh failed, logout
         console.error('❌ [signedFetch] Token refresh failed, logging out...');
         authService.logout();
-        window.location.href = '/auth';
+        window.location.href = '/login';
         throw new Error('Session expired. Please log in again.');
       }
     } catch (error) {
       console.error('❌ [signedFetch] Token refresh error:', error);
       authService.logout();
-      window.location.href = '/auth';
+      window.location.href = '/login';
       throw new Error('Session expired. Please log in again.');
     }
   }

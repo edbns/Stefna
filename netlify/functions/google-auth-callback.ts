@@ -178,7 +178,8 @@ export const handler: Handler = async (event) => {
     );
 
     // Redirect to frontend with success (include both tokens)
-    const redirectUrl = `${process.env.URL || 'https://stefna.xyz'}?auth=success&token=${accessToken}&refreshToken=${refreshToken}`;
+    const base = (process.env.URL || 'https://stefna.xyz').replace(/\/$/, '')
+    const redirectUrl = `${base}/Lab?auth=success&token=${accessToken}&refreshToken=${refreshToken}`;
     
     return {
       statusCode: 302,
@@ -193,7 +194,8 @@ export const handler: Handler = async (event) => {
     console.error('Google OAuth error:', error);
     
     // Redirect to frontend with error
-    const redirectUrl = `${process.env.URL || 'https://stefna.xyz'}?auth=error&message=${encodeURIComponent(error.message)}`;
+    const base = (process.env.URL || 'https://stefna.xyz').replace(/\/$/, '')
+    const redirectUrl = `${base}/Lab?auth=error&message=${encodeURIComponent(error.message)}`;
     
     return {
       statusCode: 302,

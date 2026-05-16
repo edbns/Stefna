@@ -1,75 +1,55 @@
 {
-  "name": "Stefna - AI Photo App",
-  "short_name": "Stefna",
-  "description": "Create amazing AI-powered photos with style filters and community sharing",
-  "start_url": "/",
+  "name": "StefnaXYZ | Independent Global Sound Lab",
+  "short_name": "StefnaXYZ",
+  "description": "StefnaXYZ is an independent music project blending Afro house, deep house, Afrobeats, and R&B into rhythm-driven global sound.",
+  "start_url": "/Lab",
   "display": "browser",
-  "background_color": "#ffffff",
+  "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
   "scope": "/",
   "lang": "en",
-  "categories": ["photo", "art", "social", "entertainment"],
+  "categories": ["music", "entertainment"],
   "icons": [
     {
-      "src": "/logo.webp",
-      "sizes": "64x64",
-      "type": "image/webp",
+      "src": "/fav-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo.webp",
+      "src": "/fav-icon.png",
       "sizes": "192x192",
-      "type": "image/webp",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo.webp",
-      "sizes": "512x512",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any"
     }
   ],
   "shortcuts": [
     {
-      "name": "Gallery",
-      "short_name": "Gallery",
-      "description": "View your AI photo gallery",
-      "url": "/gallery",
-      "icons": [
-        {
-          "src": "/logo.webp",
-          "sizes": "96x96",
-          "type": "image/webp"
-        }
-      ]
-    },
-    {
       "name": "Profile",
       "short_name": "Profile",
-      "description": "View your profile and settings",
+      "description": "Your profile and settings",
       "url": "/profile",
       "icons": [
         {
-          "src": "/logo.webp",
+          "src": "/fav-icon.png",
           "sizes": "96x96",
-          "type": "image/webp"
+          "type": "image/png"
         }
       ]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
     },
     {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "name": "Login",
+      "short_name": "Login",
+      "description": "Sign in",
+      "url": "/login",
+      "icons": [
+        {
+          "src": "/fav-icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "related_applications": [],
@@ -80,4 +60,4 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   }
-} 
+}

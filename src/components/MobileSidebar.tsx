@@ -144,7 +144,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     return;
                   }
                   
-                  const shareUrl = `${window.location.origin}/auth?referrer=${encodeURIComponent(referrerEmail)}`;
+                  const shareUrl = `${window.location.origin}/login?referrer=${encodeURIComponent(referrerEmail)}`;
                   
                   if (navigator.share) {
                     await navigator.share({

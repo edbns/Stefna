@@ -440,7 +440,7 @@ const ProfileScreen: React.FC = () => {
   // Handle toggle like
   const handleToggleLike = async (media: UserMedia) => {
     if (!authService.isAuthenticated()) {
-      navigate('/auth')
+      navigate('/login')
       return
     }
     
@@ -1531,7 +1531,7 @@ const ProfileScreen: React.FC = () => {
       // Auth guard: require JWT before attempting to change visibility
       if (!authService.getToken()) {
         addNotification('Login Required', 'Please sign in to change visibility', 'warning')
-        navigate('/auth')
+        navigate('/login')
         return
       }
 
@@ -2177,7 +2177,7 @@ const ProfileScreen: React.FC = () => {
                   onToggleLike={handleToggleLike}
                   userLikes={userLikes}
                   isLoggedIn={isAuthenticated}
-                  onShowAuth={() => navigate('/auth')}
+                  onShowAuth={() => navigate('/login')}
                   // Hide likes button on profile page
                   hideLikes={true}
                 />
@@ -2324,7 +2324,7 @@ const ProfileScreen: React.FC = () => {
                     <p className="text-white/60 text-lg mb-4">Sign up to unlock the invite system!</p>
                     <p className="text-white/40 text-sm mb-6">Invite friends and earn bonus credits together</p>
                     <button
-                      onClick={() => navigate('/auth')}
+                      onClick={() => navigate('/login')}
                       className="bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-white/90 transition-all duration-300"
                     >
                       Sign Up Now
@@ -2407,7 +2407,7 @@ const ProfileScreen: React.FC = () => {
           media={viewerMedia}
           startIndex={viewerStartIndex}
           onClose={() => setViewerOpen(false)}
-          onShowAuth={() => navigate('/auth')}
+          onShowAuth={() => navigate('/login')}
         />
       </div>
 

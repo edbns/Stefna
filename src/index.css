@@ -44,6 +44,43 @@ button.upload:hover {
   animation: shimmer 3s ease-in-out infinite;
 }
 
+/* Lab page: rotating icon ring */
+@keyframes lab-ring-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lab-ring-rotate {
+  transform-origin: center center;
+  animation: lab-ring-rotate 168s linear infinite;
+}
+
+@keyframes lab-icon-counter {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.lab-icon-upright {
+  display: block;
+  animation: lab-icon-counter 168s linear infinite;
+}
+
+html:has(.lab-page),
+body:has(.lab-page) {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-ring-rotate,
+  .lab-icon-upright {
+    animation: none;
+  }
+}
+
 /* Global Styles */
 html {
   scroll-behavior: auto;
