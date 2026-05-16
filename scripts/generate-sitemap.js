@@ -31,12 +31,21 @@ async function generateSitemap() {
         ORDER BY created_at DESC
       `);
       
-      storyEntries = result.rows.map(story => ({
+      storyEntries = result.rows.map(story => {
+        const updated = story.updated_at
+        const lastmod =
+          updated instanceof Date
+            ? updated.toISOString().split('T')[0]
+            : typeof updated === 'string'
+              ? updated.split('T')[0]
+              : currentDate
+        return {
         url: `https://stefna.xyz/story/${story.slug}`,
-        lastmod: story.updated_at ? story.updated_at.split('T')[0] : currentDate,
+        lastmod,
         changefreq: 'monthly',
         priority: '0.9'
-      }));
+      }
+      });
       
       console.log(`📚 Found ${storyEntries.length} published stories`);
     } catch (error) {
@@ -46,7 +55,7 @@ async function generateSitemap() {
     // Define static sitemap entries
     const staticEntries = [
       {
-        url: 'https://stefna.xyz/',
+        url: 'https://stefna.xyz/Lab',
         lastmod: currentDate,
         changefreq: 'daily',
         priority: '1.0'
