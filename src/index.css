@@ -44,39 +44,39 @@ button.upload:hover {
   animation: shimmer 3s ease-in-out infinite;
 }
 
-/* Lab page: rotating icon ring */
-@keyframes lab-ring-rotate {
-  to {
-    transform: rotate(360deg);
+/* Lab page */
+@keyframes lab-ambient-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1.06);
   }
 }
 
-.lab-ring-rotate {
-  transform-origin: center center;
-  animation: lab-ring-rotate 168s linear infinite;
+.lab-ambient-glow {
+  animation: lab-ambient-pulse 8s ease-in-out infinite;
 }
 
-@keyframes lab-icon-counter {
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
-.lab-icon-upright {
-  display: block;
-  animation: lab-icon-counter 168s linear infinite;
+.lab-ambient-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 72%);
 }
 
 html:has(.lab-page),
 body:has(.lab-page) {
-  overflow: hidden;
-  height: 100%;
+  background-color: #000000;
   overscroll-behavior: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lab-ring-rotate,
-  .lab-icon-upright {
+  .lab-ambient-glow {
     animation: none;
   }
 }

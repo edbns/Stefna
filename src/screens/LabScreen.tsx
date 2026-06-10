@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import { Helmet } from 'react-helmet-async'
+import { GooeyText } from '@/components/ui/gooey-text-morphing'
+import { SparklesCore } from '@/components/ui/sparkles'
 
-const ORBIT_SEC = 168
-const ORBIT_RADIUS_PCT = 44
+const MORPH_TEXTS = ['Music', 'Fashion', 'Culture']
 
 const SOCIAL_LINKS: { href: string; icon: string; label: string }[] = [
   { href: 'https://open.spotify.com/artist/0h4zpa0iYWK5bzLO19F8Bo', icon: '/spotify.svg', label: 'Spotify' },
@@ -16,22 +17,10 @@ const SOCIAL_LINKS: { href: string; icon: string; label: string }[] = [
   { href: 'https://www.tiktok.com/@stefnaxyz', icon: '/tiktok.svg', label: 'TikTok' },
 ]
 
-function orbitPosition(index: number, total: number) {
-  const angle = (2 * Math.PI * index) / total - Math.PI / 2
-  return {
-    left: 50 + ORBIT_RADIUS_PCT * Math.cos(angle),
-    top: 50 + ORBIT_RADIUS_PCT * Math.sin(angle),
-  }
-}
+const SPOTIFY_ARTIST_EMBED =
+  'https://open.spotify.com/embed/artist/0h4zpa0iYWK5bzLO19F8Bo?utm_source=generator&theme=0'
 
 const LabScreen: React.FC = () => {
-  const n = SOCIAL_LINKS.length
-
-  const iconPositions = useMemo(
-    () => SOCIAL_LINKS.map((_, i) => orbitPosition(i, n)),
-    [n]
-  )
-
   return (
     <>
       <Helmet>
@@ -56,72 +45,100 @@ const LabScreen: React.FC = () => {
         <meta name="twitter:image" content="https://stefna.xyz/og-image-new.png" />
       </Helmet>
 
-      <div className="lab-page flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-black font-figtree text-white">
-        <section className="relative flex min-h-0 flex-1 items-center justify-center overflow-visible px-3">
-          <div
-            className="relative aspect-square w-[min(88vmin,380px)] max-h-[min(72vh,380px)] shrink-0"
-            aria-label="Social and streaming links"
-          >
-            {/* Rotating ring of icons */}
-            <div
-              className="lab-ring-rotate absolute inset-0"
-              style={{ animationDuration: `${ORBIT_SEC}s` }}
-            >
-              {SOCIAL_LINKS.map((item, i) => {
-                const pos = iconPositions[i]!
-                return (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute z-10 block -translate-x-1/2 -translate-y-1/2 p-1 opacity-90 transition-opacity hover:opacity-100"
-                    style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
-                    aria-label={item.label}
-                  >
-                    <span className="lab-icon-upright" style={{ animationDuration: `${ORBIT_SEC}s` }}>
-                      <img
-                        src={item.icon}
-                        alt=""
-                        width={36}
-                        height={36}
-                        className="h-8 w-8 object-contain sm:h-9 sm:w-9 [filter:brightness(0)_invert(1)]"
-                      />
-                    </span>
-                  </a>
-                )
-              })}
-            </div>
-
-            {/* Center logo — fixed, does not rotate */}
-            <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center text-center">
-              <img
-                src="/logo-new.png"
-                alt="StefnaXYZ"
-                className="mx-auto w-[min(40vw,140px)] max-h-[min(14vh,100px)] object-contain select-none rounded-2xl sm:w-[min(34vw,160px)] sm:max-h-[min(16vh,115px)]"
-                width={160}
-                height={80}
-                draggable={false}
-              />
-              <p className="mt-3 text-sm font-medium tracking-wide text-white/95 sm:mt-4 sm:text-base">
-                Music × Fashion × Culture
-              </p>
-            </div>
+      <div className="lab-page relative min-h-[100dvh] overflow-x-hidden bg-black font-figtree text-white">
+        {/* Ambient background */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute inset-0 h-full w-full">
+            <SparklesCore
+              id="lab-sparkles"
+              background="transparent"
+              minSize={0.6}
+              maxSize={1.4}
+              particleDensity={100}
+              className="h-full w-full"
+              particleColor="#FFFFFF"
+              speed={1}
+            />
           </div>
-        </section>
+          <div className="lab-ambient-glow absolute left-1/2 top-[28%] h-[min(70vw,520px)] w-[min(90vw,720px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.04] blur-3xl" />
+          <div className="lab-ambient-grid absolute inset-0 opacity-[0.35]" />
+        </div>
 
-        <footer className="relative z-20 shrink-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 text-center text-[10px] leading-snug text-white/65 sm:text-[11px]">
-          <p>
-            Contact:{' '}
-            <a
-              href="mailto:hello@stefna.xyz"
-              className="text-white/90 underline decoration-white/30 underline-offset-2 hover:decoration-white/70"
+        <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-6">
+          {/* Hero */}
+          <section className="flex flex-col items-center pt-6 text-center sm:pt-10">
+            <img
+              src="/logo-new.png"
+              alt="StefnaXYZ"
+              className="mb-8 h-auto w-[min(42vw,148px)] select-none rounded-2xl object-contain sm:mb-10 sm:w-[min(34vw,168px)]"
+              width={168}
+              height={84}
+              draggable={false}
+            />
+
+            <div className="w-full max-w-4xl">
+              <GooeyText
+                texts={MORPH_TEXTS}
+                morphTime={1.1}
+                cooldownTime={0.3}
+                className="h-[min(14vw,110px)] w-full font-figtree sm:h-[min(12vw,130px)]"
+                textClassName="font-bold"
+              />
+            </div>
+
+            {/* Social links */}
+            <nav
+              className="mt-3 flex max-w-2xl flex-wrap items-center justify-center gap-2.5 sm:mt-4 sm:gap-3"
+              aria-label="Social and streaming links"
             >
-              hello@stefna.xyz
-            </a>
-          </p>
-          <p className="mt-0.5">© 2026 StefnaXYZ. All rights reserved.</p>
-        </footer>
+              {SOCIAL_LINKS.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/80 transition hover:border-white/25 hover:bg-white/[0.08] hover:text-white sm:px-3.5 sm:py-2.5 sm:text-[13px]"
+                  aria-label={item.label}
+                >
+                  <img
+                    src={item.icon}
+                    alt=""
+                    width={18}
+                    height={18}
+                    className="h-[18px] w-[18px] object-contain opacity-90 transition group-hover:opacity-100 [filter:brightness(0)_invert(1)]"
+                  />
+                  <span className="hidden sm:inline">{item.label}</span>
+                </a>
+              ))}
+            </nav>
+          </section>
+
+          <section className="mx-auto mt-14 w-full max-w-xl sm:mt-16" aria-label="Spotify player">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-[0_0_40px_rgba(255,255,255,0.03)]">
+              <iframe
+                title="Spotify player"
+                src={SPOTIFY_ARTIST_EMBED}
+                loading="lazy"
+                allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                className="h-[352px] w-full"
+              />
+            </div>
+          </section>
+
+          <footer className="mt-12 border-t border-white/10 pt-6 text-center text-xs leading-relaxed text-white/55 sm:text-[13px]">
+            <p>
+              Contact:{' '}
+              <a
+                href="mailto:hello@stefna.xyz"
+                className="text-white/85 underline decoration-white/25 underline-offset-2 transition hover:decoration-white/60"
+              >
+                hello@stefna.xyz
+              </a>
+            </p>
+            <p className="mt-1">© 2026 StefnaXYZ. All rights reserved.</p>
+          </footer>
+        </main>
       </div>
     </>
   )
