@@ -68,8 +68,8 @@ const LabScreen: React.FC = () => {
             <img
               src="/logo-new.png"
               alt="StefnaXYZ"
-              className="mb-5 h-auto w-[min(38vw,124px)] select-none rounded-2xl object-contain sm:mb-6 sm:w-[min(30vw,140px)]"
-              width={140}
+              className="mb-5 h-auto w-[min(34vw,110px)] select-none rounded-2xl object-contain sm:mb-5 sm:w-[min(27vw,126px)]"
+              width={126}
               height={84}
               draggable={false}
             />
