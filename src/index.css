@@ -57,6 +57,22 @@ button.upload:hover {
   }
 }
 
+@keyframes synth-merch-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.synth-merch-rotation {
+  animation: synth-merch-rotation 10s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .synth-merch-rotation {
+    animation: none;
+  }
+}
+
 .lab-ambient-glow {
   animation: lab-ambient-pulse 8s ease-in-out infinite;
 }
@@ -381,4 +397,4 @@ body {
   100% {
     width: 95%;
   }
-} 
+}
