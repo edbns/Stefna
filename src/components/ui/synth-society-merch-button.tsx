@@ -10,7 +10,7 @@ export const SynthSocietyMerchButton = () => {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Visit Synth Society Merch"
-      className="group relative grid h-[116px] w-[116px] place-items-center rounded-full border border-dotted border-white/75 text-[10px] font-semibold tracking-[0.08em] text-white transition duration-300 hover:border-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black sm:h-[124px] sm:w-[124px]"
+      className="group relative grid h-[116px] w-[116px] place-items-center rounded-full border border-dotted border-white bg-white/[0.08] text-[10px] font-semibold tracking-[0.08em] text-white shadow-[0_0_28px_rgba(255,255,255,0.16)] transition duration-300 hover:bg-white/[0.14] hover:shadow-[0_0_36px_rgba(255,255,255,0.26)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black sm:h-[124px] sm:w-[124px]"
     >
       <span className="synth-merch-rotation absolute inset-0" aria-hidden="true">
         {Array.from(BUTTON_TEXT).map((character, index) => (
