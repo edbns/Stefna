@@ -1,9 +1,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
-import { GooeyText } from '@/components/ui/gooey-text-morphing'
 import { SparklesCore } from '@/components/ui/sparkles'
-
-const MORPH_TEXTS = ['Music', 'Fashion', 'Culture']
+import { SynthSocietyMerchButton } from '@/components/ui/synth-society-merch-button'
 
 const SOCIAL_LINKS: { href: string; icon: string; label: string }[] = [
   { href: 'https://open.spotify.com/artist/0h4zpa0iYWK5bzLO19F8Bo', icon: '/spotify.svg', label: 'Spotify' },
@@ -70,25 +68,17 @@ const LabScreen: React.FC = () => {
             <img
               src="/logo-new.png"
               alt="StefnaXYZ"
-              className="mb-8 h-auto w-[min(42vw,148px)] select-none rounded-2xl object-contain sm:mb-10 sm:w-[min(34vw,168px)]"
-              width={168}
+              className="mb-5 h-auto w-[min(38vw,124px)] select-none rounded-2xl object-contain sm:mb-6 sm:w-[min(30vw,140px)]"
+              width={140}
               height={84}
               draggable={false}
             />
 
-            <div className="w-full max-w-4xl">
-              <GooeyText
-                texts={MORPH_TEXTS}
-                morphTime={1.1}
-                cooldownTime={0.3}
-                className="h-[min(14vw,110px)] w-full font-figtree sm:h-[min(12vw,130px)]"
-                textClassName="font-bold"
-              />
-            </div>
+            <SynthSocietyMerchButton />
 
             {/* Social links */}
             <nav
-              className="mt-3 flex max-w-2xl flex-wrap items-center justify-center gap-2.5 sm:mt-4 sm:gap-3"
+              className="mt-7 flex max-w-2xl flex-wrap items-center justify-center gap-2.5 sm:mt-8 sm:gap-3"
               aria-label="Social and streaming links"
             >
               {SOCIAL_LINKS.map((item) => (
