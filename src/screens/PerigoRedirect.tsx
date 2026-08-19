@@ -7,5 +7,6 @@ export default function PerigoRedirect() {
     const timer = window.setTimeout(() => window.location.replace(target), 1000)
     return () => window.clearTimeout(timer)
   }, [])
+
   return <div className="min-h-screen bg-black" aria-label="Opening Spotify" />
 }
