@@ -13,6 +13,7 @@ import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
 import LoadingSpinner from './components/LoadingSpinner'
 import authService from './services/authService'
+import { AppLovinPixel } from './components/AppLovinPixel'
 
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation()
@@ -160,6 +161,7 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <AppLovinPixel />
       <ScrollToTop />
       <ToastProvider>
         <ProfileProvider>
