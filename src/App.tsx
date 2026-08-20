@@ -6,7 +6,6 @@ import SignupGateModal from './components/SignupGateModal'
 import ProfileScreen from './screens/ProfileScreen'
 import AuthScreen from './screens/AuthScreen'
 import LabScreen from './screens/LabScreen'
-import PerigoRedirect from './screens/PerigoRedirect'
 import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import MobileRouteGuard from './components/MobileRouteGuard'
 import { initializeAuthBootstrap } from './services/authBootstrap'
@@ -14,7 +13,6 @@ import { setupGlobalErrorHandling } from './utils/globalErrorHandler'
 import WaitlistForm from './components/WaitlistForm'
 import LoadingSpinner from './components/LoadingSpinner'
 import authService from './services/authService'
-import { AppLovinPixel } from './components/AppLovinPixel'
 
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation()
@@ -133,7 +131,6 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<RootToLab />} />
           <Route path="/Lab" element={<LabScreen />} />
-          <Route path="/perigo" element={<PerigoRedirect />} />
           <Route path="/lab" element={<Navigate to="/Lab" replace />} />
           <Route path="/login" element={<AuthScreen />} />
           <Route path="/auth" element={<LegacyAuthToLogin />} />
@@ -163,7 +160,6 @@ const App: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <AppLovinPixel />
       <ScrollToTop />
       <ToastProvider>
         <ProfileProvider>
