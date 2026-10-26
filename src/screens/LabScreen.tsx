@@ -59,6 +59,7 @@ function SpotifyDialog({ release, close }: { release: Release; close: () => void
 function usePreview() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const engineRef = useRef<{ context: AudioContext; analyser: AnalyserNode } | null>(null)
+  const contextRef = useRef<AudioContext | null>(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [failed, setFailed] = useState(false)
@@ -70,28 +71,52 @@ function usePreview() {
       mounted.current = false
       operation.current += 1
       audioRef.current?.pause()
-      if (engineRef.current) { void engineRef.current.context.close(); engineRef.current = null }
+      if (contextRef.current) { void contextRef.current.close().catch(() => {}); contextRef.current = null }
+      engineRef.current = null
     }
   }, [])
   const pause = useCallback(() => { operation.current += 1; audioRef.current?.pause() }, [])
-  const toggle = useCallback(async () => {
+  const toggle = useCallback(() => {
     const audio = audioRef.current!
     if (!audio.paused) { pause(); return }
     const attempt = ++operation.current
     setFailed(false)
+    // Keep play() in the tap/click call stack. A suspended or interrupted
+    // visualizer must never hold native media playback behind an await.
+    let playback: Promise<void>
     try {
-      if (!engineRef.current && typeof AudioContext !== 'undefined') {
-        const context = new AudioContext()
+      playback = audio.play()
+    } catch {
+      setFailed(true)
+      return
+    }
+    void playback.catch(error => {
+      if (mounted.current && attempt === operation.current && error?.name !== 'AbortError') setFailed(true)
+    })
+
+    try {
+      const AudioContextConstructor = window.AudioContext ||
+        (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!AudioContextConstructor) return
+      const context = contextRef.current || new AudioContextConstructor()
+      contextRef.current = context
+      const connectVisualizer = () => {
+        if (!mounted.current || contextRef.current !== context || audioRef.current !== audio ||
+            context.state !== 'running' || engineRef.current) return
         const analyser = context.createAnalyser()
         analyser.fftSize = 128
-        context.createMediaElementSource(audio).connect(analyser)
+        // Only reroute audible native media after this context is running.
         analyser.connect(context.destination)
+        context.createMediaElementSource(audio).connect(analyser)
         engineRef.current = { context, analyser }
       }
-      await engineRef.current?.context.resume()
-    } catch { /* Native audio still works if this browser has no analyser. */ }
-    if (!mounted.current || attempt !== operation.current) return
-    try { await audio.play() } catch { if (mounted.current) setFailed(true) }
+      if (context.state === 'running') connectVisualizer()
+      else {
+        // Request the unlock during this same user gesture, without waiting
+        // for it before play(). Some mobile browsers leave resume() pending.
+        void context.resume().then(connectVisualizer).catch(() => {})
+      }
+    } catch { /* Native audio remains independent of visualizer support. */ }
   }, [pause])
   return { audioRef, engineRef, playing, setPlaying, progress, setProgress, failed, setFailed, toggle, pause }
 }

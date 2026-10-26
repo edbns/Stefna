@@ -212,7 +212,7 @@
 .signal-audio:hover { box-shadow: 0 0 35px #fff3; transform: scale(1.04); }
 .signal-audio > svg:not(.signal-progress) { margin-left: 2px; }
 .signal-audio-playing > svg:not(.signal-progress) { margin-left: 0; }
-.signal-progress { position: absolute; inset: -4px; width: 64px; height: 64px; transform: rotate(-90deg); overflow: visible; }
+.signal-progress { position: absolute; inset: -4px; width: 64px; height: 64px; transform: rotate(-90deg); overflow: visible; pointer-events: none; }
 .signal-progress circle { stroke: #fff; stroke-width: 1; fill: none; transition: stroke-dashoffset .2s linear; }
 .signal-dock-divider { height: 23px; width: 1px; background: #ffffff25; margin-left: 3px; }
 .signal-spectrum { height: 20px; display: flex; align-items: center; gap: 3px; margin-left: auto; opacity: .65; }
@@ -254,7 +254,8 @@
   .signal-header > nav { gap: 1px; }
   .signal-control { width: 42px; height: 42px; }
   .signal-stage { cursor: default; }
-  .signal-footer { left: 17px; right: 17px; bottom: max(23px,env(safe-area-inset-bottom)); }
+  .signal-footer { left: 17px; right: 17px; bottom: max(23px,env(safe-area-inset-bottom)); min-height: 72px; }
+  .signal-dock, .signal-audio { touch-action: manipulation; }
   .signal-dock { padding: 7px 9px; gap: 6px; }
   .signal-audio { width: 52px; height: 52px; }
   .signal-progress { width: 58px; height: 58px; }
