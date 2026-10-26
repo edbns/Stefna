@@ -33,7 +33,6 @@
 
 [functions."unified-generate-background"]
   timeout = 720
-  memory = 1536
 
 
   # Keep native / build-time-only deps out of the bundle:
@@ -48,7 +47,6 @@
 # Function-specific configurations
 [functions."aimlApi"]
   timeout = 26   # Netlify max for normal functions
-  memory = 1024
 
 # Function dependencies are handled by top-level package.json
 
